@@ -93,7 +93,9 @@ The first playable engine slice now includes a transactional quarter resolver, a
 - The quarter report records leadership usage, launches, completions, and project cash commitments.
 
 ### Autonomous actor pass
-- Asterion's true compute demand grows within the scenario's forecast band; flexible demand is recalculated from its contract commitments.
+- Asterion's true compute demand grows within the scenario's forecast band. Fixed contracted volumes remain protected; only flexible demand is reallocated between NodeWorks, Kestrel, and other regional providers.
+- Asterion's flexible allocation weighs provider price, reliability, available capacity, and supplier concentration. Capacity limits are enforced, while rival allocation quantities remain hidden from the player unless separately researched.
+- Changes to NodeWorks' flexible allocation update its contract volume and next-quarter workload. The public event log reports that the customer rebalanced providers without exposing rival operating data.
 - Kestrel can independently initiate a capacity expansion pipeline only after reserving 2 MW-equivalent from Silicon Vein's delivery pool. NodeWorks' equipment initiative reserves 6 MW-equivalent two quarters ahead; the regional pool is capped at 10 MW-equivalent per delivery quarter after NodeWorks' standing 2 MW allocation. Kestrel's project also requires 2 MW of immediate firm power at commissioning.
 - Solara adjusts regional energy pricing in response to grid utilization.
 - The Infrastructure Authority can open a concentration review when the regional grid crosses its review threshold.
@@ -101,4 +103,4 @@ The first playable engine slice now includes a transactional quarter resolver, a
 - Silicon Vein orders are tracked by buyer, quantity, placement quarter, delivery quarter, and status. Reservations cannot exceed the quarterly pool; player and rival orders compete for the same delivery windows.
 - Actor outcomes are deterministic for the same world seed and quarter.
 
-This is an initial simulation layer, not the final economic model. In particular, rival procurement competition, contract reallocation, financing choices, project dependencies, regulatory consequences, and information-quality mechanics remain future work.
+This is an initial simulation layer, not the final economic model. In particular, deeper contract negotiations and renewals, financing choices, project dependencies, regulatory consequences, and information-quality mechanics remain future work.
