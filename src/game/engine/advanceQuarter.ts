@@ -25,6 +25,10 @@ export interface DebtDrawdownCommand {
   principalCents: number;
 }
 
+export interface LoanAcceptanceCommand {
+  offerId: string;
+}
+
 interface ResolvedDebtRepayment extends DebtRepaymentCommand {
   repaymentType: 'scheduled' | 'maturity' | 'voluntary';
 }
@@ -65,6 +69,8 @@ export interface QuarterCommands {
   debtRepayments?: DebtRepaymentCommand[];
   /** Draws against an existing committed credit facility; proceeds belong to its borrower. */
   debtDrawdowns?: DebtDrawdownCommand[];
+  /** Accept lender-originated terms; proceeds and debt belong to the named borrower. */
+  acceptLoanOffers?: LoanAcceptanceCommand[];
 }
 
 export interface AdvanceQuarterSuccess {
@@ -202,6 +208,42 @@ function validateCommands(state: GameState, commands: QuarterCommands): Validati
       continue;
     }
     drawdownByFacility.set(drawdown.debtId, totalDrawdown);
+  }
+
+  const seenLoanOffers = new Set<string>();
+  const lenderCapacityUsed = new Map<string, number>();
+  for (const acceptance of commands.acceptLoanOffers ?? []) {
+    if (seenLoanOffers.has(acceptance.offerId)) {
+      issues.push(issue('command.loan_offer_duplicate', 'A loan offer can only be accepted once per quarter.', acceptance.offerId));
+      continue;
+    }
+    seenLoanOffers.add(acceptance.offerId);
+    const offer = state.loanOffers.find((item) => item.id === acceptance.offerId);
+    if (!offer) {
+      issues.push(issue('command.loan_offer_unknown', 'Loan acceptance references an unknown offer.', acceptance.offerId));
+      continue;
+    }
+    if (offer.status !== 'available') {
+      issues.push(issue('command.loan_offer_unavailable', 'This loan offer is no longer available.', acceptance.offerId));
+      continue;
+    }
+    if (state.quarter > offer.expiresAfterQuarter) {
+      issues.push(issue('command.loan_offer_expired', 'This loan offer has expired.', acceptance.offerId));
+      continue;
+    }
+    const lender = state.lenders.find((item) => item.organizationId === offer.lenderId);
+    const lenderOrg = state.organizations.find((item) => item.id === offer.lenderId);
+    const borrower = state.organizations.find((item) => item.id === offer.borrowerId);
+    if (!lender || !lenderOrg || !borrower) {
+      issues.push(issue('command.loan_offer_party_missing', 'The lender or borrower for this offer is missing.', acceptance.offerId));
+      continue;
+    }
+    const used = (lenderCapacityUsed.get(offer.lenderId) ?? 0) + offer.principalCents;
+    if (used > lender.availableCapacityCents || used > lenderOrg.cashCents) {
+      issues.push(issue('command.lender_capacity_insufficient', 'The lender no longer has enough available lending capacity or liquidity.', offer.lenderId));
+      continue;
+    }
+    lenderCapacityUsed.set(offer.lenderId, used);
   }
 
   const seenContractOffers = new Set<string>();
@@ -471,6 +513,8 @@ export function advanceQuarter(state: GameState, commands: QuarterCommands = {})
       playerIntelligence: state.playerIntelligence.map((estimate) => ({ ...estimate })),
       projects: state.projects.map((project) => ({ ...project })),
       equipmentOrders: state.equipmentOrders.map((order) => ({ ...order })),
+      lenders: state.lenders.map((lender) => ({ ...lender })),
+      loanOffers: state.loanOffers.map((offer) => ({ ...offer })),
     };
 
     // Supplier reservations mature at the start of their delivery quarter.
@@ -603,6 +647,59 @@ export function advanceQuarter(state: GameState, commands: QuarterCommands = {})
         principalCents: moneyFromCents(drawdown.principalCents),
       }));
     }
+    const acceptedOffers = commands.acceptLoanOffers ?? [];
+    if (acceptedOffers.length > 0) {
+      const accepted = acceptedOffers.map((command) => candidate.loanOffers.find((offer) => offer.id === command.offerId)!);
+      const fundingByBorrower = new Map<string, number>();
+      const fundingByLender = new Map<string, number>();
+      for (const offer of accepted) {
+        fundingByBorrower.set(offer.borrowerId, (fundingByBorrower.get(offer.borrowerId) ?? 0) + offer.principalCents);
+        fundingByLender.set(offer.lenderId, (fundingByLender.get(offer.lenderId) ?? 0) + offer.principalCents);
+      }
+      candidate = {
+        ...candidate,
+        loanOffers: candidate.loanOffers.map((offer) => accepted.some((item) => item.id === offer.id)
+          ? { ...offer, status: 'accepted' as const } : offer),
+        lenders: candidate.lenders.map((lender) => {
+          const used = fundingByLender.get(lender.organizationId) ?? 0;
+          return used > 0 ? { ...lender, availableCapacityCents: moneyFromCents(lender.availableCapacityCents - used) } : lender;
+        }),
+        organizations: candidate.organizations.map((organization) => {
+          const lent = fundingByLender.get(organization.id) ?? 0;
+          const received = fundingByBorrower.get(organization.id) ?? 0;
+          if (lent === 0 && received === 0) return organization;
+          return { ...organization,
+            cashCents: moneyFromCents(organization.cashCents - lent + received),
+            debtCents: received > 0 ? moneyFromCents(organization.debtCents + received) : organization.debtCents,
+          };
+        }),
+        debts: [...candidate.debts, ...accepted.map((offer) => ({
+          id: `loan-${offer.id}`, borrowerId: offer.borrowerId,
+          principalCents: offer.principalCents, quarterlyInterestRate: offer.quarterlyInterestRate,
+          maturityQuarter: offer.maturityQuarter,
+        }))],
+      };
+      const adjustBridge = (bridge: typeof report.entityCashBridges[number]) => {
+        const received = fundingByBorrower.get(bridge.organizationId) ?? 0;
+        const lent = fundingByLender.get(bridge.organizationId) ?? 0;
+        const flow = received - lent;
+        if (flow === 0) return bridge;
+        return { ...bridge, financingCashFlowCents: moneyFromCents(bridge.financingCashFlowCents + flow),
+          netCashChangeCents: moneyFromCents(bridge.netCashChangeCents + flow),
+          closingCashCents: moneyFromCents(bridge.closingCashCents + flow) };
+      };
+      report.entityCashBridges = report.entityCashBridges.map(adjustBridge);
+      report.companies = report.companies.map((company) => ({ ...company, cashBridge: adjustBridge(company.cashBridge) }));
+      report.loanAcceptances = accepted.map((offer) => ({
+        offerId: offer.id, lenderId: offer.lenderId, borrowerId: offer.borrowerId,
+        principalCents: offer.principalCents, quarterlyInterestRate: offer.quarterlyInterestRate,
+        maturityQuarter: offer.maturityQuarter,
+      }));
+    }
+    candidate = { ...candidate, loanOffers: candidate.loanOffers.map((offer) =>
+      offer.status === 'available' && offer.expiresAfterQuarter < state.quarter + 1
+        ? { ...offer, status: 'expired' as const } : offer) };
+
     const nodeworksOperations = report.companies.find((item) => item.companyId === 'nodeworks')?.operations;
     if (nodeworksOperations) {
       const fixedContracts = candidate.operatingCompanies.find((item) => item.organizationId === 'nodeworks')?.contracts.filter((item) => item.flexibility === 'contracted') ?? [];
