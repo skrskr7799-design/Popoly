@@ -266,7 +266,15 @@ A debt instrument may define a fixed quarterly principal installment and a final
 The quarter is rejected atomically if mandatory scheduled or maturity principal cannot be funded from the borrower's opening cash after the quarter's modeled operating and interest flows are accounted for. The first implementation does not yet model arrears, covenant breaches, lender grace periods, or refinancing; those belong to the subsequent credit-facility and distress systems. Interest continues to accrue on opening principal for the quarter, and principal paid during the quarter reduces the following quarter's interest base.
 
 
-## 21. Lender-originated loan offers
+## 22. Independent lender underwriting
+
+A borrower may submit one credit request per quarter, specifying a legal entity, requested principal, term (2–12 quarters), and optional collateral description. Every lender evaluates the request independently using the borrower's own quarterly operating cash contribution, opening cash, outstanding debt service, leverage, and reputation. A holding company with cash but no operating cash flow is not treated as financially identical to its operating subsidiary.
+
+The first credit score is a transparent deterministic 300–850 model. It combines debt-service coverage, cash-to-debt liquidity, debt relative to an annualized cash-flow proxy, and borrower reputation, then maps the result to a coarse rating band. This is an initial game-balance model, not a real-world credit bureau score or a complete underwriting methodology.
+
+Each lender has its own minimum score, base quarterly rate, risk appetite, and maximum loan-to-annual-cash-flow multiple. Eligible lenders independently size the offer against the request, borrower limit, their remaining lending capacity, and their cash liquidity. The quoted quarterly rate adds a score-sensitive risk spread and a lender-policy adjustment. A lender may reject the request or offer less than requested; the report records the decision and reason. Offers become available for acceptance in a later quarter, preserving the distinction between underwriting and funding.
+
+The score, rating, requested amount, offered amount, and quoted rate are recorded in the quarter report. No lender's hidden policy thresholds are exposed through the decision text. Collateral is currently descriptive only: collateral valuation, priority, enforcement, guarantees, covenant testing, and renegotiation are future work.
 
 The credit market distinguishes committed revolving facilities from new term-loan offers. A lender is represented by a legal organization plus a lending policy record containing remaining lending capacity and a broad risk-appetite profile. A loan offer names one lender, one legal borrower, a principal amount, quarterly interest rate, maturity quarter, expiry quarter, and optional collateral description.
 
