@@ -885,7 +885,7 @@ export function advanceQuarter(state: GameState, commands: QuarterCommands = {})
             unpaidInterestCents: moneyFromCents(closingInterestArrears),
             unpaidDueCents: moneyFromCents(unpaidPrincipal),
             totalArrearsCents: moneyFromCents(closingPrincipalArrears),
-            overdueQuarters, status,
+            overdueQuarters, status: overdueQuarters >= 2 ? 'defaulted' : 'overdue',
           });
         }
         return {
