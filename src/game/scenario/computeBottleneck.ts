@@ -18,6 +18,8 @@ export function createComputeBottleneckState(seed = 2035): GameState {
       { id: 'solara-grid', name: 'Solara Grid', kind: 'supplier', cashCents: moneyFromDollars(0), debtCents: moneyFromDollars(0), reputation: 72 },
       { id: 'silicon-vein', name: 'Silicon Vein', kind: 'supplier', cashCents: moneyFromDollars(0), debtCents: moneyFromDollars(0), reputation: 66 },
       { id: 'regional-infrastructure-authority', name: 'Regional Infrastructure Authority', kind: 'institution', cashCents: moneyFromDollars(0), debtCents: moneyFromDollars(0), reputation: 60 },
+      { id: 'northstar-commercial-bank', name: 'Northstar Commercial Bank', kind: 'lender', cashCents: moneyFromDollars(25_000_000), debtCents: moneyFromDollars(0), reputation: 78 },
+      { id: 'frontier-development-bank', name: 'Frontier Development Bank', kind: 'lender', cashCents: moneyFromDollars(18_000_000), debtCents: moneyFromDollars(0), reputation: 71 },
     ],
     ownership: [
       { ownerId: 'meridian-group', companyId: 'nodeworks', shares: 7_200_000, votingShares: 7_200_000 },
@@ -62,6 +64,18 @@ export function createComputeBottleneckState(seed = 2035): GameState {
     ],
     projects: [],
     equipmentOrders: [],
+    lenders: [
+      { organizationId: 'northstar-commercial-bank', availableCapacityCents: moneyFromDollars(12_000_000), riskAppetite: 'conservative' },
+      { organizationId: 'frontier-development-bank', availableCapacityCents: moneyFromDollars(9_000_000), riskAppetite: 'growth' },
+    ],
+    loanOffers: [
+      { id: 'northstar-nodeworks-q1', lenderId: 'northstar-commercial-bank', borrowerId: 'nodeworks',
+        principalCents: moneyFromDollars(2_000_000), quarterlyInterestRate: 0.028,
+        maturityQuarter: 9, expiresAfterQuarter: 2, collateralDescription: 'Equipment and receivables', status: 'available' },
+      { id: 'frontier-meridian-q1', lenderId: 'frontier-development-bank', borrowerId: 'meridian-group',
+        principalCents: moneyFromDollars(3_000_000), quarterlyInterestRate: 0.032,
+        maturityQuarter: 9, expiresAfterQuarter: 2, collateralDescription: 'Holding-company assets; covenant package applies', status: 'available' },
+    ],
     playerIntelligence: [
       { subjectId: 'kestrel-compute', metric: 'effectiveCapacityMW', min: 22, max: 26, knowledge: 'estimated', confidence: 0.65, observedQuarter: 1, source: 'market analyst consensus' },
       { subjectId: 'kestrel-compute', metric: 'deliveredWorkloadMW', min: 17, max: 21, knowledge: 'estimated', confidence: 0.7, observedQuarter: 1, source: 'customer and grid reports' },
