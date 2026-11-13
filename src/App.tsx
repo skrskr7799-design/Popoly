@@ -2,24 +2,24 @@ import { useState } from 'react';
 import { useGameStore } from './store/gameStore';
 import { SECTOR_ABILITIES, SECTOR_ADJACENCY } from './data/sectors';
 import type { Sector, EconomyPhase } from './entities/types';
-import { useI18n, type TranslationKey } from './i18n';
+import { useI18n } from './i18n';
 
 type MobileTab = 'players' | 'market' | 'actions';
 
-function sectorLabelKey(s: Sector): TranslationKey {
-  return `sector_${s}` as TranslationKey;
+function sectorLabelKey(s: Sector): string {
+  return `sector_${s}`;
 }
-function phaseLabelKey(p: EconomyPhase): TranslationKey {
-  return `phase_${p}` as TranslationKey;
+function phaseLabelKey(p: EconomyPhase): string {
+  return `phase_${p}`;
 }
-function phaseDescKey(p: EconomyPhase): TranslationKey {
-  return `phaseDesc_${p}` as TranslationKey;
+function phaseDescKey(p: EconomyPhase): string {
+  return `phaseDesc_${p}`;
 }
-function abilityNameKey(s: Sector): TranslationKey {
-  return `ab_${s}` as TranslationKey;
+function abilityNameKey(s: Sector): string {
+  return `ab_${s}`;
 }
-function abilitySummaryKey(s: Sector): TranslationKey {
-  return `ab_${s}_s` as TranslationKey;
+function abilitySummaryKey(s: Sector): string {
+  return `ab_${s}_s`;
 }
 
 function LanguageSwitch() {
@@ -45,6 +45,41 @@ function LanguageSwitch() {
       >
         EN
       </button>
+    </div>
+  );
+}
+
+function TutorialModal({
+  open,
+  onClose,
+  t,
+}: {
+  open: boolean;
+  onClose: () => void;
+  t: (k: string) => string;
+}) {
+  if (!open) return null;
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70"
+      onClick={onClose}
+    >
+      <div
+        className="max-w-md w-full bg-zinc-900 border border-zinc-700 rounded-xl p-5 space-y-4"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <h2 className="text-lg font-semibold text-cyan-300">{t('tutorialTitle')}</h2>
+        <p className="text-sm text-zinc-300 whitespace-pre-line leading-relaxed">
+          {t('tutorialBody')}
+        </p>
+        <button
+          type="button"
+          onClick={onClose}
+          className="w-full py-2.5 bg-zinc-800 rounded-lg text-sm"
+        >
+          {t('close')}
+        </button>
+      </div>
     </div>
   );
 }
@@ -82,6 +117,7 @@ function App() {
   const [selectedCompanyId, setSelectedCompanyId] = useState<string | null>(null);
   const [showMap, setShowMap] = useState(false);
   const [mobileTab, setMobileTab] = useState<MobileTab>('market');
+  const [showTutorial, setShowTutorial] = useState(false);
 
   const currentPlayer = players[currentPlayerIndex];
   const isHumanTurn = currentPlayer && !currentPlayer.isBot;
@@ -92,12 +128,7 @@ function App() {
       : [];
   const winner = winnerId ? players.find((p) => p.id === winnerId) : null;
 
-  const startNames = () => [
-    t('you'),
-    t('botRaider'),
-    t('botSpymaster'),
-    t('botConservative'),
-  ];
+  const startNames = () => [t('you'), t('botRaider'), t('botSpymaster'), t('botConservative')];
 
   if (status === 'setup') {
     return (
@@ -116,12 +147,20 @@ function App() {
             <p className="text-zinc-300 text-sm leading-relaxed">{t('setupBlurb')}</p>
             <button
               onClick={() => initGame(startNames())}
-              className="w-full py-3.5 px-4 bg-cyan-600 hover:bg-cyan-500 active:bg-cyan-700 text-white font-medium rounded-lg transition-colors text-base"
+              className="w-full py-3.5 px-4 bg-cyan-600 hover:bg-cyan-500 text-white font-medium rounded-lg text-base"
             >
               {t('startGame')}
             </button>
+            <button
+              type="button"
+              onClick={() => setShowTutorial(true)}
+              className="w-full py-2.5 px-4 border border-zinc-700 text-zinc-300 rounded-lg text-sm hover:bg-zinc-800"
+            >
+              {t('howToPlay')}
+            </button>
           </div>
           <p className="text-center text-xs text-zinc-600">{t('botsHint')}</p>
+          <TutorialModal open={showTutorial} onClose={() => setShowTutorial(false)} t={t} />
         </div>
       </div>
     );
@@ -190,10 +229,8 @@ function App() {
           return (
             <div
               key={p.id}
-              className={`p-3 rounded-lg border transition-colors ${
-                isCurrent
-                  ? 'border-cyan-500/50 bg-cyan-950/30'
-                  : 'border-zinc-800 bg-zinc-900/50'
+              className={`p-3 rounded-lg border ${
+                isCurrent ? 'border-cyan-500/50 bg-cyan-950/30' : 'border-zinc-800 bg-zinc-900/50'
               }`}
             >
               <div className="flex justify-between items-start">
@@ -205,9 +242,7 @@ function App() {
                   {t('score')} ${(score / 1e6).toFixed(1)}M
                 </div>
                 <div>
-                  {t('net')} ${(net / 1e6).toFixed(2)}M · {t('cash')} ${
-                    (p.cash / 1e6).toFixed(2)
-                  }M
+                  {t('net')} ${(net / 1e6).toFixed(2)}M · {t('cash')} ${(p.cash / 1e6).toFixed(2)}M
                 </div>
                 {debt > 0 && (
                   <div className="text-rose-400/90">
@@ -282,9 +317,7 @@ function App() {
 
   const marketPanel = (
     <section className="space-y-3">
-      <h2 className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">
-        {t('market')}
-      </h2>
+      <h2 className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">{t('market')}</h2>
       <div className="space-y-2">
         {companies.map((company) => {
           const ownership = currentPlayer
@@ -302,7 +335,7 @@ function App() {
             <div
               key={company.id}
               onClick={() => setSelectedCompanyId(company.id)}
-              className={`p-3 rounded-xl border cursor-pointer transition-colors ${
+              className={`p-3 rounded-xl border cursor-pointer ${
                 isSelected
                   ? 'border-violet-500/60 bg-violet-950/20'
                   : 'border-zinc-800 bg-zinc-900/40 hover:border-zinc-700'
@@ -391,8 +424,7 @@ function App() {
             <div className="text-sm font-medium">{selectedCompany.name}</div>
             <div className="text-[11px] text-zinc-500">
               {t('sec')} {selectedCompany.securityLevel} · {t('intel')}{' '}
-              {currentPlayer?.intelligenceLevel ?? 0} ·{' '}
-              {t(abilityNameKey(selectedCompany.sector))}
+              {currentPlayer?.intelligenceLevel ?? 0} · {t(abilityNameKey(selectedCompany.sector))}
             </div>
             <p className="text-[10px] text-zinc-600 leading-snug">
               {t(abilitySummaryKey(selectedCompany.sector))}
@@ -431,10 +463,10 @@ function App() {
                     className="text-[11px] p-2 rounded-lg bg-zinc-950/80 border border-zinc-800 space-y-1"
                   >
                     <div className="flex justify-between">
-                      <span className="text-zinc-400 capitalize">{s.type}</span>
+                      <span className="text-zinc-400">{t(`type_${s.type}`)}</span>
                       <span className="text-rose-400">Sev {s.severity}</span>
                     </div>
-                    <p className="text-zinc-300 leading-snug">{s.description}</p>
+                    <p className="text-zinc-300 leading-snug">{t(s.description)}</p>
                     {!s.leaked ? (
                       <button
                         onClick={() => leakSecret(selectedCompany.id, s.id)}
@@ -530,6 +562,13 @@ function App() {
             </span>
           </div>
           <div className="flex items-center gap-2 sm:gap-3 text-xs sm:text-sm">
+            <button
+              type="button"
+              onClick={() => setShowTutorial(true)}
+              className="text-[10px] sm:text-xs text-zinc-500 hover:text-zinc-300 px-1"
+            >
+              {t('howToPlay')}
+            </button>
             <LanguageSwitch />
             <div className="text-zinc-400 truncate max-w-[7rem] sm:max-w-none">
               <span className="text-zinc-100 font-medium">{currentPlayer?.name}</span>
@@ -558,6 +597,8 @@ function App() {
         {mobileTab === 'market' && marketPanel}
         {mobileTab === 'actions' && actionsPanel}
       </main>
+
+      <TutorialModal open={showTutorial} onClose={() => setShowTutorial(false)} t={t} />
 
       <nav className="md:hidden fixed bottom-0 inset-x-0 z-20 border-t border-zinc-800 bg-zinc-950/95 backdrop-blur">
         <div className="grid grid-cols-3">
