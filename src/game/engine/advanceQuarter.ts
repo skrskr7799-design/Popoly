@@ -769,8 +769,9 @@ export function advanceQuarter(state: GameState, commands: QuarterCommands = {})
     }
     if (creditDecisions.length > 0) report.creditDecisions = creditDecisions;
 
+    const refinancingDebtIds = new Set((commands.refinanceDebts ?? []).map((item) => item.debtId));
     const debtRepayments: ResolvedDebtRepayment[] = [
-      ...getScheduledDebtRepayments(candidate),
+      ...getScheduledDebtRepayments(candidate).filter((item) => !refinancingDebtIds.has(item.debtId)),
       ...(commands.debtRepayments ?? []).map((item) => ({ ...item, repaymentType: 'voluntary' as const })),
     ];
     if (debtRepayments.length > 0) {
@@ -852,13 +853,40 @@ export function advanceQuarter(state: GameState, commands: QuarterCommands = {})
       }));
     }
     const acceptedOffers = commands.acceptLoanOffers ?? [];
-    if (acceptedOffers.length > 0) {
-      const accepted = acceptedOffers.map((command) => candidate.loanOffers.find((offer) => offer.id === command.offerId)!);
+    const refinanceCommands = commands.refinanceDebts ?? [];
+    const accepted = [
+      ...acceptedOffers.map((command) => candidate.loanOffers.find((offer) => offer.id === command.offerId)!),
+      ...refinanceCommands.map((command) => candidate.loanOffers.find((offer) => offer.id === command.offerId)!),
+    ];
+    if (accepted.length > 0) {
       const fundingByBorrower = new Map<string, number>();
       const fundingByLender = new Map<string, number>();
+      const refinancePayoffByBorrower = new Map<string, number>();
+      const refinanceFeesByBorrower = new Map<string, number>();
+      const repaymentReceiptsByLender = new Map<string, number>();
+      const refinancingLines = [];
+      const refinanceByDebt = new Map(refinanceCommands.map((item) => [item.debtId, item]));
       for (const offer of accepted) {
         fundingByBorrower.set(offer.borrowerId, (fundingByBorrower.get(offer.borrowerId) ?? 0) + offer.principalCents);
         fundingByLender.set(offer.lenderId, (fundingByLender.get(offer.lenderId) ?? 0) + offer.principalCents);
+      }
+      for (const command of refinanceCommands) {
+        const oldDebt = candidate.debts.find((item) => item.id === command.debtId)!;
+        const offer = accepted.find((item) => item.id === command.offerId)!;
+        const feeBps = command.feeBasisPoints ?? 100;
+        const fee = Math.ceil(oldDebt.principalCents * feeBps / 10_000);
+        refinancePayoffByBorrower.set(oldDebt.borrowerId, (refinancePayoffByBorrower.get(oldDebt.borrowerId) ?? 0) + oldDebt.principalCents);
+        refinanceFeesByBorrower.set(oldDebt.borrowerId, (refinanceFeesByBorrower.get(oldDebt.borrowerId) ?? 0) + fee);
+        if (oldDebt.lenderId) {
+          repaymentReceiptsByLender.set(oldDebt.lenderId, (repaymentReceiptsByLender.get(oldDebt.lenderId) ?? 0) + oldDebt.principalCents);
+        }
+        refinancingLines.push({
+          oldDebtId: oldDebt.id, newDebtId: `loan-${offer.id}`,
+          borrowerId: oldDebt.borrowerId, newLenderId: offer.lenderId,
+          refinancedPrincipalCents: moneyFromCents(oldDebt.principalCents),
+          feeCents: moneyFromCents(fee),
+          netCashReleasedCents: moneyFromCents(offer.principalCents - oldDebt.principalCents - fee),
+        });
       }
       candidate = {
         ...candidate,
@@ -866,32 +894,49 @@ export function advanceQuarter(state: GameState, commands: QuarterCommands = {})
           ? { ...offer, status: 'accepted' as const } : offer),
         lenders: candidate.lenders.map((lender) => {
           const used = fundingByLender.get(lender.organizationId) ?? 0;
-          return used > 0 ? { ...lender, availableCapacityCents: moneyFromCents(lender.availableCapacityCents - used) } : lender;
+          const recovered = repaymentReceiptsByLender.get(lender.organizationId) ?? 0;
+          return used > 0 || recovered > 0
+            ? { ...lender, availableCapacityCents: moneyFromCents(lender.availableCapacityCents - used + recovered) }
+            : lender;
         }),
         organizations: candidate.organizations.map((organization) => {
           const lent = fundingByLender.get(organization.id) ?? 0;
           const received = fundingByBorrower.get(organization.id) ?? 0;
-          if (lent === 0 && received === 0) return organization;
-          return { ...organization,
-            cashCents: moneyFromCents(organization.cashCents - lent + received),
-            debtCents: received > 0 ? moneyFromCents(organization.debtCents + received) : organization.debtCents,
+          const payoff = refinancePayoffByBorrower.get(organization.id) ?? 0;
+          const fee = refinanceFeesByBorrower.get(organization.id) ?? 0;
+          const recovered = repaymentReceiptsByLender.get(organization.id) ?? 0;
+          const cashFlow = -lent + received - payoff - fee + recovered;
+          const debtChange = received - payoff;
+          if (cashFlow === 0 && debtChange === 0) return organization;
+          return {
+            ...organization,
+            cashCents: moneyFromCents(organization.cashCents + cashFlow),
+            debtCents: debtChange !== 0 ? moneyFromCents(organization.debtCents + debtChange) : organization.debtCents,
           };
         }),
-        debts: [...candidate.debts, ...accepted.map((offer) => ({
-          id: `loan-${offer.id}`, borrowerId: offer.borrowerId,
-          principalCents: offer.principalCents, quarterlyInterestRate: offer.quarterlyInterestRate,
-          maturityQuarter: offer.maturityQuarter,
-          covenantTerms: offer.covenantTerms ? { ...offer.covenantTerms } : undefined,
-          covenantStartQuarter: candidate.quarter + 1,
-          covenantBreachStreak: 0,
-          covenantStatus: 'compliant' as const,
-          covenantPenaltyApplied: false,
-        }))],
+        debts: [
+          ...candidate.debts.map((debt) => refinanceByDebt.has(debt.id)
+            ? { ...debt, principalCents: moneyFromCents(0), scheduledPrincipalCentsPerQuarter: moneyFromCents(0) }
+            : debt),
+          ...accepted.map((offer) => ({
+            id: `loan-${offer.id}`, borrowerId: offer.borrowerId, lenderId: offer.lenderId,
+            principalCents: offer.principalCents, quarterlyInterestRate: offer.quarterlyInterestRate,
+            maturityQuarter: offer.maturityQuarter,
+            covenantTerms: offer.covenantTerms ? { ...offer.covenantTerms } : undefined,
+            covenantStartQuarter: candidate.quarter + 1,
+            covenantBreachStreak: 0,
+            covenantStatus: 'compliant' as const,
+            covenantPenaltyApplied: false,
+          })),
+        ],
       };
       const adjustBridge = (bridge: typeof report.entityCashBridges[number]) => {
         const received = fundingByBorrower.get(bridge.organizationId) ?? 0;
         const lent = fundingByLender.get(bridge.organizationId) ?? 0;
-        const flow = received - lent;
+        const payoff = refinancePayoffByBorrower.get(bridge.organizationId) ?? 0;
+        const fee = refinanceFeesByBorrower.get(bridge.organizationId) ?? 0;
+        const recovered = repaymentReceiptsByLender.get(bridge.organizationId) ?? 0;
+        const flow = received - lent - payoff - fee + recovered;
         if (flow === 0) return bridge;
         return { ...bridge, financingCashFlowCents: moneyFromCents(bridge.financingCashFlowCents + flow),
           netCashChangeCents: moneyFromCents(bridge.netCashChangeCents + flow),
@@ -904,6 +949,7 @@ export function advanceQuarter(state: GameState, commands: QuarterCommands = {})
         principalCents: offer.principalCents, quarterlyInterestRate: offer.quarterlyInterestRate,
         maturityQuarter: offer.maturityQuarter,
       }));
+      if (refinancingLines.length > 0) report.debtRefinancings = refinancingLines;
     }
     candidate = { ...candidate, loanOffers: candidate.loanOffers.map((offer) =>
       offer.status === 'available' && offer.expiresAfterQuarter < state.quarter + 1
