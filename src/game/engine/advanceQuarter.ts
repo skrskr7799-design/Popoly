@@ -20,6 +20,11 @@ export interface DebtRepaymentCommand {
   principalCents: number;
 }
 
+export interface DebtDrawdownCommand {
+  debtId: string;
+  principalCents: number;
+}
+
 interface ResolvedDebtRepayment extends DebtRepaymentCommand {
   repaymentType: 'scheduled' | 'maturity' | 'voluntary';
 }
@@ -58,6 +63,8 @@ export interface QuarterCommands {
   contractRenewals?: ContractRenewalCommand[];
   /** Explicit principal repayments funded only by the legal borrower's opening cash. */
   debtRepayments?: DebtRepaymentCommand[];
+  /** Draws against an existing committed credit facility; proceeds belong to its borrower. */
+  debtDrawdowns?: DebtDrawdownCommand[];
 }
 
 export interface AdvanceQuarterSuccess {
@@ -166,6 +173,35 @@ function validateCommands(state: GameState, commands: QuarterCommands): Validati
       continue;
     }
     repaymentByBorrower.set(debt.borrowerId, (repaymentByBorrower.get(debt.borrowerId) ?? 0) + repayment.principalCents);
+  }
+
+  const seenDebtDrawdowns = new Set<string>();
+  const drawdownByFacility = new Map<string, number>();
+  for (const drawdown of commands.debtDrawdowns ?? []) {
+    if (seenDebtDrawdowns.has(drawdown.debtId)) {
+      issues.push(issue('command.debt_drawdown_duplicate', 'Only one drawdown per credit facility is allowed in a quarter.', drawdown.debtId));
+      continue;
+    }
+    seenDebtDrawdowns.add(drawdown.debtId);
+    const facility = state.debts.find((item) => item.id === drawdown.debtId);
+    if (!facility) {
+      issues.push(issue('command.debt_unknown', 'Credit drawdown references an unknown debt instrument.', drawdown.debtId));
+      continue;
+    }
+    if (facility.facilityLimitCents === undefined) {
+      issues.push(issue('command.debt_not_revolving_facility', 'Only a debt instrument with a committed facility limit can be drawn.', drawdown.debtId));
+      continue;
+    }
+    if (!Number.isSafeInteger(drawdown.principalCents) || drawdown.principalCents <= 0) {
+      issues.push(issue('command.debt_drawdown_invalid', 'Credit drawdown must be a positive integer number of cents.', drawdown.debtId));
+      continue;
+    }
+    const totalDrawdown = (drawdownByFacility.get(drawdown.debtId) ?? 0) + drawdown.principalCents;
+    if (facility.principalCents + totalDrawdown > facility.facilityLimitCents) {
+      issues.push(issue('command.debt_facility_limit_exceeded', 'Drawdown would exceed the committed credit facility limit.', drawdown.debtId));
+      continue;
+    }
+    drawdownByFacility.set(drawdown.debtId, totalDrawdown);
   }
 
   const seenContractOffers = new Set<string>();
@@ -526,6 +562,45 @@ export function advanceQuarter(state: GameState, commands: QuarterCommands = {})
         borrowerId: candidate.debts.find((debt) => debt.id === repayment.debtId)!.borrowerId,
         principalCents: moneyFromCents(repayment.principalCents),
         repaymentType: repayment.repaymentType,
+      }));
+    }
+    const debtDrawdowns = commands.debtDrawdowns ?? [];
+    if (debtDrawdowns.length > 0) {
+      const drawdownByBorrower = new Map<string, number>();
+      for (const drawdown of debtDrawdowns) {
+        const facility = candidate.debts.find((item) => item.id === drawdown.debtId)!;
+        drawdownByBorrower.set(facility.borrowerId, (drawdownByBorrower.get(facility.borrowerId) ?? 0) + drawdown.principalCents);
+      }
+      candidate = {
+        ...candidate,
+        debts: candidate.debts.map((debt) => {
+          const drawdown = debtDrawdowns.find((item) => item.debtId === debt.id);
+          return drawdown ? { ...debt, principalCents: moneyFromCents(debt.principalCents + drawdown.principalCents) } : debt;
+        }),
+        organizations: candidate.organizations.map((organization) => {
+          const drawdown = drawdownByBorrower.get(organization.id) ?? 0;
+          return drawdown > 0 ? { ...organization, debtCents: moneyFromCents(organization.debtCents + drawdown) } : organization;
+        }),
+      };
+      const adjustBridge = (bridge: typeof report.entityCashBridges[number]) => {
+        const drawdown = drawdownByBorrower.get(bridge.organizationId) ?? 0;
+        if (drawdown === 0) return bridge;
+        return {
+          ...bridge,
+          financingCashFlowCents: moneyFromCents(bridge.financingCashFlowCents + drawdown),
+          netCashChangeCents: moneyFromCents(bridge.netCashChangeCents + drawdown),
+          closingCashCents: moneyFromCents(bridge.closingCashCents + drawdown),
+        };
+      };
+      report.entityCashBridges = report.entityCashBridges.map(adjustBridge);
+      report.companies = report.companies.map((company) => ({
+        ...company,
+        cashBridge: adjustBridge(company.cashBridge),
+      }));
+      report.debtDrawdowns = debtDrawdowns.map((drawdown) => ({
+        debtId: drawdown.debtId,
+        borrowerId: candidate.debts.find((debt) => debt.id === drawdown.debtId)!.borrowerId,
+        principalCents: moneyFromCents(drawdown.principalCents),
       }));
     }
     const nodeworksOperations = report.companies.find((item) => item.companyId === 'nodeworks')?.operations;
