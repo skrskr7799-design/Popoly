@@ -901,7 +901,7 @@ describe('independent lender underwriting', () => {
     expect(decisions.every((item) => item.creditScore >= 300 && item.creditScore <= 850)).toBe(true);
     expect(decisions.every((item) => item.status === 'offered')).toBe(true);
     expect(decisions[0]!.quarterlyInterestRate).toBeGreaterThan(0);
-    expect(result.state.loanOffers.filter((offer) => offer.borrowerId === 'nodeworks')).toHaveLength(2);
+    expect(result.state.loanOffers.filter((offer) => offer.borrowerId === 'nodeworks')).toHaveLength(3); // one opening offer plus two fresh lender decisions
     expect(validateGameState(result.state)).toEqual([]);
   });
 
