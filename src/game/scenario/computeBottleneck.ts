@@ -27,8 +27,8 @@ export function createComputeBottleneckState(seed = 2035): GameState {
       { ownerId: 'regional-infrastructure-fund', companyId: 'nodeworks', shares: 1_000_000, votingShares: 1_000_000 },
     ],
     debts: [
-      { id: 'meridian-revolver', borrowerId: 'meridian-group', principalCents: moneyFromDollars(3_000_000), quarterlyInterestRate: 0.02, facilityLimitCents: moneyFromDollars(8_000_000) },
-      { id: 'nodeworks-infrastructure-debt', borrowerId: 'nodeworks', principalCents: moneyFromDollars(14_000_000), quarterlyInterestRate: 0.0225 },
+      { id: 'meridian-revolver', borrowerId: 'meridian-group', lenderId: 'northstar-commercial-bank', principalCents: moneyFromDollars(3_000_000), quarterlyInterestRate: 0.02, facilityLimitCents: moneyFromDollars(8_000_000) },
+      { id: 'nodeworks-infrastructure-debt', borrowerId: 'nodeworks', lenderId: 'frontier-development-bank', principalCents: moneyFromDollars(14_000_000), quarterlyInterestRate: 0.0225 },
     ],
     holding: {
       organizationId: 'meridian-group', leadershipCapacityPerQuarter: 4, institutionalAccess: 55,
@@ -71,10 +71,10 @@ export function createComputeBottleneckState(seed = 2035): GameState {
     loanOffers: [
       { id: 'northstar-nodeworks-q1', lenderId: 'northstar-commercial-bank', borrowerId: 'nodeworks',
         principalCents: moneyFromDollars(2_000_000), quarterlyInterestRate: 0.028,
-        maturityQuarter: 9, expiresAfterQuarter: 2, collateralDescription: 'Equipment and receivables', creditScore: 686, creditRating: 'BBB', status: 'available' },
+        maturityQuarter: 9, expiresAfterQuarter: 2, collateralDescription: 'Equipment and receivables', covenantTerms: { minimumDebtServiceCoverage: 1.3, maximumDebtToAnnualCashFlow: 3, restrictAdditionalBorrowing: true, graceQuarters: 1, breachRatePremium: 0.004 }, creditScore: 686, creditRating: 'BBB', status: 'available' },
       { id: 'frontier-meridian-q1', lenderId: 'frontier-development-bank', borrowerId: 'meridian-group',
         principalCents: moneyFromDollars(3_000_000), quarterlyInterestRate: 0.032,
-        maturityQuarter: 9, expiresAfterQuarter: 2, collateralDescription: 'Holding-company assets; covenant package applies', creditScore: 528, creditRating: 'B', status: 'available' },
+        maturityQuarter: 9, expiresAfterQuarter: 2, collateralDescription: 'Holding-company assets; covenant package applies', covenantTerms: { minimumDebtServiceCoverage: 1.05, maximumDebtToAnnualCashFlow: 4.5, restrictAdditionalBorrowing: true, graceQuarters: 2, breachRatePremium: 0.004 }, creditScore: 528, creditRating: 'B', status: 'available' },
     ],
     playerIntelligence: [
       { subjectId: 'kestrel-compute', metric: 'effectiveCapacityMW', min: 22, max: 26, knowledge: 'estimated', confidence: 0.65, observedQuarter: 1, source: 'market analyst consensus' },
