@@ -263,7 +263,7 @@ Repayment is funded only from the legal borrower's opening cash. Multiple repaym
 
 A debt instrument may define a fixed quarterly principal installment and a final maturity quarter. Scheduled installments are paid automatically during the quarter from the borrower's own cash and are reported separately from voluntary prepayments. In the maturity quarter, all remaining principal becomes due as a balloon repayment, replacing the ordinary installment for that instrument. Voluntary repayment can be added to a scheduled installment only when the combined amount does not exceed outstanding principal.
 
-The quarter is rejected atomically if mandatory scheduled or maturity principal cannot be funded from the borrower's opening cash after the quarter's modeled operating and interest flows are accounted for. The first implementation does not yet model arrears, covenant breaches, lender grace periods, or refinancing; those belong to the subsequent credit-facility and distress systems. Interest continues to accrue on opening principal for the quarter, and principal paid during the quarter reduces the following quarter's interest base.
+The quarter is rejected atomically if mandatory scheduled or maturity principal cannot be funded from the borrower's opening cash after the quarter's modeled operating and interest flows are accounted for. Arrears, collateral enforcement, default, and insolvency remain future systems. Interest continues to accrue on opening principal for the quarter, and principal paid during the quarter reduces the following quarter's interest base.
 
 
 ## 22. Independent lender underwriting
