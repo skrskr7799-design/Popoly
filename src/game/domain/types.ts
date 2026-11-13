@@ -18,6 +18,10 @@ export interface Organization {
 export interface OwnershipStake { ownerId: EntityId; companyId: EntityId; shares: number; votingShares: number; }
 export interface DebtInstrument {
   id: EntityId; borrowerId: EntityId; principalCents: MoneyCents; quarterlyInterestRate: number; facilityLimitCents?: MoneyCents;
+  /** Contractual principal amount due each quarter, in integer cents. */
+  scheduledPrincipalCentsPerQuarter?: MoneyCents;
+  /** Final maturity quarter; any remaining principal becomes due in full in this quarter. */
+  maturityQuarter?: number;
 }
 export interface ServiceContract {
   id: EntityId; customerId: EntityId; providerId: EntityId; workloadMW: number;
