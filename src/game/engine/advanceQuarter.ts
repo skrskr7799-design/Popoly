@@ -772,13 +772,16 @@ export function advanceQuarter(state: GameState, commands: QuarterCommands = {})
           expiresAfterQuarter: candidate.quarter + 1,
           covenantTerms,
           ...(request.collateralDescription ? { collateralDescription: request.collateralDescription } : {}),
-          creditScore: assessment.score, creditRating: assessment.rating, crossDefaultClause: false, status: 'available' as const,
+          creditScore: assessment.score, creditRating: assessment.rating,
+          // Conservative lenders require broader contractual protection; other policies do not by default.
+          crossDefaultClause: lender.riskAppetite === 'conservative', status: 'available' as const,
         };
         candidate = { ...candidate, loanOffers: [...candidate.loanOffers, offer] };
         creditDecisions.push({
           lenderId: lender.organizationId, borrowerId: borrower.id,
           requestedPrincipalCents: moneyFromCents(request.requestedPrincipalCents),
           offeredPrincipalCents: offer.principalCents, quarterlyInterestRate: offer.quarterlyInterestRate,
+          crossDefaultClause: offer.crossDefaultClause ?? false,
           creditScore: assessment.score, creditRating: assessment.rating, status: 'offered',
           reason: amount < request.requestedPrincipalCents
             ? 'Lender approved a smaller amount within its risk and liquidity limits.'
@@ -1163,7 +1166,7 @@ export function advanceQuarter(state: GameState, commands: QuarterCommands = {})
       report.loanAcceptances = accepted.map((offer) => ({
         offerId: offer.id, lenderId: offer.lenderId, borrowerId: offer.borrowerId,
         principalCents: offer.principalCents, quarterlyInterestRate: offer.quarterlyInterestRate,
-        maturityQuarter: offer.maturityQuarter,
+        maturityQuarter: offer.maturityQuarter, crossDefaultClause: offer.crossDefaultClause ?? false,
       }));
       if (refinancingLines.length > 0) report.debtRefinancings = refinancingLines;
     }
