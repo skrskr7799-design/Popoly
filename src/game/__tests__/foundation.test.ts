@@ -961,7 +961,7 @@ describe('debt covenant monitoring and enforcement', () => {
     }] });
     if (!requested.ok) throw new Error('credit request failed');
     const offer = requested.state.loanOffers.find((item) => item.lenderId === 'northstar-commercial-bank' &&
-      item.borrowerId === 'nodeworks' && item.status === 'available')!;
+      item.borrowerId === 'nodeworks' && item.status === 'available' && item.covenantTerms !== undefined)!;
     const funded = advanceQuarter(requested.state, { acceptLoanOffers: [{ offerId: offer.id }] });
     if (!funded.ok) throw new Error('loan acceptance failed');
     return { state: funded.state, offer, loanId: `loan-${offer.id}` };
