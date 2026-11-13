@@ -131,3 +131,83 @@ describe('atomic quarter transition', () => {
     expect(state.quarter).toBe(1);
   });
 });
+
+
+describe('strategic initiatives and project lifecycle', () => {
+  it('launches initiatives using leadership capacity and holding-company cash', () => {
+    const state = initializeGame();
+    const result = advanceQuarter(state, {
+      launchInitiatives: ['capacity-expansion-phase-i', 'secure-equipment-allocation'],
+    });
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.report.leadershipCapacity).toBe(4);
+    expect(result.report.leadershipCommitted).toBe(3);
+    expect(result.report.projectsLaunched).toEqual([
+      'capacity-expansion-phase-i',
+      'secure-equipment-allocation',
+    ]);
+    expect(result.state.projects).toHaveLength(2);
+    expect(result.state.projects[0]!.remainingQuarters).toBe(3);
+    expect(result.state.organizations.find((item) => item.id === 'meridian-group')!.cashCents)
+      .toBe(1_079_400_000);
+    expect(state.projects).toHaveLength(0);
+  });
+
+  it('rejects a portfolio that exceeds executive leadership capacity', () => {
+    const state = initializeGame();
+    const before = JSON.stringify(state);
+    const result = advanceQuarter(state, {
+      launchInitiatives: [
+        'capacity-expansion-phase-i',
+        'negotiate-firm-power',
+        'resilience-security-program',
+      ],
+    });
+
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.issues.some((item) => item.code === 'command.leadership_exceeded')).toBe(true);
+    expect(JSON.stringify(state)).toBe(before);
+  });
+
+  it('progresses projects automatically and applies effects only on completion', () => {
+    let state = initializeGame();
+    const launch = advanceQuarter(state, { launchInitiatives: ['resilience-security-program'] });
+    expect(launch.ok).toBe(true);
+    if (!launch.ok) return;
+    state = launch.state;
+    expect(state.operatingCompanies[0]!.capacity.reliability).toBe(0.985);
+    expect(state.projects[0]!.remainingQuarters).toBe(2);
+
+    const second = advanceQuarter(state);
+    expect(second.ok).toBe(true);
+    if (!second.ok) return;
+    state = second.state;
+    expect(state.projects[0]!.remainingQuarters).toBe(1);
+    expect(state.operatingCompanies[0]!.capacity.reliability).toBe(0.985);
+
+    const third = advanceQuarter(state);
+    expect(third.ok).toBe(true);
+    if (!third.ok) return;
+    expect(third.report.projectsCompleted).toEqual(['resilience-security-program']);
+    expect(third.state.projects[0]!.remainingQuarters).toBe(0);
+    expect(third.state.operatingCompanies[0]!.capacity.reliability).toBeCloseTo(0.99, 8);
+  });
+
+  it('rejects unknown and already-active initiatives', () => {
+    const first = advanceQuarter(initializeGame(), {
+      launchInitiatives: ['commission-market-study'],
+    });
+    expect(first.ok).toBe(true);
+    if (!first.ok) return;
+    const second = advanceQuarter(first.state, {
+      launchInitiatives: ['commission-market-study', 'not-a-real-project'],
+    });
+    expect(second.ok).toBe(false);
+    if (second.ok) return;
+    expect(second.issues.some((item) => item.code === 'command.initiative_already_active')).toBe(true);
+    expect(second.issues.some((item) => item.code === 'command.initiative_unknown')).toBe(true);
+  });
+});
