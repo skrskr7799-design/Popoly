@@ -161,7 +161,10 @@ function validateCommands(state: GameState, commands: QuarterCommands): Validati
     }
   }
 
-  const scheduledRepayments = getScheduledDebtRepayments(state);
+  const refinanceDebtIds = new Set<string>();
+  const refinanceOfferIds = new Set<string>();
+  const scheduledRepayments = getScheduledDebtRepayments(state)
+    .filter((item) => !(commands.refinanceDebts ?? []).some((command) => command.debtId === item.debtId));
   const scheduledByDebt = new Map(scheduledRepayments.map((item) => [item.debtId, item.principalCents]));
   const seenDebtRepayments = new Set<string>();
   const repaymentByBorrower = new Map<string, number>();
@@ -184,6 +187,10 @@ function validateCommands(state: GameState, commands: QuarterCommands): Validati
       issues.push(issue('command.debt_repayment_invalid', 'Principal repayment must be a positive integer number of cents.', repayment.debtId));
       continue;
     }
+    if ((commands.refinanceDebts ?? []).some((item) => item.debtId === repayment.debtId)) {
+      issues.push(issue('command.debt_refinance_repayment_conflict', 'A debt instrument cannot be voluntarily repaid and refinanced in the same quarter.', repayment.debtId));
+      continue;
+    }
     if (repayment.principalCents + (scheduledByDebt.get(repayment.debtId) ?? 0) > debt.principalCents) {
       issues.push(issue('command.debt_repayment_exceeds_principal', 'Voluntary and scheduled repayments cannot exceed the outstanding debt balance.', repayment.debtId));
       continue;
@@ -194,6 +201,92 @@ function validateCommands(state: GameState, commands: QuarterCommands): Validati
   const borrowerHasBorrowingRestriction = (borrowerId: string) => state.debts.some((debt) =>
     debt.borrowerId === borrowerId && debt.covenantTerms?.restrictAdditionalBorrowing === true &&
     debt.covenantStatus === 'breached');
+
+  for (const refinance of commands.refinanceDebts ?? []) {
+    if (refinanceDebtIds.has(refinance.debtId) || refinanceOfferIds.has(refinance.offerId)) {
+      issues.push(issue('command.debt_refinance_duplicate', 'A debt or loan offer can only participate in one refinancing operation per quarter.', refinance.debtId));
+      continue;
+    }
+    refinanceDebtIds.add(refinance.debtId);
+    refinanceOfferIds.add(refinance.offerId);
+    const debt = state.debts.find((item) => item.id === refinance.debtId);
+    const offer = state.loanOffers.find((item) => item.id === refinance.offerId);
+    if (!debt || debt.principalCents <= 0) {
+      issues.push(issue('command.debt_refinance_debt_invalid', 'Refinancing requires an existing debt instrument with outstanding principal.', refinance.debtId));
+      continue;
+    }
+    if (debt.maturityQuarter !== undefined && debt.maturityQuarter <= state.quarter) {
+      issues.push(issue('command.debt_refinance_maturity_due', 'A debt already due for repayment this quarter cannot be refinanced through this command.', refinance.debtId));
+    }
+    if (!offer || offer.status !== 'available' || state.quarter > offer.expiresAfterQuarter) {
+      issues.push(issue('command.debt_refinance_offer_unavailable', 'Refinancing requires an available, unexpired lender offer.', refinance.offerId));
+      continue;
+    }
+    if (offer.borrowerId !== debt.borrowerId) {
+      issues.push(issue('command.debt_refinance_borrower_mismatch', 'The replacement loan must belong to the same legal borrower as the debt being refinanced.', refinance.offerId));
+    }
+    const feeBps = refinance.feeBasisPoints ?? 100;
+    if (!Number.isInteger(feeBps) || feeBps < 0 || feeBps > 1000) {
+      issues.push(issue('command.debt_refinance_fee_invalid', 'Refinancing fee must be an integer from 0 to 1,000 basis points.', refinance.debtId));
+    } else {
+      const fee = Math.ceil(debt.principalCents * feeBps / 10_000);
+      if (offer.principalCents < debt.principalCents + fee) {
+        issues.push(issue('command.debt_refinance_amount_insufficient', 'The replacement facility must cover the old principal and refinancing fee.', refinance.offerId));
+      }
+    }
+    if ((commands.acceptLoanOffers ?? []).some((item) => item.offerId === refinance.offerId)) {
+      issues.push(issue('command.loan_offer_duplicate', 'A refinancing offer cannot also be accepted as a separate new loan.', refinance.offerId));
+    }
+  }
+
+  const restructuredDebtIds = new Set<string>();
+  for (const proposal of commands.restructureDebts ?? []) {
+    if (restructuredDebtIds.has(proposal.debtId)) {
+      issues.push(issue('command.debt_restructure_duplicate', 'Only one restructuring proposal per debt instrument is allowed in a quarter.', proposal.debtId));
+      continue;
+    }
+    restructuredDebtIds.add(proposal.debtId);
+    const debt = state.debts.find((item) => item.id === proposal.debtId);
+    if (!debt || debt.principalCents <= 0 || !debt.lenderId || !state.lenders.some((item) => item.organizationId === debt.lenderId)) {
+      issues.push(issue('command.debt_restructure_creditor_missing', 'Restructuring requires outstanding debt with a represented lender.', proposal.debtId));
+      continue;
+    }
+    if (refinanceDebtIds.has(proposal.debtId)) {
+      issues.push(issue('command.debt_restructure_refinance_conflict', 'A debt cannot be restructured and refinanced in the same quarter.', proposal.debtId));
+    }
+    const hasTerms = proposal.requestedMaturityQuarter !== undefined ||
+      proposal.requestedQuarterlyInterestRate !== undefined ||
+      proposal.requestedScheduledPrincipalCentsPerQuarter !== undefined;
+    if (!hasTerms) issues.push(issue('command.debt_restructure_terms_missing', 'A restructuring proposal must change at least one financial term.', proposal.debtId));
+    if (proposal.requestedMaturityQuarter !== undefined &&
+        (!Number.isInteger(proposal.requestedMaturityQuarter) ||
+          proposal.requestedMaturityQuarter <= Math.max(state.quarter, debt.maturityQuarter ?? state.quarter) ||
+          proposal.requestedMaturityQuarter > state.quarter + 16)) {
+      issues.push(issue('command.debt_restructure_maturity_invalid', 'A revised maturity must extend the existing maturity and fall within the next 16 quarters.', proposal.debtId));
+    }
+    if (proposal.requestedQuarterlyInterestRate !== undefined &&
+        (!Number.isFinite(proposal.requestedQuarterlyInterestRate) || proposal.requestedQuarterlyInterestRate < 0 ||
+          proposal.requestedQuarterlyInterestRate > debt.quarterlyInterestRate)) {
+      issues.push(issue('command.debt_restructure_rate_invalid', 'A restructuring may only retain or reduce the current quarterly interest rate.', proposal.debtId));
+    }
+    if (proposal.requestedScheduledPrincipalCentsPerQuarter !== undefined &&
+        (!Number.isSafeInteger(proposal.requestedScheduledPrincipalCentsPerQuarter) ||
+          proposal.requestedScheduledPrincipalCentsPerQuarter < 0 ||
+          debt.scheduledPrincipalCentsPerQuarter === undefined ||
+          proposal.requestedScheduledPrincipalCentsPerQuarter > debt.scheduledPrincipalCentsPerQuarter)) {
+      issues.push(issue('command.debt_restructure_amortization_invalid', 'A revised scheduled installment must be an integer no greater than the existing contractual installment.', proposal.debtId));
+    }
+    const improvesTerms =
+      (proposal.requestedMaturityQuarter !== undefined && proposal.requestedMaturityQuarter > (debt.maturityQuarter ?? state.quarter)) ||
+      (proposal.requestedQuarterlyInterestRate !== undefined && proposal.requestedQuarterlyInterestRate < debt.quarterlyInterestRate) ||
+      (proposal.requestedScheduledPrincipalCentsPerQuarter !== undefined &&
+        debt.scheduledPrincipalCentsPerQuarter !== undefined &&
+        proposal.requestedScheduledPrincipalCentsPerQuarter < debt.scheduledPrincipalCentsPerQuarter);
+    if (hasTerms && !improvesTerms) issues.push(issue('command.debt_restructure_no_improvement', 'The proposed terms must extend maturity, reduce interest, or lower scheduled principal.', proposal.debtId));
+    if (proposal.reason !== undefined && (typeof proposal.reason !== 'string' || proposal.reason.length > 240)) {
+      issues.push(issue('command.debt_restructure_reason_invalid', 'Restructuring rationale must be 240 characters or fewer.', proposal.debtId));
+    }
+  }
 
   const seenDebtDrawdowns = new Set<string>();
   const drawdownByFacility = new Map<string, number>();
@@ -256,7 +349,11 @@ function validateCommands(state: GameState, commands: QuarterCommands): Validati
 
   const seenLoanOffers = new Set<string>();
   const lenderCapacityUsed = new Map<string, number>();
-  for (const acceptance of commands.acceptLoanOffers ?? []) {
+  const loanFundingCommands = [
+    ...(commands.acceptLoanOffers ?? []),
+    ...(commands.refinanceDebts ?? []).map((item) => ({ offerId: item.offerId })),
+  ];
+  for (const acceptance of loanFundingCommands) {
     if (seenLoanOffers.has(acceptance.offerId)) {
       issues.push(issue('command.loan_offer_duplicate', 'A loan offer can only be accepted once per quarter.', acceptance.offerId));
       continue;
