@@ -227,6 +227,48 @@ describe('autonomous world simulation', () => {
     expect(result.report.actorActions?.some((action) => action.actorId === 'solara-grid')).toBe(true);
   });
 
+
+  it('makes Kestrel compete for the same scarce firm-power headroom as NodeWorks', () => {
+    const state = initializeGame();
+    state.actors = state.actors.map((actor) => actor.organizationId === 'kestrel-compute'
+      ? { ...actor, hiddenMetrics: { ...actor.hiddenMetrics, expansionPipelineQuarters: 1 } }
+      : actor);
+
+    const result = advanceQuarter(state);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+
+    const kestrel = result.state.actors.find((actor) => actor.organizationId === 'kestrel-compute')!;
+    expect(kestrel.hiddenMetrics.effectiveCapacityMinMW).toBe(24);
+    expect(kestrel.hiddenMetrics.expansionPipelineQuarters).toBe(0);
+    expect(result.state.regionalMarkets[0]!.immediateFirmPowerHeadroomMW).toBe(0);
+    expect(result.state.regionalMarkets[0]!.committedPowerMW).toBe(60);
+    expect(result.report.actorActions?.some((action) =>
+      action.actorId === 'kestrel-compute' && action.kind === 'capacity-expansion-completed')).toBe(true);
+  });
+
+  it('delays a completed rival build when the player has committed the remaining firm power', () => {
+    const state = initializeGame();
+    state.actors = state.actors.map((actor) => actor.organizationId === 'kestrel-compute'
+      ? { ...actor, hiddenMetrics: { ...actor.hiddenMetrics, expansionPipelineQuarters: 1 } }
+      : actor);
+    state.regionalMarkets = state.regionalMarkets.map((market) => ({
+      ...market,
+      immediateFirmPowerHeadroomMW: 0,
+    }));
+
+    const result = advanceQuarter(state);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+
+    const kestrel = result.state.actors.find((actor) => actor.organizationId === 'kestrel-compute')!;
+    expect(kestrel.hiddenMetrics.effectiveCapacityMinMW).toBe(22);
+    expect(kestrel.hiddenMetrics.expansionPipelineQuarters).toBe(1);
+    expect(result.state.regionalMarkets[0]!.committedPowerMW).toBe(58);
+    expect(result.report.actorActions?.some((action) =>
+      action.actorId === 'kestrel-compute' && action.kind === 'capacity-expansion-delayed')).toBe(true);
+  });
+
   it('produces the same autonomous world outcome from the same seed and quarter', () => {
     const first = advanceQuarter(initializeGame(12345));
     const second = advanceQuarter(initializeGame(12345));
