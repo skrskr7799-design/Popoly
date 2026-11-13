@@ -75,6 +75,32 @@ export function validateGameState(state: GameState): ValidationIssue[] {
     }
   }
 
+  const equipmentOrderIds = new Set<string>();
+  for (const order of state.equipmentOrders) {
+    if (equipmentOrderIds.has(order.id)) issues.push({ code: 'equipment.order_id_duplicate', message: 'Equipment order IDs must be unique.', entityId: order.id });
+    equipmentOrderIds.add(order.id);
+    if (!organizationIds.has(order.buyerId) || !isFiniteNonNegative(order.quantityMWEquivalent) ||
+        order.quantityMWEquivalent <= 0 || !Number.isInteger(order.placedQuarter) ||
+        order.placedQuarter < 1 || !Number.isInteger(order.deliveryQuarter) ||
+        order.deliveryQuarter < order.placedQuarter ||
+        !['reserved', 'delivered', 'cancelled'].includes(order.status)) {
+      issues.push({ code: 'equipment.order_invalid', message: 'Equipment order contains an invalid buyer, quantity, schedule, or status.', entityId: order.id });
+    }
+  }
+  const equipmentMarket = state.regionalMarkets[0];
+  if (equipmentMarket) {
+    const reservedByQuarter = new Map<number, number>();
+    for (const order of state.equipmentOrders) {
+      if (order.status !== 'reserved') continue;
+      reservedByQuarter.set(order.deliveryQuarter, (reservedByQuarter.get(order.deliveryQuarter) ?? 0) + order.quantityMWEquivalent);
+    }
+    for (const [deliveryQuarter, reserved] of reservedByQuarter) {
+      if (reserved + 2 > equipmentMarket.equipmentDeliveryPoolMWEquivalentPerQuarter) {
+        issues.push({ code: 'equipment.delivery_pool_overcommitted', message: `Equipment reservations for quarter ${deliveryQuarter} exceed the supplier pool after NodeWorks' standing 2 MW-equivalent allocation.` });
+      }
+    }
+  }
+
   const projectIds = new Set<string>();
   for (const project of state.projects) {
     if (projectIds.has(project.id)) issues.push({ code: 'project.id_duplicate', message: 'Strategic project IDs must be unique.', entityId: project.id });
