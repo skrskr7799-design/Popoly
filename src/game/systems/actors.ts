@@ -210,10 +210,9 @@ export function advanceAutonomousActors(state: GameState): {
       .reduce((sum, item) => sum + item.contract.workloadMW, 0);
     actorState.operatingCompanies = actorState.operatingCompanies.map((company) => {
       const remainingContracts = company.contracts.filter((contract) => !expired.some((item) => item.contract.id === contract.id));
-      return { ...company, contracts: remainingContracts,
-        deliveredWorkloadMW: company.organizationId === 'nodeworks'
-          ? Math.min(company.deliveredWorkloadMW, remainingContracts.reduce((sum, contract) => sum + contract.workloadMW, 0))
-          : company.deliveredWorkloadMW };
+      // Preserve the operating target until the customer's post-expiry
+      // allocation pass has assigned replacement flexible workload.
+      return { ...company, contracts: remainingContracts, deliveredWorkloadMW: company.deliveredWorkloadMW };
     });
     const customerIndex = actors.findIndex((actor) => actor.organizationId === 'asterion-ai');
     const kestrelIndex = actors.findIndex((actor) => actor.organizationId === 'kestrel-compute');
