@@ -342,6 +342,8 @@ function validateCommands(state: GameState, commands: QuarterCommands): Validati
 
   const seenDebtDrawdowns = new Set<string>();
   const drawdownByFacility = new Map<string, number>();
+  const drawdownCapacityUsed = new Map<string, number>();
+  const drawdownCashUsed = new Map<string, number>();
   for (const drawdown of commands.debtDrawdowns ?? []) {
     if (seenDebtDrawdowns.has(drawdown.debtId)) {
       issues.push(issue('command.debt_drawdown_duplicate', 'Only one drawdown per credit facility is allowed in a quarter.', drawdown.debtId));
@@ -370,7 +372,25 @@ function validateCommands(state: GameState, commands: QuarterCommands): Validati
       issues.push(issue('command.debt_facility_limit_exceeded', 'Drawdown would exceed the committed credit facility limit.', drawdown.debtId));
       continue;
     }
+    if (!facility.lenderId) {
+      issues.push(issue('command.debt_drawdown_lender_missing', 'A revolving facility drawdown requires a named contractual lender.', drawdown.debtId));
+      continue;
+    }
+    const lender = state.lenders.find((item) => item.organizationId === facility.lenderId);
+    const lenderOrganization = state.organizations.find((item) => item.id === facility.lenderId);
+    if (!lender || !lenderOrganization) {
+      issues.push(issue('command.debt_drawdown_lender_missing', 'The revolving facility lender must have a represented lending policy and organization.', facility.lenderId));
+      continue;
+    }
+    const capacityUsed = (drawdownCapacityUsed.get(facility.lenderId) ?? 0) + drawdown.principalCents;
+    const cashUsed = (drawdownCashUsed.get(facility.lenderId) ?? 0) + drawdown.principalCents;
+    if (capacityUsed > lender.availableCapacityCents || cashUsed > lenderOrganization.cashCents) {
+      issues.push(issue('command.lender_capacity_insufficient', 'The facility lender lacks sufficient remaining lending capacity or cash liquidity for this drawdown.', facility.lenderId));
+      continue;
+    }
     drawdownByFacility.set(drawdown.debtId, totalDrawdown);
+    drawdownCapacityUsed.set(facility.lenderId, capacityUsed);
+    drawdownCashUsed.set(facility.lenderId, cashUsed);
   }
 
   const seenCreditRequests = new Set<string>();
@@ -945,7 +965,7 @@ export function advanceQuarter(state: GameState, commands: QuarterCommands = {})
             debtId: debt.id, borrowerId: debt.borrowerId,
             unpaidInterestCents: moneyFromCents(closingInterestArrears),
             unpaidDueCents: moneyFromCents(unpaidPrincipal),
-            totalArrearsCents: moneyFromCents(closingPrincipalArrears),
+            totalArrearsCents: moneyFromCents(closingPrincipalArrears + closingInterestArrears),
             overdueQuarters, status: overdueQuarters >= 2 ? 'defaulted' : 'overdue',
           });
         }
@@ -979,11 +999,11 @@ export function advanceQuarter(state: GameState, commands: QuarterCommands = {})
           trigger.id !== debt.id && trigger.borrowerId === debt.borrowerId &&
           trigger.paymentStatus === 'defaulted' && debt.paymentStatus !== 'defaulted' && debt.crossDefaultClause === true);
         const nextSource = stillTriggered ? previousSource : activeTrigger?.id;
-        if (previousSource && !stillTriggered && !activeTrigger) {
+        if (previousSource && previousSource !== nextSource) {
           crossDefaultLines.push({ affectedDebtId: debt.id, triggerDebtId: previousSource,
             borrowerId: debt.borrowerId, ...(debt.lenderId ? { lenderId: debt.lenderId } : {}), action: 'released' });
         }
-        if (!previousSource && nextSource) {
+        if (nextSource && nextSource !== previousSource) {
           crossDefaultLines.push({ affectedDebtId: debt.id, triggerDebtId: nextSource,
             borrowerId: debt.borrowerId, ...(debt.lenderId ? { lenderId: debt.lenderId } : {}), action: 'activated' });
         }
@@ -1079,9 +1099,12 @@ export function advanceQuarter(state: GameState, commands: QuarterCommands = {})
     const debtDrawdowns = commands.debtDrawdowns ?? [];
     if (debtDrawdowns.length > 0) {
       const drawdownByBorrower = new Map<string, number>();
+      const drawdownByLender = new Map<string, number>();
       for (const drawdown of debtDrawdowns) {
         const facility = candidate.debts.find((item) => item.id === drawdown.debtId)!;
+        const lenderId = facility.lenderId!;
         drawdownByBorrower.set(facility.borrowerId, (drawdownByBorrower.get(facility.borrowerId) ?? 0) + drawdown.principalCents);
+        drawdownByLender.set(lenderId, (drawdownByLender.get(lenderId) ?? 0) + drawdown.principalCents);
       }
       candidate = {
         ...candidate,
@@ -1090,18 +1113,33 @@ export function advanceQuarter(state: GameState, commands: QuarterCommands = {})
           return drawdown ? { ...debt, principalCents: moneyFromCents(debt.principalCents + drawdown.principalCents) } : debt;
         }),
         organizations: candidate.organizations.map((organization) => {
-          const drawdown = drawdownByBorrower.get(organization.id) ?? 0;
-          return drawdown > 0 ? { ...organization, debtCents: moneyFromCents(organization.debtCents + drawdown) } : organization;
+          const received = drawdownByBorrower.get(organization.id) ?? 0;
+          const lent = drawdownByLender.get(organization.id) ?? 0;
+          const cashChange = received - lent;
+          if (cashChange === 0 && received === 0) return organization;
+          return {
+            ...organization,
+            cashCents: moneyFromCents(organization.cashCents + cashChange),
+            debtCents: received > 0 ? moneyFromCents(organization.debtCents + received) : organization.debtCents,
+          };
+        }),
+        lenders: candidate.lenders.map((lender) => {
+          const drawn = drawdownByLender.get(lender.organizationId) ?? 0;
+          return drawn > 0
+            ? { ...lender, availableCapacityCents: moneyFromCents(lender.availableCapacityCents - drawn) }
+            : lender;
         }),
       };
       const adjustBridge = (bridge: typeof report.entityCashBridges[number]) => {
-        const drawdown = drawdownByBorrower.get(bridge.organizationId) ?? 0;
-        if (drawdown === 0) return bridge;
+        const received = drawdownByBorrower.get(bridge.organizationId) ?? 0;
+        const lent = drawdownByLender.get(bridge.organizationId) ?? 0;
+        const net = received - lent;
+        if (net === 0) return bridge;
         return {
           ...bridge,
-          financingCashFlowCents: moneyFromCents(bridge.financingCashFlowCents + drawdown),
-          netCashChangeCents: moneyFromCents(bridge.netCashChangeCents + drawdown),
-          closingCashCents: moneyFromCents(bridge.closingCashCents + drawdown),
+          financingCashFlowCents: moneyFromCents(bridge.financingCashFlowCents + net),
+          netCashChangeCents: moneyFromCents(bridge.netCashChangeCents + net),
+          closingCashCents: moneyFromCents(bridge.closingCashCents + net),
         };
       };
       report.entityCashBridges = report.entityCashBridges.map(adjustBridge);
@@ -1112,6 +1150,7 @@ export function advanceQuarter(state: GameState, commands: QuarterCommands = {})
       report.debtDrawdowns = debtDrawdowns.map((drawdown) => ({
         debtId: drawdown.debtId,
         borrowerId: candidate.debts.find((debt) => debt.id === drawdown.debtId)!.borrowerId,
+        lenderId: candidate.debts.find((debt) => debt.id === drawdown.debtId)!.lenderId!,
         principalCents: moneyFromCents(drawdown.principalCents),
       }));
     }
@@ -1183,7 +1222,8 @@ export function advanceQuarter(state: GameState, commands: QuarterCommands = {})
         }),
         debts: [
           ...candidate.debts.map((debt) => refinanceByDebt.has(debt.id)
-            ? { ...debt, principalCents: moneyFromCents(0), scheduledPrincipalCentsPerQuarter: moneyFromCents(0) }
+            ? { ...debt, principalCents: moneyFromCents(0), arrearsPrincipalCents: moneyFromCents(0),
+              scheduledPrincipalCentsPerQuarter: moneyFromCents(0), overdueQuarters: 0, paymentStatus: 'settled' as const }
             : debt),
           ...accepted.map((offer) => ({
             id: `loan-${offer.id}`, borrowerId: offer.borrowerId, lenderId: offer.lenderId,
