@@ -250,6 +250,11 @@ describe('explicit debt principal repayments', () => {
     expect(second.state.organizations.find((item) => item.id === 'frontier-development-bank')!.cashCents)
       .toBe(openingLenderCash + 10_000_000);
     expect(second.state.debts.find((item) => item.id === firstDebt.id)?.paymentStatus).toBe('defaulted');
+    const blockedCredit = advanceQuarter(second.state, { requestCredit: [{
+      borrowerId: 'nodeworks', requestedPrincipalCents: 100_000_000, termQuarters: 4,
+    }] });
+    expect(blockedCredit.ok).toBe(false);
+    if (!blockedCredit.ok) expect(blockedCredit.issues.some((item) => item.code === 'command.payment_default_borrowing_restricted')).toBe(true);
     expect(validateGameState(second.state)).toEqual([]);
   });
 
@@ -1320,7 +1325,14 @@ describe('debt refinancing and lender-led restructuring', () => {
     if (!second.ok) return;
     const distressedDebt = second.state.debts.find((item) => item.id === `loan-${offer.id}`)!;
     expect(distressedDebt.covenantStatus).toBe('breached');
-    const restructured = advanceQuarter(mildlyDistressed(second.state), { restructureDebts: [{
+    const arrearsState = {
+      ...second.state,
+      organizations: second.state.organizations.map((organization) => organization.id === 'nodeworks'
+        ? { ...organization, cashCents: moneyFromCents(0) } : organization),
+      debts: second.state.debts.map((debt) => debt.id === distressedDebt.id
+        ? { ...debt, arrearsInterestCents: moneyFromCents(50_000_000) } : debt),
+    };
+    const restructured = advanceQuarter(mildlyDistressed(arrearsState), { restructureDebts: [{
       debtId: distressedDebt.id,
       requestedMaturityQuarter: offer.maturityQuarter + 2,
       requestedQuarterlyInterestRate: offer.quarterlyInterestRate,
@@ -1336,6 +1348,7 @@ describe('debt refinancing and lender-led restructuring', () => {
     expect(updated.quarterlyInterestRate).toBe(offer.quarterlyInterestRate);
     expect(updated.covenantTerms).toBeUndefined();
     expect(updated.covenantStatus).toBe('compliant');
+    expect(updated.arrearsInterestCents).toBeGreaterThan(50_000_000);
     expect(validateGameState(restructured.state)).toEqual([]);
   });
 });
