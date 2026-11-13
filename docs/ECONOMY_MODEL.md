@@ -274,7 +274,15 @@ The first credit score is a transparent deterministic 300–850 model. It combin
 
 Each lender has its own minimum score, base quarterly rate, risk appetite, and maximum loan-to-annual-cash-flow multiple. Eligible lenders independently size the offer against the request, borrower limit, their remaining lending capacity, and their cash liquidity. The quoted quarterly rate adds a score-sensitive risk spread and a lender-policy adjustment. A lender may reject the request or offer less than requested; the report records the decision and reason. Offers become available for acceptance in a later quarter, preserving the distinction between underwriting and funding.
 
-The score, rating, requested amount, offered amount, and quoted rate are recorded in the quarter report. No lender's hidden policy thresholds are exposed through the decision text. Collateral is currently descriptive only: collateral valuation, priority, enforcement, guarantees, covenant testing, and renegotiation are future work.
+The score, rating, requested amount, offered amount, and quoted rate are recorded in the quarter report. No lender's hidden policy thresholds are exposed through the decision text. Collateral is currently descriptive only: collateral valuation, priority, enforcement, and guarantees remain future work.
+
+## 23. Debt covenants and distress triggers
+
+Newly originated bank loans may carry borrower-level debt-service coverage and debt-to-annual-cash-flow covenants, a grace period, a restriction on additional borrowing, and a contractual rate premium after an uncured breach. Covenant monitoring begins in the quarter after origination, so a newly accepted loan does not retroactively affect the operating period in which it was funded.
+
+At each quarter close, the engine evaluates covenant-bearing debt against the named legal borrower's operating cash contribution, total debt service, and leverage proxy. Each instrument records its consecutive breach streak and current state: compliant, grace, or breached. A cure resets the streak and restores compliant status. If the breach persists beyond the contract's grace period, the rate premium is applied once and any contractual restriction on new borrowing becomes active. That restriction blocks new credit requests, acceptance of outstanding loan offers, and revolving-facility drawdowns for that borrower.
+
+Covenant results are included in the quarter report with the measured coverage and leverage ratios and plain-language breach reasons. This first pass is intentionally limited: there is no lender waiver, covenant amendment, collateral seizure, default declaration, cross-default, or formal insolvency process yet.
 
 The credit market distinguishes committed revolving facilities from new term-loan offers. A lender is represented by a legal organization plus a lending policy record containing remaining lending capacity and a broad risk-appetite profile. A loan offer names one lender, one legal borrower, a principal amount, quarterly interest rate, maturity quarter, expiry quarter, and optional collateral description.
 
