@@ -7,9 +7,12 @@ interface GameStore extends GameState {
   nextTurn: () => void;
   addLog: (message: string) => void;
   buyShares: (companyId: string, amount: number) => boolean;
+  sellShares: (companyId: string, amount: number) => boolean;
   getPlayerShares: (playerId: string, companyId: string) => number;
   getOwnershipPercent: (playerId: string, companyId: string) => number;
   recalculateControl: () => void;
+  payDividends: () => void;
+  runBotTurn: () => void;
 }
 
 const initialState: GameState = {
@@ -27,8 +30,23 @@ function createInitialCompanies(): Company[] {
   return INITIAL_COMPANIES.map((c) => ({
     ...c,
     controlledBy: null,
-    secrets: [], // will be populated later
+    secrets: [],
   }));
+}
+
+/** Simple price impact: buying pushes price up, selling pushes it down */
+function applyPriceImpact(company: Company, amount: number, isBuy: boolean): Company {
+  const impactFactor = 0.004; // 0.4% per share roughly, scaled
+  const direction = isBuy ? 1 : -1;
+  const change = company.sharePrice * impactFactor * amount * direction;
+  const newPrice = Math.max(5, Math.round(company.sharePrice + change));
+  const newValuation = newPrice * company.totalShares;
+
+  return {
+    ...company,
+    sharePrice: newPrice,
+    valuation: newValuation,
+  };
 }
 
 export const useGameStore = create<GameStore>((set, get) => ({
@@ -39,7 +57,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
       id: `player-${i}`,
       name,
       isBot: i > 0,
-      cash: 10_000_000, // $10M starting capital
+      cash: 10_000_000,
       shares: [],
       controlledCompanyIds: [],
       reputation: 50,
@@ -60,30 +78,15 @@ export const useGameStore = create<GameStore>((set, get) => ({
       actionPointsRemaining: 3,
       log: [
         'Game initialized. Welcome to Popoly: Tech Dominion.',
-        `8 companies listed on the market. Starting capital: $10M each.`,
+        '8 companies listed on the market. Starting capital: $10M each.',
+        '--- You\'s turn ---',
       ],
     });
   },
 
-  nextTurn: () => {
-    const { currentPlayerIndex, players, turn, addLog } = get();
-    const nextIndex = (currentPlayerIndex + 1) % players.length;
-    const isNewRound = nextIndex === 0;
-
-    const nextPlayer = players[nextIndex];
-
-    set({
-      currentPlayerIndex: nextIndex,
-      turn: isNewRound ? turn + 1 : turn,
-      actionPointsRemaining: 3,
-    });
-
-    get().addLog(`--- ${nextPlayer.name}'s turn ---`);
-  },
-
   addLog: (message: string) => {
     set((state) => ({
-      log: [...state.log, message].slice(-100), // keep last 100 entries
+      log: [...state.log, message].slice(-120),
     }));
   },
 
@@ -119,7 +122,6 @@ export const useGameStore = create<GameStore>((set, get) => ({
       return { ...company, controlledBy: controller };
     });
 
-    // Update controlledCompanyIds on players
     const updatedPlayers = players.map((player) => ({
       ...player,
       controlledCompanyIds: updatedCompanies
@@ -145,11 +147,13 @@ export const useGameStore = create<GameStore>((set, get) => ({
 
     const cost = company.sharePrice * amount;
     if (player.cash < cost) {
-      state.addLog(`${player.name} does not have enough cash (need $${cost.toLocaleString()}).`);
+      state.addLog(
+        `${player.name} does not have enough cash (need $${cost.toLocaleString()}).`
+      );
       return false;
     }
 
-    // Update player cash and shares
+    // Update player
     const updatedPlayers = players.map((p) => {
       if (p.id !== player.id) return p;
 
@@ -171,16 +175,181 @@ export const useGameStore = create<GameStore>((set, get) => ({
       };
     });
 
+    // Update company price
+    const updatedCompanies = companies.map((c) =>
+      c.id === companyId ? applyPriceImpact(c, amount, true) : c
+    );
+
     set({
       players: updatedPlayers,
+      companies: updatedCompanies,
       actionPointsRemaining: actionPointsRemaining - 1,
     });
 
     get().recalculateControl();
     get().addLog(
-      `${player.name} bought ${amount} shares of ${company.name} for $${cost.toLocaleString()}.`
+      `${player.name} bought ${amount} shares of ${company.name} for $${cost.toLocaleString()} (new price: $${updatedCompanies.find((c) => c.id === companyId)?.sharePrice}).`
     );
 
     return true;
+  },
+
+  sellShares: (companyId: string, amount: number) => {
+    const state = get();
+    const { currentPlayerIndex, players, companies, actionPointsRemaining } = state;
+    const player = players[currentPlayerIndex];
+    const company = companies.find((c) => c.id === companyId);
+
+    if (!player || !company) return false;
+    if (actionPointsRemaining < 1) {
+      state.addLog('Not enough Action Points.');
+      return false;
+    }
+    if (amount <= 0) return false;
+
+    const owned = state.getPlayerShares(player.id, companyId);
+    if (owned < amount) {
+      state.addLog(`${player.name} only owns ${owned} shares of ${company.name}.`);
+      return false;
+    }
+
+    const proceeds = company.sharePrice * amount;
+
+    const updatedPlayers = players.map((p) => {
+      if (p.id !== player.id) return p;
+
+      const newShares = p.shares
+        .map((s) =>
+          s.companyId === companyId ? { ...s, amount: s.amount - amount } : s
+        )
+        .filter((s) => s.amount > 0);
+
+      return {
+        ...p,
+        cash: p.cash + proceeds,
+        shares: newShares,
+      };
+    });
+
+    const updatedCompanies = companies.map((c) =>
+      c.id === companyId ? applyPriceImpact(c, amount, false) : c
+    );
+
+    set({
+      players: updatedPlayers,
+      companies: updatedCompanies,
+      actionPointsRemaining: actionPointsRemaining - 1,
+    });
+
+    get().recalculateControl();
+    get().addLog(
+      `${player.name} sold ${amount} shares of ${company.name} for $${proceeds.toLocaleString()} (new price: $${updatedCompanies.find((c) => c.id === companyId)?.sharePrice}).`
+    );
+
+    return true;
+  },
+
+  payDividends: () => {
+    const { players, companies, addLog } = get();
+
+    let totalPaid = 0;
+    const updatedPlayers = players.map((player) => {
+      let dividend = 0;
+
+      for (const holding of player.shares) {
+        const company = companies.find((c) => c.id === holding.companyId);
+        if (!company || company.cashFlow <= 0) continue;
+
+        // Simple: each share gets a portion of cashFlow
+        const perShare = company.cashFlow / company.totalShares;
+        dividend += Math.floor(perShare * holding.amount);
+      }
+
+      if (dividend > 0) {
+        totalPaid += dividend;
+        addLog(`${player.name} received $${dividend.toLocaleString()} in dividends.`);
+      }
+
+      return {
+        ...player,
+        cash: player.cash + dividend,
+      };
+    });
+
+    if (totalPaid > 0) {
+      set({ players: updatedPlayers });
+      addLog(`Total dividends paid this round: $${totalPaid.toLocaleString()}.`);
+    }
+  },
+
+  runBotTurn: () => {
+    const state = get();
+    const { currentPlayerIndex, players, companies, actionPointsRemaining } = state;
+    const bot = players[currentPlayerIndex];
+
+    if (!bot || !bot.isBot) return;
+
+    // Very simple bot: try to buy 10-50 shares of 1-2 random companies while it has AP and cash
+    let ap = actionPointsRemaining;
+    const available = [...companies].sort(() => Math.random() - 0.5);
+
+    for (const company of available) {
+      if (ap <= 0) break;
+
+      const qty = Math.random() > 0.6 ? 50 : 10;
+      const cost = company.sharePrice * qty;
+
+      if (bot.cash >= cost) {
+        const success = state.buyShares(company.id, qty);
+        if (success) {
+          ap -= 1;
+          // refresh bot reference after state change
+          const updatedBot = get().players[currentPlayerIndex];
+          if (!updatedBot || updatedBot.cash < company.sharePrice * 10) break;
+        }
+      }
+    }
+
+    // If still has AP, sometimes do nothing (pass)
+    if (get().actionPointsRemaining > 0) {
+      get().addLog(`${bot.name} ends its actions.`);
+    }
+  },
+
+  nextTurn: () => {
+    const state = get();
+    const { currentPlayerIndex, players, turn } = state;
+    const nextIndex = (currentPlayerIndex + 1) % players.length;
+    const isNewRound = nextIndex === 0;
+
+    if (isNewRound) {
+      // Pay dividends at the start of a new round
+      state.payDividends();
+      state.addLog(`=== Round ${turn + 1} begins ===`);
+    }
+
+    const nextPlayer = players[nextIndex];
+
+    set({
+      currentPlayerIndex: nextIndex,
+      turn: isNewRound ? turn + 1 : turn,
+      actionPointsRemaining: 3,
+    });
+
+    state.addLog(`--- ${nextPlayer.name}'s turn ---`);
+
+    // If next player is a bot, run its turn automatically after a short delay feel
+    if (nextPlayer.isBot) {
+      // We run it synchronously for simplicity for now
+      setTimeout(() => {
+        get().runBotTurn();
+        // After bot finishes, auto-end turn if it still has the turn
+        const current = get();
+        if (current.players[current.currentPlayerIndex]?.id === nextPlayer.id) {
+          // Give a tiny pause then end
+          setTimeout(() => get().nextTurn(), 400);
+        }
+      }, 300);
+    }
   },
 }));

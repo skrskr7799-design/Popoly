@@ -14,10 +14,13 @@ function App() {
     initGame,
     nextTurn,
     buyShares,
+    sellShares,
     getOwnershipPercent,
+    getPlayerShares,
   } = useGameStore();
 
   const currentPlayer = players[currentPlayerIndex];
+  const isHumanTurn = currentPlayer && !currentPlayer.isBot;
 
   if (status === 'setup') {
     return (
@@ -68,6 +71,9 @@ function App() {
             <div className="text-zinc-400">
               Current:{' '}
               <span className="text-zinc-100 font-medium">{currentPlayer?.name}</span>
+              {currentPlayer?.isBot && (
+                <span className="ml-1 text-xs text-amber-400/80">(thinking...)</span>
+              )}
             </div>
             <div className="px-2.5 py-1 rounded-md bg-zinc-800 text-cyan-300 text-xs font-medium">
               AP: {actionPointsRemaining}
@@ -125,6 +131,9 @@ function App() {
               const ownership = currentPlayer
                 ? getOwnershipPercent(currentPlayer.id, company.id)
                 : 0;
+              const ownedAmount = currentPlayer
+                ? getPlayerShares(currentPlayer.id, company.id)
+                : 0;
               const controller = company.controlledBy
                 ? players.find((p) => p.id === company.controlledBy)?.name
                 : null;
@@ -135,42 +144,55 @@ function App() {
                   className="p-4 rounded-xl border border-zinc-800 bg-zinc-900/40 hover:border-zinc-700 transition-colors"
                 >
                   <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <div className="flex items-center gap-2">
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
                         <h3 className="font-semibold text-zinc-100">{company.name}</h3>
                         <span className="text-[10px] px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-400">
                           {SECTOR_LABELS[company.sector]}
                         </span>
                       </div>
                       <div className="mt-1 text-xs text-zinc-500 flex flex-wrap gap-x-3 gap-y-1">
-                        <span>Price: ${company.sharePrice}</span>
+                        <span>Price: <span className="text-zinc-300">${company.sharePrice}</span></span>
                         <span>Val: ${(company.valuation / 1000).toFixed(0)}k</span>
-                        <span>Dev: {company.developmentLevel}</span>
-                        <span>Sec: {company.securityLevel}</span>
+                        <span>CF: ${company.cashFlow}</span>
+                        <span>Dev {company.developmentLevel}</span>
+                        <span>Sec {company.securityLevel}</span>
                         {controller && (
-                          <span className="text-cyan-400">Controlled by {controller}</span>
+                          <span className="text-cyan-400">Ctrl: {controller}</span>
                         )}
                       </div>
                     </div>
 
-                    <div className="text-right shrink-0">
+                    <div className="text-right shrink-0 space-y-1">
                       {ownership > 0 && (
-                        <div className="text-xs text-cyan-300 mb-1">
-                          You own {ownership.toFixed(1)}%
+                        <div className="text-xs text-cyan-300">
+                          You: {ownership.toFixed(1)}% ({ownedAmount})
                         </div>
                       )}
-                      <div className="flex gap-1">
-                        {[10, 50, 100].map((qty) => (
+                      <div className="flex gap-1 justify-end">
+                        {[10, 50].map((qty) => (
                           <button
-                            key={qty}
+                            key={`buy-${qty}`}
                             onClick={() => buyShares(company.id, qty)}
-                            disabled={actionPointsRemaining < 1 || !currentPlayer}
-                            className="text-[11px] px-2 py-1 rounded bg-zinc-800 hover:bg-cyan-900/60 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-                            title={`Buy ${qty} shares for $${(company.sharePrice * qty).toLocaleString()}`}
+                            disabled={!isHumanTurn || actionPointsRemaining < 1}
+                            className="text-[11px] px-2 py-1 rounded bg-emerald-900/40 hover:bg-emerald-800/60 text-emerald-300 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                            title={`Buy ${qty} shares`}
                           >
                             +{qty}
                           </button>
                         ))}
+                        {ownedAmount > 0 &&
+                          [10, 50].map((qty) => (
+                            <button
+                              key={`sell-${qty}`}
+                              onClick={() => sellShares(company.id, Math.min(qty, ownedAmount))}
+                              disabled={!isHumanTurn || actionPointsRemaining < 1}
+                              className="text-[11px] px-2 py-1 rounded bg-rose-900/40 hover:bg-rose-800/60 text-rose-300 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                              title={`Sell ${Math.min(qty, ownedAmount)} shares`}
+                            >
+                              -{qty}
+                            </button>
+                          ))}
                       </div>
                     </div>
                   </div>
@@ -189,12 +211,15 @@ function App() {
             <div className="space-y-2">
               <button
                 onClick={nextTurn}
-                className="w-full py-2.5 px-3 bg-zinc-800 hover:bg-zinc-700 rounded-lg text-sm font-medium transition-colors"
+                disabled={!isHumanTurn}
+                className="w-full py-2.5 px-3 bg-zinc-800 hover:bg-zinc-700 disabled:opacity-40 disabled:cursor-not-allowed rounded-lg text-sm font-medium transition-colors"
               >
                 End Turn
               </button>
-              <p className="text-[11px] text-zinc-600 px-1">
-                Each buy costs 1 Action Point. You have {actionPointsRemaining} left.
+              <p className="text-[11px] text-zinc-600 px-1 leading-relaxed">
+                Buy / Sell costs 1 AP each.
+                Dividends are paid at the start of every new round.
+                Bots act automatically.
               </p>
             </div>
           </div>
