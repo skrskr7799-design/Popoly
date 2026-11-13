@@ -94,6 +94,73 @@ describe('The Compute Bottleneck opening state', () => {
 });
 
 
+describe('explicit debt principal repayments', () => {
+  it('repays principal from the borrower's own cash and leaves current-quarter interest unchanged', () => {
+    const state = initializeGame();
+    const result = advanceQuarter(state, {
+      debtRepayments: [{ debtId: 'nodeworks-infrastructure-debt', principalCents: 100_000_000 }],
+    });
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    const debt = result.state.debts.find((item) => item.id === 'nodeworks-infrastructure-debt')!;
+    const nodeworks = result.state.organizations.find((item) => item.id === 'nodeworks')!;
+    const bridge = result.report.entityCashBridges.find((item) => item.organizationId === 'nodeworks')!;
+    expect(debt.principalCents).toBe(1_300_000_000);
+    expect(nodeworks.debtCents).toBe(1_300_000_000);
+    expect(nodeworks.cashCents).toBe(539_616_000);
+    expect(bridge.interestExpenseCents).toBe(31_500_000);
+    expect(bridge.financingCashFlowCents).toBe(-100_000_000);
+    expect(bridge.closingCashCents).toBe(539_616_000);
+    expect(result.report.debtRepayments).toEqual([{
+      debtId: 'nodeworks-infrastructure-debt',
+      borrowerId: 'nodeworks',
+      principalCents: 100_000_000,
+    }]);
+    expect(state.debts.find((item) => item.id === 'nodeworks-infrastructure-debt')!.principalCents).toBe(1_400_000_000);
+  });
+
+  it('does not let the holding repay a subsidiary debt using holding cash', () => {
+    const state = initializeGame();
+    const result = advanceQuarter(state, {
+      debtRepayments: [{ debtId: 'nodeworks-infrastructure-debt', principalCents: 500_000_000 }],
+    });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.state.organizations.find((item) => item.id === 'meridian-group')!.cashCents).toBe(1_394_000_000);
+    expect(result.state.organizations.find((item) => item.id === 'nodeworks')!.cashCents).toBe(139_616_000);
+  });
+
+  it('rejects overpayment, duplicate repayment and insufficient borrower cash atomically', () => {
+    const state = initializeGame();
+    const before = JSON.stringify(state);
+    const overPrincipal = advanceQuarter(state, {
+      debtRepayments: [{ debtId: 'nodeworks-infrastructure-debt', principalCents: 1_500_000_000 }],
+    });
+    expect(overPrincipal.ok).toBe(false);
+    if (overPrincipal.ok) return;
+    expect(overPrincipal.issues.some((item) => item.code === 'command.debt_repayment_exceeds_principal')).toBe(true);
+
+    const duplicate = advanceQuarter(state, {
+      debtRepayments: [
+        { debtId: 'meridian-revolver', principalCents: 100_000_000 },
+        { debtId: 'meridian-revolver', principalCents: 100_000_000 },
+      ],
+    });
+    expect(duplicate.ok).toBe(false);
+    if (duplicate.ok) return;
+    expect(duplicate.issues.some((item) => item.code === 'command.debt_repayment_duplicate')).toBe(true);
+
+    const insufficient = advanceQuarter(state, {
+      debtRepayments: [{ debtId: 'nodeworks-infrastructure-debt', principalCents: 500_000_000 }],
+    });
+    expect(insufficient.ok).toBe(false);
+    if (insufficient.ok) return;
+    expect(insufficient.issues.some((item) => item.code === 'command.debt_repayment_insufficient_cash')).toBe(true);
+    expect(JSON.stringify(state)).toBe(before);
+  });
+});
+
 describe('atomic quarter transition', () => {
   it('commits one quarter and applies entity cash bridges without merging legal entities', () => {
     const state = initializeGame();
