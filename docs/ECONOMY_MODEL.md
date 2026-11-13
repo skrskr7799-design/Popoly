@@ -338,3 +338,12 @@ Interest expense remains an accrual measure in the quarter report, while interes
 The quarter report exposes accrued interest, opening interest arrears, interest paid, closing interest arrears, and any missed contractual service. All amounts use integer cents and deterministic rounding. Refinancing or restructuring must explicitly preserve or settle accrued interest arrears; a new instrument must not silently erase them. Interest arrears are not capitalized into principal in this increment.
 
 This increment does not yet implement interest-on-interest, late fees, acceleration, cross-default, collection actions, collateral enforcement, or insolvency.
+
+
+## 28. Contractual cross-default
+
+Cross-default is an explicit term of each individual debt agreement, not a universal borrower-wide rule. An instrument is affected only when its own `crossDefaultClause` is enabled and another instrument of the exact same legal borrower enters payment default. Ownership links do not extend the trigger across a holding company and its subsidiaries, and a lender's other borrowers are never included.
+
+A cross-default is recorded separately from the affected instrument's own payment status and arrears. It does not fabricate missed interest or principal, increase principal, or rewrite the affected instrument's overdue counter. The state records the triggering debt ID for auditability. When the triggering instrument cures and is no longer in payment default, the derived cross-default is released unless another qualifying default remains active. A debt with its own unpaid contractual service remains overdue/defaulted on its own merits.
+
+Newly underwritten offers default to no cross-default clause unless the offer terms explicitly enable it. Acceleration remains a separate creditor election and is not triggered automatically by cross-default.
