@@ -15,7 +15,6 @@ const strategies: Array<{ id: string; initiativesByQuarter: string[][] }> = [
     initiativesByQuarter: [
       ['resilience-security-program', 'commission-market-study'],
       [],
-      ['resilience-security-program'],
     ],
   },
   {
