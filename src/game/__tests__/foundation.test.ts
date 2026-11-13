@@ -354,6 +354,14 @@ describe('autonomous world simulation', () => {
     expect(result.state.operatingCompanies[0]!.contracts.find((contract) => contract.id === 'flexible-workload')!.workloadMW).toBeCloseTo(asterion.hiddenMetrics.nodeworksFlexibleMW!, 8);
     expect(result.state.operatingCompanies[0]!.deliveredWorkloadMW).toBeCloseTo(Math.min(17, 13 + asterion.hiddenMetrics.nodeworksFlexibleMW!), 8);
     expect(result.report.actorActions?.some((action) => action.kind === 'customer-allocation')).toBe(true);
+
+    // The rebalanced contract is recognised in the following quarter's
+    // operating report, not retroactively in the quarter just resolved.
+    const nextQuarterReport = buildQuarterReport(result.state);
+    expect(nextQuarterReport.quarter).toBe(2);
+    expect(nextQuarterReport.companies[0]!.operations.deliveredWorkloadMW)
+      .toBeCloseTo(result.state.operatingCompanies[0]!.deliveredWorkloadMW, 8);
+    expect(nextQuarterReport.companies[0]!.operations.revenueCents).toBeLessThan(816_500_000);
   });
 
 
