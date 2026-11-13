@@ -828,6 +828,7 @@ export function advanceQuarter(state: GameState, commands: QuarterCommands = {})
       if (closingArrears > 0) unpaidInterestByDebt.set(debt.id, closingArrears);
       interestLines.push({
         debtId: debt.id, borrowerId: debt.borrowerId,
+        ...(debt.lenderId ? { lenderId: debt.lenderId } : {}),
         accruedInterestCents: moneyFromCents(accrued),
         openingInterestArrearsCents: moneyFromCents(openingArrears),
         interestPaidCents: moneyFromCents(paid),
