@@ -54,7 +54,7 @@ export function createComputeBottleneckState(seed = 2035): GameState {
       immediateFirmPowerHeadroomMW: 2, equipmentDeliveryPoolMWEquivalentPerQuarter: 10,
     }],
     actors: [
-      { organizationId: 'kestrel-compute', goals: ['expand-capacity', 'protect-anchor-contracts', 'preserve-liquidity'], hiddenMetrics: { effectiveCapacityMinMW: 22, effectiveCapacityMaxMW: 26, deliveredWorkloadMinMW: 17, deliveredWorkloadMaxMW: 21, reliabilityMin: 0.96, reliabilityMax: 0.98 } },
+      { organizationId: 'kestrel-compute', goals: ['expand-capacity', 'protect-anchor-contracts', 'preserve-liquidity'], hiddenMetrics: { effectiveCapacityMinMW: 22, effectiveCapacityMaxMW: 26, expansionPipelineQuarters: 0, deliveredWorkloadMinMW: 17, deliveredWorkloadMaxMW: 21, reliabilityMin: 0.96, reliabilityMax: 0.98 } },
       { organizationId: 'asterion-ai', goals: ['secure-reliable-compute', 'diversify-suppliers', 'reduce-unit-cost'], hiddenMetrics: { demandMW: 28, nodeworksContractMW: 13, kestrelContractMW: 10, flexibleDemandMW: 5 } },
       { organizationId: 'solara-grid', goals: ['grid-stability', 'predictable-revenue', 'regulatory-compliance'], hiddenMetrics: { regionalHeadroomMW: 6 } },
       { organizationId: 'silicon-vein', goals: ['maximize-margin', 'prioritize-strategic-buyers'], hiddenMetrics: { deliveryLeadQuarters: 2, rushPremium: 0.25 } },
