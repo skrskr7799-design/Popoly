@@ -114,7 +114,10 @@ export function validateGameState(state: GameState): ValidationIssue[] {
     if (!organizationIds.has(contract.customerId) || !organizationIds.has(contract.providerId)) {
       issues.push({ code: 'contract.organization_missing', message: 'Contract references a missing organization.', entityId: contract.id });
     }
-    if (!isFiniteNonNegative(contract.workloadMW) || !Number.isSafeInteger(contract.priceCentsPerMWQuarter)) {
+    if (!isFiniteNonNegative(contract.workloadMW) || !Number.isSafeInteger(contract.priceCentsPerMWQuarter) ||
+        (contract.termEndQuarter !== undefined && (!Number.isInteger(contract.termEndQuarter) || contract.termEndQuarter < 1)) ||
+        (contract.renewalNoticeQuarters !== undefined && (!Number.isInteger(contract.renewalNoticeQuarters) || contract.renewalNoticeQuarters < 0)) ||
+        (contract.minimumWorkloadMW !== undefined && (!isFiniteNonNegative(contract.minimumWorkloadMW) || contract.minimumWorkloadMW > contract.workloadMW))) {
       issues.push({ code: 'contract.value_invalid', message: 'Contract workload and price must be valid.', entityId: contract.id });
     }
   }
