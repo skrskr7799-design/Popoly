@@ -254,7 +254,7 @@ describe('explicit debt principal repayments', () => {
       borrowerId: 'nodeworks', requestedPrincipalCents: 100_000_000, termQuarters: 4,
     }] });
     expect(blockedCredit.ok).toBe(false);
-    if (!blockedCredit.ok) expect(blockedCredit.issues.some((item) => item.code === 'command.payment_default_borrowing_restricted')).toBe(true);
+    if (!blockedCredit.ok) expect(blockedCredit.issues.some((item) => item.code === 'command.covenant_borrowing_restricted')).toBe(true);
     expect(validateGameState(second.state)).toEqual([]);
   });
 
