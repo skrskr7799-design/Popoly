@@ -22,7 +22,7 @@ export function calculateRevenueCents(company: OperatingCompanyState): MoneyCent
     (sum, contract) => sum + contract.workloadMW * contract.priceCentsPerMWQuarter,
     0,
   );
-  return moneyFromCents(total);
+  return moneyFromCents(Math.round(total));
 }
 
 export function calculateOperatingQuarter(
@@ -32,8 +32,7 @@ export function calculateOperatingQuarter(
   const effectiveCapacityMW = calculateEffectiveCapacityMW(company);
   const deliveredWorkloadMW = Math.min(company.deliveredWorkloadMW, effectiveCapacityMW);
   const energyConsumedMWh = deliveredWorkloadMW * market.quarterHours;
-  const energyPrice = market.referenceEnergyPriceCentsPerMWh;
-  const energyCostCents = multiplyMoney(energyPrice, energyConsumedMWh);
+  const energyCostCents = multiplyMoney(market.referenceEnergyPriceCentsPerMWh, energyConsumedMWh);
   const nonEnergyOperatingCostCents = addMoney(
     company.cashCosts.operationsAndStaffingCents,
     company.cashCosts.maintenanceCents,
@@ -45,13 +44,7 @@ export function calculateOperatingQuarter(
   const operatingCashContributionCents = moneyFromCents(revenueCents - totalOperatingCostCents);
 
   return {
-    effectiveCapacityMW,
-    deliveredWorkloadMW,
-    energyConsumedMWh,
-    revenueCents,
-    energyCostCents,
-    nonEnergyOperatingCostCents,
-    totalOperatingCostCents,
-    operatingCashContributionCents,
+    effectiveCapacityMW, deliveredWorkloadMW, energyConsumedMWh, revenueCents, energyCostCents,
+    nonEnergyOperatingCostCents, totalOperatingCostCents, operatingCashContributionCents,
   };
 }
