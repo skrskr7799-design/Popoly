@@ -192,6 +192,71 @@ describe('explicit debt principal repayments', () => {
     expect(validateGameState(second.state)).toEqual([]);
   });
 
+  it('accrues interest without compounding arrears and remits only actual cash to the lender', () => {
+    const state = initializeGame();
+    state.organizations = state.organizations.map((item) => item.id === 'nodeworks'
+      ? { ...item, cashCents: 10_000_000 as typeof item.cashCents } : item);
+    state.operatingCompanies = state.operatingCompanies.map((company) => ({
+      ...company, deliveredWorkloadMW: 0,
+      cashCosts: { operationsAndStaffingCents: 0, maintenanceCents: 0,
+        networkAndConnectivityCents: 0, overheadComplianceInsuranceCents: 0 },
+    }));
+    const openingLenderCash = state.organizations.find((item) => item.id === 'frontier-development-bank')!.cashCents;
+    const first = advanceQuarter(state);
+    expect(first.ok).toBe(true);
+    if (!first.ok) return;
+    const firstDebt = first.state.debts.find((item) => item.id === 'nodeworks-infrastructure-debt')!;
+    const firstInterest = first.report.debtInterestService?.find((item) => item.debtId === firstDebt.id)!;
+    expect(firstInterest.accruedInterestCents).toBe(31_500_000);
+    expect(firstInterest.interestPaidCents).toBe(10_000_000);
+    expect(firstInterest.closingInterestArrearsCents).toBe(21_500_000);
+    expect(firstDebt.principalCents).toBe(1_400_000_000);
+    expect(firstDebt.arrearsInterestCents).toBe(21_500_000);
+    expect(first.report.totalInterestExpenseCents).toBe(31_500_000);
+    expect(first.state.organizations.find((item) => item.id === 'frontier-development-bank')!.cashCents)
+      .toBe(openingLenderCash + 10_000_000);
+
+    const second = advanceQuarter(first.state);
+    expect(second.ok).toBe(true);
+    if (!second.ok) return;
+    const secondInterest = second.report.debtInterestService?.find((item) => item.debtId === firstDebt.id)!;
+    expect(secondInterest.openingInterestArrearsCents).toBe(21_500_000);
+    expect(secondInterest.accruedInterestCents).toBe(31_500_000);
+    expect(secondInterest.interestPaidCents).toBe(0);
+    expect(secondInterest.closingInterestArrearsCents).toBe(53_000_000);
+    expect(second.report.totalInterestExpenseCents).toBe(31_500_000);
+    expect(second.state.debts.find((item) => item.id === firstDebt.id)?.paymentStatus).toBe('defaulted');
+    expect(validateGameState(second.state)).toEqual([]);
+  });
+
+  it('services interest before principal and keeps unpaid interest out of principal balances', () => {
+    const state = initializeGame();
+    state.organizations = state.organizations.map((item) => item.id === 'nodeworks'
+      ? { ...item, cashCents: 40_000_000 as typeof item.cashCents } : item);
+    state.operatingCompanies = state.operatingCompanies.map((company) => ({
+      ...company, deliveredWorkloadMW: 0,
+      cashCosts: { operationsAndStaffingCents: 0, maintenanceCents: 0,
+        networkAndConnectivityCents: 0, overheadComplianceInsuranceCents: 0 },
+    }));
+    state.debts = state.debts.map((debt) => debt.id === 'nodeworks-infrastructure-debt'
+      ? { ...debt, scheduledPrincipalCentsPerQuarter: 20_000_000 as typeof debt.principalCents } : debt);
+    const result = advanceQuarter(state);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    const debt = result.state.debts.find((item) => item.id === 'nodeworks-infrastructure-debt')!;
+    const interest = result.report.debtInterestService?.find((item) => item.debtId === debt.id)!;
+    expect(interest.interestPaidCents).toBe(31_500_000);
+    expect(interest.closingInterestArrearsCents).toBe(0);
+    expect(debt.principalCents).toBe(1_400_000_000);
+    expect(debt.arrearsPrincipalCents).toBe(20_000_000);
+    expect(debt.arrearsInterestCents).toBe(0);
+    expect(result.report.debtRepayments?.some((item) => item.debtId === debt.id)).toBe(false);
+    const bridge = result.report.entityCashBridges.find((item) => item.organizationId === 'nodeworks')!;
+    expect(bridge.interestExpenseCents).toBe(31_500_000);
+    expect(bridge.interestPaidCents).toBe(31_500_000);
+    expect(bridge.closingCashCents).toBe(8_500_000);
+  });
+
   it('services affordable debts in ledger order without falsely defaulting every facility of the borrower', () => {
     const state = initializeGame();
     state.debts = state.debts.map((debt) => debt.id === 'nodeworks-infrastructure-debt'
