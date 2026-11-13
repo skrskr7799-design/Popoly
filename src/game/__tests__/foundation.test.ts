@@ -103,6 +103,63 @@ describe('atomic quarter transition', () => {
     expect(result.state.operatingCompanies[0]!.deliveredWorkloadMW).toBe(10);
   });
 
+  it('opens a renewal window and applies accepted price, guaranteed volume and term next quarter', () => {
+    const first = advanceQuarter(initializeGame());
+    expect(first.ok).toBe(true);
+    if (!first.ok) return;
+    expect(first.report.contractsInRenewalWindow).toEqual([]);
+    const state = first.state;
+    const renewal = advanceQuarter(state, { contractRenewals: [{
+      contractId: 'asterion-contract-a', offeredPriceCentsPerMWQuarter: 53_000_000,
+      offeredWorkloadMW: 8, termQuarters: 4,
+    }] });
+    expect(renewal.ok).toBe(true);
+    if (!renewal.ok) return;
+    expect(renewal.report.contractsInRenewalWindow).toContain('asterion-contract-a');
+    expect(renewal.report.contractRenewals?.[0]).toEqual(expect.objectContaining({ status: 'accepted', termQuarters: 4 }));
+    const contract = renewal.state.operatingCompanies[0]!.contracts.find((item) => item.id === 'asterion-contract-a')!;
+    expect(contract.priceCentsPerMWQuarter).toBe(53_000_000);
+    expect(contract.termEndQuarter).toBe(6);
+    expect(contract.minimumWorkloadMW).toBe(8);
+  });
+
+  it('counters an excessive renewal price and rejects a volume below the customer's private minimum', () => {
+    const first = advanceQuarter(initializeGame());
+    if (!first.ok) return;
+    const counter = advanceQuarter(first.state, { contractRenewals: [{
+      contractId: 'asterion-contract-a', offeredPriceCentsPerMWQuarter: 56_000_000,
+      offeredWorkloadMW: 8, termQuarters: 4,
+    }] });
+    expect(counter.ok).toBe(true);
+    if (!counter.ok) return;
+    expect(counter.report.contractRenewals?.[0]).toEqual(expect.objectContaining({
+      status: 'countered', counterPriceCents: 53_500_000,
+    }));
+    const lowVolume = advanceQuarter(first.state, { contractRenewals: [{
+      contractId: 'asterion-contract-a', offeredPriceCentsPerMWQuarter: 51_000_000,
+      offeredWorkloadMW: 7, termQuarters: 4,
+    }] });
+    expect(lowVolume.ok).toBe(true);
+    if (!lowVolume.ok) return;
+    expect(lowVolume.report.contractRenewals?.[0]?.status).toBe('rejected');
+  });
+
+  it('expires an unrenewed fixed contract and reallocates its guaranteed volume', () => {
+    let state = initializeGame();
+    let lastReport: ReturnType<typeof advanceQuarter> | undefined;
+    for (let quarter = 0; quarter < 4; quarter += 1) {
+      lastReport = advanceQuarter(state);
+      expect(lastReport.ok).toBe(true);
+      if (!lastReport.ok) return;
+      state = lastReport.state;
+    }
+    expect(state.quarter).toBe(5);
+    expect(state.operatingCompanies[0]!.contracts.some((item) => item.id === 'asterion-contract-a')).toBe(false);
+    const asterion = state.actors.find((actor) => actor.organizationId === 'asterion-ai')!;
+    expect(asterion.hiddenMetrics.nodeworksContractMW).toBe(5);
+    expect(lastReport?.ok && lastReport.report.actorActions?.some((action) => action.kind === 'contract-expired')).toBe(true);
+  });
+
   it('accepts a competitive flexible-contract price offer effective next quarter', () => {
     const state = initializeGame();
     const originalPrice = state.operatingCompanies[0]!.contracts.find((item) => item.id === 'flexible-workload')!.priceCentsPerMWQuarter;
