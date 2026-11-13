@@ -16,6 +16,22 @@ interface StoredCampaign {
 }
 
 
+const writeQueues = new Map<string, Promise<void>>();
+
+async function withCampaignWriteLock<T>(key: string, operation: () => Promise<T>): Promise<T> {
+  const previous = writeQueues.get(key) ?? Promise.resolve();
+  let release!: () => void;
+  const current = new Promise<void>((resolve) => { release = resolve; });
+  writeQueues.set(key, current);
+  await previous;
+  try {
+    return await operation();
+  } finally {
+    release();
+    if (writeQueues.get(key) === current) writeQueues.delete(key);
+  }
+}
+
 async function isValidRevision(serialized: string): Promise<boolean> {
   try {
     const parsed: unknown = JSON.parse(serialized);
@@ -126,7 +142,9 @@ export class IndexedDbCampaignSaveRepository implements CampaignSaveRepository {
       const observedCurrentIsValid = observedCurrent !== null && await isValidRevision(observedCurrent);
 
       database = await this.openDatabase();
-      return await new Promise((resolve, reject) => {
+      return await withCampaignWriteLock(
+        `${this.databaseName}:${this.storeName}:${save.campaignId}`,
+        () => new Promise((resolve, reject) => {
         const transaction = database!.transaction(this.storeName, 'readwrite');
         const store = transaction.objectStore(this.storeName);
         const request = store.get(save.campaignId) as IDBRequest<StoredCampaign | undefined>;
@@ -169,7 +187,8 @@ export class IndexedDbCampaignSaveRepository implements CampaignSaveRepository {
             reject(transaction.error ?? new Error('Campaign save transaction was aborted.'));
           }
         };
-      });
+      }),
+      );
     } catch (error) {
       return { ok: false, error: storageError(error) };
     } finally {
