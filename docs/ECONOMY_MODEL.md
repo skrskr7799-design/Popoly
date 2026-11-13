@@ -323,3 +323,18 @@ Scheduled and maturity principal obligations no longer abort an otherwise valid 
 Mandatory payments are allocated in deterministic debt-ledger order using the borrower's remaining opening cash after voluntary repayments and holding project reserves. Each instrument's installment is all-or-nothing, but an unaffordable installment does not prevent a later, smaller obligation from being paid if funds remain. A missed contractual principal payment increments the instrument's consecutive overdue-quarter counter. One missed quarter produces an overdue status; two consecutive missed quarters produce a defaulted status. Paying the scheduled obligation cures the arrears and resets the counter. The quarter report exposes the unpaid due amount, cumulative arrears, duration, and resulting status. Voluntary principal repayments remain strict: an explicitly requested repayment that the borrower cannot fund still rejects the command atomically.
 
 This is the first distress layer, not enforcement. Interest arrears, acceleration, cross-default, creditor collection actions, collateral valuation/enforcement, insolvency proceedings, and asset transfers are intentionally deferred to subsequent increments. The two-quarter default threshold is a provisional gameplay rule, not a claim about real loan documentation.
+
+
+## 27. Interest accrual, payment, and arrears
+
+Interest is calculated on each instrument's opening-quarter principal at its contractual quarterly rate. Existing interest arrears are tracked separately from principal and do not compound: no interest is charged on unpaid interest in this first implementation.
+
+For each instrument, the quarter's interest obligation is the sum of opening interest arrears and newly accrued interest. Cash servicing follows the deterministic debt-ledger order. Within each instrument, interest is paid before scheduled or maturity principal. Available liquidity is drawn only from the exact legal borrower's cash after holding-company project reserves and explicitly committed voluntary principal repayments. Cash is not pooled between a holding company and its subsidiaries.
+
+Any unpaid interest is carried in `arrearsInterestCents`; it does not increase principal or the organization's reported principal debt balance. A debt instrument is overdue when either contractual principal or interest remains unpaid. The existing consecutive-missed-quarter rule applies to the combined contractual debt-service obligation: one consecutive missed quarter is overdue, two are payment default. A quarter in which all currently due interest and principal are paid cures the instrument's payment arrears and resets its overdue counter.
+
+Interest expense remains an accrual measure in the quarter report, while interest cash paid is a separate cash-flow measure. The borrower's cash bridge must deduct only the amount actually paid, not the full accrued amount. The lender receives the same paid amount as cash income; unpaid interest creates no lender cash receipt. This keeps both sides of the transaction balanced and prevents the engine from creating liquidity by recording unpaid interest as paid.
+
+The quarter report exposes accrued interest, opening interest arrears, interest paid, closing interest arrears, and any missed contractual service. All amounts use integer cents and deterministic rounding. Refinancing or restructuring must explicitly preserve or settle accrued interest arrears; a new instrument must not silently erase them. Interest arrears are not capitalized into principal in this increment.
+
+This increment does not yet implement interest-on-interest, late fees, acceleration, cross-default, collection actions, collateral enforcement, or insolvency.
