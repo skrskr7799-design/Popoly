@@ -34,6 +34,11 @@ export interface DebtInstrument {
   scheduledPrincipalCentsPerQuarter?: MoneyCents;
   /** Final maturity quarter; any remaining principal becomes due in full in this quarter. */
   maturityQuarter?: number;
+  /** Principal already due but not paid; remains included in principalCents. */
+  arrearsPrincipalCents?: MoneyCents;
+  /** Consecutive quarters with an unpaid contractual principal amount. */
+  overdueQuarters?: number;
+  paymentStatus?: 'current' | 'overdue' | 'defaulted' | 'settled';
 }
 export interface ServiceContract {
   id: EntityId; customerId: EntityId; providerId: EntityId; workloadMW: number;
