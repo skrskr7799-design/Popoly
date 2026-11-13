@@ -532,3 +532,56 @@ describe('autonomous world simulation', () => {
     expect(first.report.actorActions).toEqual(second.report.actorActions);
   });
 });
+
+
+describe('customer relationship and renewal intelligence', () => {
+  it('tracks service history and shifts Asterion private renewal terms', () => {
+    const state = initializeGame();
+    const asterionBefore = state.actors.find((actor) => actor.organizationId === 'asterion-ai')!;
+    const initialMax = asterionBefore.hiddenMetrics['renewalMaxPrice:asterion-contract-a']!;
+    const breachedState = {
+      ...state,
+      operatingCompanies: state.operatingCompanies.map((company) => ({
+        ...company,
+        capacity: { ...company.capacity, reliability: 0.97 },
+      })),
+    };
+    const result = advanceQuarter(breachedState);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    const asterionAfter = result.state.actors.find((actor) => actor.organizationId === 'asterion-ai')!;
+    const nodeworksAfter = result.state.organizations.find((item) => item.id === 'nodeworks')!;
+    expect(asterionAfter.hiddenMetrics.relationshipScore).toBeLessThan(65);
+    expect(asterionAfter.hiddenMetrics.slaBreachStreak).toBe(1);
+    expect(asterionAfter.hiddenMetrics['renewalMaxPrice:asterion-contract-a']).toBeLessThan(initialMax);
+    expect(nodeworksAfter.reputation).toBeLessThan(74);
+  });
+
+  it('improves customer relationship after reliable service and publishes only an estimated renewal risk', () => {
+    const result = advanceQuarter(initializeGame(2035));
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    const asterion = result.state.actors.find((actor) => actor.organizationId === 'asterion-ai')!;
+    expect(asterion.hiddenMetrics.relationshipScore).toBeGreaterThan(65);
+    const risk = result.state.playerIntelligence.find((item) =>
+      item.metric === 'contractRenewalRisk:asterion-contract-a');
+    expect(risk).toBeDefined();
+    expect(risk!.knowledge).toBe('estimated');
+    expect(risk!.min).toBeGreaterThanOrEqual(0);
+    expect(risk!.max).toBeLessThanOrEqual(100);
+    expect(risk!.confidence).toBeLessThan(1);
+    expect(risk!.metric).not.toContain('renewalMaxPrice');
+    expect(result.state.playerIntelligence.some((item) => item.metric === 'renewalMaxPrice:asterion-contract-a')).toBe(false);
+  });
+
+  it('keeps relationship outcomes and intelligence deterministic for the same seed', () => {
+    const first = advanceQuarter(initializeGame(991));
+    const second = advanceQuarter(initializeGame(991));
+    expect(first.ok).toBe(true);
+    expect(second.ok).toBe(true);
+    if (!first.ok || !second.ok) return;
+    expect(first.state.actors.find((actor) => actor.organizationId === 'asterion-ai')?.hiddenMetrics)
+      .toEqual(second.state.actors.find((actor) => actor.organizationId === 'asterion-ai')?.hiddenMetrics);
+    expect(first.state.playerIntelligence).toEqual(second.state.playerIntelligence);
+  });
+});
