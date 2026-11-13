@@ -118,3 +118,11 @@ This file records important decisions and their rationale. Add new entries rathe
 **Decision:** Save/load serializes the framework-independent Game Engine `GameState` inside a separate versioned envelope. Save-envelope schema, GameState schema, and scenario version are independent compatibility dimensions. The first storage backend is IndexedDB behind a repository adapter, with JSON import/export. Saves are created at stable quarter boundaries, validated before writing, protected by a canonical SHA-256 checksum, and retain one previous valid revision. Loading structurally decodes untrusted input before domain validation, applies only registered pure migrations, verifies scenario compatibility and state invariants, and never mutates the source save on failure.
 
 **Rationale:** Persistence must preserve authoritative simulation state without coupling campaign files to UI implementation details. Separate version dimensions and explicit migration paths make future evolution controlled; atomic revisions and validation prevent a failed save/load from destroying the last known-good campaign. A checksum detects accidental corruption but is not an anti-cheat signature.
+
+
+## D-016 — Serialize concurrent campaign commits per campaign
+
+**Status:** Accepted  
+**Decision:** IndexedDB campaign commits capture their optimistic preflight revision before entering a per-campaign in-process write queue. The queue is shared by repository instances in the same JavaScript realm. Inside the serialized write, the repository compares the current stored revision with the captured snapshot and rejects stale writes with a structured concurrency conflict. IndexedDB read/write transactions remain responsible for atomicity across storage connections.
+
+**Rationale:** Concurrent calls from separate repository instances in one browser context must not both succeed against the same stale revision. The queue makes the optimistic concurrency contract deterministic in tests and in application code without replacing IndexedDB transaction guarantees.
