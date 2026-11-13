@@ -1373,3 +1373,55 @@ describe('opening lender relationships', () => {
     expect(validateGameState(state)).toEqual([]);
   });
 });
+
+
+describe('contractual cross-default', () => {
+  it('activates only on opted-in instruments of the same legal borrower and releases after cure', () => {
+    const opening = initializeGame();
+    const prepared = {
+      ...opening,
+      organizations: opening.organizations.map((item) => item.id === 'nodeworks'
+        ? { ...item, cashCents: moneyFromCents(0), debtCents: moneyFromCents(item.debtCents + 200_000_000) }
+        : item),
+      operatingCompanies: opening.operatingCompanies.map((company) => ({
+        ...company, deliveredWorkloadMW: 0,
+        cashCosts: { operationsAndStaffingCents: moneyFromCents(0), maintenanceCents: moneyFromCents(0),
+          networkAndConnectivityCents: moneyFromCents(0), overheadComplianceInsuranceCents: moneyFromCents(0) },
+      })),
+      debts: [
+        ...opening.debts,
+        { id: 'nodeworks-cross-defaulted-loan', borrowerId: 'nodeworks', lenderId: 'northstar-commercial-bank',
+          principalCents: moneyFromCents(100_000_000), quarterlyInterestRate: 0, crossDefaultClause: true },
+        { id: 'nodeworks-no-cross-default-loan', borrowerId: 'nodeworks', lenderId: 'northstar-commercial-bank',
+          principalCents: moneyFromCents(100_000_000), quarterlyInterestRate: 0, crossDefaultClause: false },
+      ],
+    };
+    const first = advanceQuarter(prepared);
+    expect(first.ok).toBe(true);
+    if (!first.ok) return;
+    const second = advanceQuarter(first.state);
+    expect(second.ok).toBe(true);
+    if (!second.ok) return;
+    const optedIn = second.state.debts.find((debt) => debt.id === 'nodeworks-cross-defaulted-loan')!;
+    const optedOut = second.state.debts.find((debt) => debt.id === 'nodeworks-no-cross-default-loan')!;
+    expect(second.state.debts.find((debt) => debt.id === 'nodeworks-infrastructure-debt')?.paymentStatus).toBe('defaulted');
+    expect(optedIn.paymentStatus).toBe('current');
+    expect(optedIn.crossDefaultedByDebtId).toBe('nodeworks-infrastructure-debt');
+    expect(optedOut.crossDefaultedByDebtId).toBeUndefined();
+    expect(second.report.crossDefaults?.some((line) =>
+      line.affectedDebtId === optedIn.id && line.triggerDebtId === 'nodeworks-infrastructure-debt' && line.action === 'activated')).toBe(true);
+
+    const cureInput = {
+      ...second.state,
+      organizations: second.state.organizations.map((item) => item.id === 'nodeworks'
+        ? { ...item, cashCents: moneyFromCents(2_000_000_000) } : item),
+    };
+    const cured = advanceQuarter(cureInput);
+    expect(cured.ok).toBe(true);
+    if (!cured.ok) return;
+    expect(cured.state.debts.find((debt) => debt.id === optedIn.id)?.crossDefaultedByDebtId).toBeUndefined();
+    expect(cured.report.crossDefaults?.some((line) =>
+      line.affectedDebtId === optedIn.id && line.action === 'released')).toBe(true);
+    expect(validateGameState(cured.state)).toEqual([]);
+  });
+});
