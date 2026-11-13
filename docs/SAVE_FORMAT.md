@@ -137,7 +137,7 @@ The persistence core depends on an adapter/repository interface, not directly on
 - atomically commit a new current revision and rotate the prior current revision to previous;
 - delete a campaign only through an explicit repository operation.
 
-The current and previous revisions for one campaign must be updated in a single read/write transaction. A failed transaction must roll back both changes. Keep storage records separate from domain types.
+The current and previous revisions for one campaign must be updated in a single read/write transaction. Before rotating, the adapter verifies the existing current revision's structure, checksum, and domain invariants; if it is damaged, the last retained previous revision is preserved instead of replacing it with corrupt data. The adapter compares the preflight revision with the value read inside the write transaction and reports a concurrent-write conflict rather than overwriting a newer revision. A failed transaction must roll back both changes. Keep storage records separate from domain types.
 
 The repository must expose failures as structured errors. Do not silently fall back to in-memory or localStorage persistence.
 
