@@ -140,7 +140,7 @@ The persistence core depends on an adapter/repository interface, not directly on
 
 The current and previous revisions for one campaign must be updated in a single read/write transaction. Before rotating, the adapter verifies the existing current revision's structure, checksum, and domain invariants; if it is damaged, the last retained previous revision is preserved instead of replacing it with corrupt data. The adapter compares the preflight revision with the value read inside the write transaction and reports a concurrent-write conflict rather than overwriting a newer revision. A failed transaction must roll back both changes. Keep storage records separate from domain types.
 
-The repository must expose failures as structured errors. Do not silently fall back to in-memory or localStorage persistence.
+The repository must expose failures as structured errors. Do not silently fall back to in-memory or localStorage persistence. The current automated adapter tests use `fake-indexeddb` to exercise IndexedDB transaction semantics in CI; a real-browser smoke test remains required when the application UI is connected and before treating browser compatibility as fully verified.
 
 ## 9. JSON portability
 
