@@ -1,6 +1,5 @@
 /**
  * Core game entity types for Popoly: Tech Dominion
- * This is the source of truth for data shapes.
  */
 
 export type Sector =
@@ -27,8 +26,8 @@ export interface ShareHolding {
 
 export interface Loan {
   id: string;
-  from: string; // 'bank' or playerId
-  to: string;   // playerId
+  from: string;
+  to: string;
   principal: number;
   interestRate: number;
   remaining: number;
@@ -52,7 +51,7 @@ export interface Player {
 export interface CompanySecret {
   id: string;
   type: 'scandal' | 'tech' | 'financial' | 'personal' | 'other';
-  severity: number; // 1-10
+  severity: number;
   description: string;
   discoveredBy?: string[];
   leaked: boolean;
@@ -77,10 +76,13 @@ export interface Company {
 export interface GameState {
   turn: number;
   phase: EconomyPhase;
+  /** Rounds spent in the current economy phase */
+  phaseRounds: number;
   players: Player[];
   companies: Company[];
   currentPlayerIndex: number;
   actionPointsRemaining: number;
   log: string[];
   status: 'setup' | 'playing' | 'finished';
+  winnerId: string | null;
 }
