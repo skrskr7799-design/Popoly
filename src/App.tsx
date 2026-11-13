@@ -15,6 +15,8 @@ function App() {
     nextTurn,
     buyShares,
     sellShares,
+    takeLoan,
+    repayLoan,
     getOwnershipPercent,
     getPlayerShares,
   } = useGameStore();
@@ -36,7 +38,7 @@ function App() {
           <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-6 space-y-4">
             <p className="text-zinc-300 text-sm leading-relaxed">
               Hardcore economic strategy in the near-future Big Tech world.
-              Companies. Shares. Espionage. Reputation. War.
+              Companies. Shares. Loans. Espionage. Reputation. War.
             </p>
             <button
               onClick={() => initGame(['You', 'Bot Alpha', 'Bot Beta', 'Bot Gamma'])}
@@ -46,17 +48,17 @@ function App() {
             </button>
           </div>
 
-          <p className="text-center text-xs text-zinc-600">
-            Design document: DESIGN.md
-          </p>
+          <p className="text-center text-xs text-zinc-600">Design document: DESIGN.md</p>
         </div>
       </div>
     );
   }
 
+  const totalDebt =
+    currentPlayer?.loans.reduce((sum, l) => sum + l.remaining, 0) ?? 0;
+
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-100">
-      {/* Top bar */}
       <header className="border-b border-zinc-800 bg-zinc-900/60 backdrop-blur sticky top-0 z-10">
         <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
@@ -72,7 +74,7 @@ function App() {
               Current:{' '}
               <span className="text-zinc-100 font-medium">{currentPlayer?.name}</span>
               {currentPlayer?.isBot && (
-                <span className="ml-1 text-xs text-amber-400/80">(thinking...)</span>
+                <span className="ml-1 text-xs text-amber-400/80">(acting...)</span>
               )}
             </div>
             <div className="px-2.5 py-1 rounded-md bg-zinc-800 text-cyan-300 text-xs font-medium">
@@ -83,13 +85,14 @@ function App() {
       </header>
 
       <main className="max-w-7xl mx-auto p-4 grid grid-cols-12 gap-4">
-        {/* Left: Players */}
+        {/* Players */}
         <section className="col-span-3 space-y-3">
           <h2 className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">
             Players
           </h2>
           {players.map((p) => {
             const isCurrent = p.id === currentPlayer?.id;
+            const debt = p.loans.reduce((s, l) => s + l.remaining, 0);
             return (
               <div
                 key={p.id}
@@ -101,14 +104,15 @@ function App() {
               >
                 <div className="flex justify-between items-start">
                   <span className="font-medium">{p.name}</span>
-                  {p.isBot && (
-                    <span className="text-[10px] text-zinc-500 uppercase">Bot</span>
-                  )}
+                  {p.isBot && <span className="text-[10px] text-zinc-500 uppercase">Bot</span>}
                 </div>
                 <div className="mt-2 text-xs text-zinc-400 space-y-1">
                   <div>Cash: ${(p.cash / 1_000_000).toFixed(2)}M</div>
-                  <div>Reputation: {p.reputation}</div>
-                  <div>Intel Lv: {p.intelligenceLevel}</div>
+                  {debt > 0 && (
+                    <div className="text-rose-400/90">Debt: ${(debt / 1_000_000).toFixed(2)}M</div>
+                  )}
+                  <div>Rep: {p.reputation} · Credit: {p.creditRating}</div>
+                  <div>Intel: {p.intelligenceLevel}</div>
                   {p.controlledCompanyIds.length > 0 && (
                     <div className="text-cyan-400/80">
                       Controls: {p.controlledCompanyIds.length}
@@ -120,7 +124,7 @@ function App() {
           })}
         </section>
 
-        {/* Center: Market */}
+        {/* Market */}
         <section className="col-span-6 space-y-3">
           <h2 className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">
             Market — Companies
@@ -152,7 +156,9 @@ function App() {
                         </span>
                       </div>
                       <div className="mt-1 text-xs text-zinc-500 flex flex-wrap gap-x-3 gap-y-1">
-                        <span>Price: <span className="text-zinc-300">${company.sharePrice}</span></span>
+                        <span>
+                          Price: <span className="text-zinc-300">${company.sharePrice}</span>
+                        </span>
                         <span>Val: ${(company.valuation / 1000).toFixed(0)}k</span>
                         <span>CF: ${company.cashFlow}</span>
                         <span>Dev {company.developmentLevel}</span>
@@ -169,14 +175,13 @@ function App() {
                           You: {ownership.toFixed(1)}% ({ownedAmount})
                         </div>
                       )}
-                      <div className="flex gap-1 justify-end">
+                      <div className="flex gap-1 justify-end flex-wrap">
                         {[10, 50].map((qty) => (
                           <button
-                            key={`buy-${qty}`}
+                            key={`b-${qty}`}
                             onClick={() => buyShares(company.id, qty)}
                             disabled={!isHumanTurn || actionPointsRemaining < 1}
                             className="text-[11px] px-2 py-1 rounded bg-emerald-900/40 hover:bg-emerald-800/60 text-emerald-300 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-                            title={`Buy ${qty} shares`}
                           >
                             +{qty}
                           </button>
@@ -184,11 +189,12 @@ function App() {
                         {ownedAmount > 0 &&
                           [10, 50].map((qty) => (
                             <button
-                              key={`sell-${qty}`}
-                              onClick={() => sellShares(company.id, Math.min(qty, ownedAmount))}
+                              key={`s-${qty}`}
+                              onClick={() =>
+                                sellShares(company.id, Math.min(qty, ownedAmount))
+                              }
                               disabled={!isHumanTurn || actionPointsRemaining < 1}
                               className="text-[11px] px-2 py-1 rounded bg-rose-900/40 hover:bg-rose-800/60 text-rose-300 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-                              title={`Sell ${Math.min(qty, ownedAmount)} shares`}
                             >
                               -{qty}
                             </button>
@@ -202,7 +208,7 @@ function App() {
           </div>
         </section>
 
-        {/* Right: Actions + Log */}
+        {/* Right panel */}
         <section className="col-span-3 space-y-4">
           <div>
             <h2 className="text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-2">
@@ -216,10 +222,45 @@ function App() {
               >
                 End Turn
               </button>
-              <p className="text-[11px] text-zinc-600 px-1 leading-relaxed">
-                Buy / Sell costs 1 AP each.
-                Dividends are paid at the start of every new round.
-                Bots act automatically.
+
+              <div className="pt-2 border-t border-zinc-800 space-y-2">
+                <p className="text-[11px] text-zinc-500 font-medium">Bank Loans</p>
+                <div className="flex gap-1">
+                  {[1, 2, 5].map((m) => (
+                    <button
+                      key={m}
+                      onClick={() => takeLoan(m * 1_000_000)}
+                      disabled={!isHumanTurn || actionPointsRemaining < 1}
+                      className="flex-1 text-[11px] py-1.5 rounded bg-amber-900/30 hover:bg-amber-800/50 text-amber-200 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                    >
+                      +${m}M
+                    </button>
+                  ))}
+                </div>
+                {totalDebt > 0 && (
+                  <div className="text-[11px] text-zinc-400 space-y-1">
+                    <div>Your debt: ${(totalDebt / 1_000_000).toFixed(2)}M</div>
+                    {currentPlayer?.loans.map((loan) => (
+                      <div key={loan.id} className="flex items-center justify-between gap-2">
+                        <span>
+                          ${(loan.remaining / 1_000_000).toFixed(2)}M @{' '}
+                          {(loan.interestRate * 100).toFixed(1)}%
+                        </span>
+                        <button
+                          onClick={() => repayLoan(loan.id)}
+                          disabled={!isHumanTurn || currentPlayer.cash < 1000}
+                          className="text-[10px] px-1.5 py-0.5 rounded bg-zinc-800 hover:bg-zinc-700 disabled:opacity-40"
+                        >
+                          Repay
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <p className="text-[11px] text-zinc-600 leading-relaxed pt-1">
+                Loans cost 1 AP. Interest accrues each round. Credit rating limits max debt.
               </p>
             </div>
           </div>
@@ -228,7 +269,7 @@ function App() {
             <h2 className="text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-2">
               Event Log
             </h2>
-            <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-3 h-80 overflow-y-auto text-xs space-y-1.5 font-mono">
+            <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-3 h-72 overflow-y-auto text-xs space-y-1.5 font-mono">
               {log.map((entry, i) => (
                 <div key={i} className="text-zinc-400 leading-snug">
                   {entry}
