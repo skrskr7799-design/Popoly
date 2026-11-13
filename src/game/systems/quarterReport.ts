@@ -13,7 +13,12 @@ export interface QuarterReport {
   quarter: number;
   companies: CompanyQuarterReport[];
   entityCashBridges: EntityCashBridge[];
-  totalInterestExpenseCents: MoneyCents;\n  leadershipCapacity?: number;\n  leadershipCommitted?: number;\n  projectsLaunched?: string[];\n  projectsCompleted?: string[];\n  projectCashCommitmentCents?: MoneyCents;
+  totalInterestExpenseCents: MoneyCents;
+  leadershipCapacity?: number;
+  leadershipCommitted?: number;
+  projectsLaunched?: string[];
+  projectsCompleted?: string[];
+  projectCashCommitmentCents?: MoneyCents;
 }
 
 /**
