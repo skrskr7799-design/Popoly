@@ -1,6 +1,6 @@
 import { useState, type ReactNode } from 'react';
 import {
-  Activity, ArrowUpRight, Banknote, Building2, Check,
+  Activity, ArrowUpRight, Banknote, Building2, Check, FolderOpen,
   ChevronRight, CircleAlert, Cpu, Gauge, Globe2, Landmark,
   LockKeyhole, Plus, Radar, ShieldCheck, Sparkles, Zap,
 } from 'lucide-react';
@@ -9,8 +9,20 @@ import { COMPUTE_BOTTLENECK_INITIATIVES, type StrategicInitiativeDefinition } fr
 import type { GameState, ValidationIssue } from '../domain/types';
 import type { QuarterReport } from '../systems/quarterReport';
 import { formatMillions, formatPercent, formatQuarter } from './format';
+import { IndexedDbCampaignSaveRepository } from '../persistence/indexedDbRepository';
+import type { CampaignSaveSummary } from '../persistence/repository';
+import { exportCampaignSave, importCampaignSave } from '../persistence/transfer';
+import { CAMPAIGN_SIMULATION_VERSION } from '../campaign/session';
+import { COMPUTE_BOTTLENECK_SCENARIO_ID, COMPUTE_BOTTLENECK_SCENARIO_VERSION } from '../scenario/computeBottleneck';
+import { CampaignStoragePanel } from './CampaignStoragePanel';
 
 const money = (cents: number) => formatMillions(cents);
+const campaignRepository = new IndexedDbCampaignSaveRepository();
+const loadCompatibility = {
+  isSimulationCompatible: (version: string) => version === CAMPAIGN_SIMULATION_VERSION,
+  isScenarioCompatible: (scenarioId: string, scenarioVersion: string) =>
+    scenarioId === COMPUTE_BOTTLENECK_SCENARIO_ID && scenarioVersion === COMPUTE_BOTTLENECK_SCENARIO_VERSION,
+};
 function getCash(state: GameState, id: string): number {
   return state.organizations.find((item) => item.id === id)?.cashCents ?? 0;
 }
@@ -69,7 +81,7 @@ function InitiativeCard({ initiative, selected, active, affordable, onToggle }: 
   </button>;
 }
 
-function OpeningScreen({ onStart }: { onStart: () => void }) {
+function OpeningScreen({ onStart, onOpenArchive }: { onStart: () => void; onOpenArchive: () => void }) {
   return <main className="pop-opening">
     <div className="pop-opening-mark"><Building2 size={28} /></div>
     <span className="pop-eyebrow">POPOLY · STRATEGIC SIMULATION</span>
@@ -79,6 +91,7 @@ function OpeningScreen({ onStart }: { onStart: () => void }) {
       <span><Landmark size={16} /> Meridian Group</span><span><Cpu size={16} /> NodeWorks</span><span><Globe2 size={16} /> North Region · 2035</span>
     </div>
     <button className="pop-primary pop-start" onClick={onStart}>Establish command <ChevronRight size={17} /></button>
+    <button className="pop-opening-archive" onClick={onOpenArchive}><FolderOpen size={15} /> Resume a saved campaign</button>
     <small className="pop-muted">New campaign · Seed 2035 · Eight-quarter opening</small>
   </main>;
 }
@@ -113,17 +126,113 @@ export default function CampaignApp() {
   const [report, setReport] = useState<QuarterReport | null>(null);
   const [issues, setIssues] = useState<ValidationIssue[]>([]);
   const [revision, setRevision] = useState(0);
+  const [showStorage, setShowStorage] = useState(false);
+  const [campaigns, setCampaigns] = useState<CampaignSaveSummary[]>([]);
+  const [storageBusy, setStorageBusy] = useState(false);
+  const [storageMessage, setStorageMessage] = useState<string | null>(null);
 
   const startCampaign = () => {
-    const next = CampaignSession.start({ seed: 2035 });
+    const next = CampaignSession.start({ seed: 2035, repository: campaignRepository });
     setSession(next);
     setSelected([]);
     setReport(null);
     setIssues([]);
+    setStorageMessage(null);
+    setShowStorage(false);
     setRevision((value) => value + 1);
   };
 
-  if (!session) return <OpeningScreen onStart={startCampaign} />;
+  const refreshCampaigns = async (showBusy = true) => {
+    if (showBusy) setStorageBusy(true);
+    const result = await campaignRepository.list();
+    if (result.ok) setCampaigns(result.value);
+    else setStorageMessage(result.error.message);
+    if (showBusy) setStorageBusy(false);
+  };
+
+  const openArchive = () => {
+    setShowStorage(true);
+    setStorageMessage(null);
+    void refreshCampaigns();
+  };
+
+  const saveCurrentCampaign = async () => {
+    if (!session) return;
+    setStorageBusy(true);
+    const result = await session.save();
+    if (!result.ok) setStorageMessage(result.error.message);
+    else {
+      setStorageMessage('Campaign snapshot saved locally.');
+      await refreshCampaigns(false);
+    }
+    setStorageBusy(false);
+  };
+
+  const loadCampaign = async (campaignId: string) => {
+    setStorageBusy(true);
+    const result = await CampaignSession.restore(campaignId, campaignRepository);
+    if (!result.ok) setStorageMessage(result.error.message);
+    else {
+      setSession(result.value.session);
+      setSelected([]);
+      setReport(null);
+      setIssues([]);
+      setStorageMessage(result.value.recoveredFromPrevious
+        ? 'The current revision was unavailable. Restored the previous valid snapshot.'
+        : 'Campaign loaded and validated successfully.');
+      setShowStorage(false);
+      setRevision((value) => value + 1);
+    }
+    setStorageBusy(false);
+  };
+
+  const exportCampaign = async (campaignId: string) => {
+    setStorageBusy(true);
+    const result = await exportCampaignSave(campaignRepository, campaignId, loadCompatibility);
+    if (!result.ok) setStorageMessage(result.error.message);
+    else {
+      const blob = new Blob([result.value], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement('a');
+      anchor.href = url;
+      anchor.download = `popoly-${campaignId}.json`;
+      anchor.click();
+      URL.revokeObjectURL(url);
+      setStorageMessage('Validated campaign JSON exported.');
+    }
+    setStorageBusy(false);
+  };
+
+  const importCampaign = async (file: File | null) => {
+    if (!file) return;
+    setStorageBusy(true);
+    const serialized = await file.text();
+    const imported = await importCampaignSave(campaignRepository, serialized, loadCompatibility);
+    if (!imported.ok) setStorageMessage(imported.error.message);
+    else {
+      const restored = await CampaignSession.restore(imported.value.save.campaignId, campaignRepository);
+      if (!restored.ok) setStorageMessage(restored.error.message);
+      else {
+        setSession(restored.value.session);
+        setSelected([]);
+        setReport(null);
+        setIssues([]);
+        setShowStorage(false);
+        setStorageMessage('Campaign imported, validated, and opened.');
+        setRevision((value) => value + 1);
+      }
+      await refreshCampaigns(false);
+    }
+    setStorageBusy(false);
+  };
+
+  const storagePanel = <CampaignStoragePanel campaigns={campaigns} activeCampaignId={session?.campaignId ?? ''}
+    busy={storageBusy} onLoad={(id) => void loadCampaign(id)} onExport={(id) => void exportCampaign(id)}
+    onImport={(file) => void importCampaign(file)} onRefresh={() => void refreshCampaigns()} />;
+
+  if (!session) return <div className="pop-opening-shell"><OpeningScreen onStart={startCampaign} onOpenArchive={openArchive} />
+    {showStorage && <div className="pop-opening-storage">{storagePanel}</div>}
+  </div>;
 
   const state = session.state;
   const currentReport = session.currentReport;
@@ -176,7 +285,7 @@ export default function CampaignApp() {
 
     <main className="pop-main">
       <header className="pop-topbar"><div><span className="pop-eyebrow">MERIDIAN GROUP / EXECUTIVE OFFICE</span><h1>Command overview</h1></div>
-        <div className="pop-topbar-right"><span className="pop-quarter-chip">{formatQuarter(state.quarter)}</span><span className="pop-status"><i /> {session.stage === 'guided' ? 'Guided campaign' : 'Sandbox mode'}</span></div>
+        <div className="pop-topbar-right"><span className="pop-quarter-chip">{formatQuarter(state.quarter)}</span><span className="pop-status"><i /> {session.stage === 'guided' ? 'Guided campaign' : 'Sandbox mode'}</span><button className="pop-secondary-button" onClick={() => void saveCurrentCampaign()} disabled={storageBusy}><Banknote size={14} /> Save</button><button className="pop-quiet-button" onClick={() => showStorage ? setShowStorage(false) : openArchive()}><FolderOpen size={14} /> Archive</button></div>
       </header>
 
       <section className="pop-hero">
@@ -185,6 +294,9 @@ export default function CampaignApp() {
         </div>
         <div className="pop-hero-progress"><span>CAMPAIGN PROGRESS</span><strong>{Math.min(session.completedQuarters, GUIDED_CAMPAIGN_QUARTERS)} <small>/ {GUIDED_CAMPAIGN_QUARTERS}</small></strong><div className="pop-progress"><i style={{ width: `${Math.min(100, session.completedQuarters / GUIDED_CAMPAIGN_QUARTERS * 100)}%` }} /></div><small>{session.stage === 'sandbox' ? 'Evaluation window complete · Continue freely' : `${GUIDED_CAMPAIGN_QUARTERS - session.completedQuarters} quarters remaining`}</small></div>
       </section>
+
+      {storageMessage && <div className="pop-storage-message">{storageMessage}<button onClick={() => setStorageMessage(null)}>Dismiss</button></div>}
+      {showStorage && storagePanel}
 
       <section className="pop-stat-grid">
         <StatCard label="MERIDIAN · CASH" value={money(holdingCash)} note={`Debt ${money(holdingDebt)}`} icon={Banknote} tone="good" />
