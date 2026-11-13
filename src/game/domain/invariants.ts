@@ -52,6 +52,9 @@ export function validateGameState(state: GameState): ValidationIssue[] {
     lenderIds.add(lender.organizationId);
     if (!organizationIds.has(lender.organizationId) ||
         !Number.isSafeInteger(lender.availableCapacityCents) || lender.availableCapacityCents < 0 ||
+        !Number.isFinite(lender.baseQuarterlyInterestRate) || lender.baseQuarterlyInterestRate < 0 ||
+        !Number.isInteger(lender.minimumCreditScore) || lender.minimumCreditScore < 300 || lender.minimumCreditScore > 850 ||
+        !Number.isFinite(lender.maxLoanToAnnualCashFlow) || lender.maxLoanToAnnualCashFlow <= 0 ||
         !['conservative', 'balanced', 'growth'].includes(lender.riskAppetite)) {
       issues.push({ code: 'finance.lender_invalid', message: 'Lender capacity or policy is invalid.', entityId: lender.organizationId });
     }
@@ -63,6 +66,8 @@ export function validateGameState(state: GameState): ValidationIssue[] {
     if (!lenderIds.has(offer.lenderId) || !organizationIds.has(offer.borrowerId) ||
         !Number.isSafeInteger(offer.principalCents) || offer.principalCents <= 0 ||
         !Number.isFinite(offer.quarterlyInterestRate) || offer.quarterlyInterestRate < 0 ||
+        !Number.isInteger(offer.creditScore) || offer.creditScore < 300 || offer.creditScore > 850 ||
+        !['AAA', 'AA', 'A', 'BBB', 'BB', 'B', 'CCC'].includes(offer.creditRating) ||
         !Number.isInteger(offer.maturityQuarter) || offer.maturityQuarter < 1 ||
         !Number.isInteger(offer.expiresAfterQuarter) || offer.expiresAfterQuarter < 1 ||
         !['available', 'accepted', 'expired', 'withdrawn'].includes(offer.status)) {
