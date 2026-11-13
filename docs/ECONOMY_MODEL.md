@@ -282,7 +282,7 @@ Newly originated bank loans may carry borrower-level debt-service coverage and d
 
 At each quarter close, the engine evaluates covenant-bearing debt against the named legal borrower's operating cash contribution, total debt service, and leverage proxy. Each instrument records its consecutive breach streak and current state: compliant, grace, or breached. A cure resets the streak and restores compliant status. If the breach persists beyond the contract's grace period, the rate premium is applied once and any contractual restriction on new borrowing becomes active. That restriction blocks new credit requests, acceptance of outstanding loan offers, and revolving-facility drawdowns for that borrower.
 
-Covenant results are included in the quarter report with the measured coverage and leverage ratios and plain-language breach reasons. This first pass is intentionally limited: there is no lender waiver, covenant amendment, collateral seizure, default declaration, cross-default, or formal insolvency process yet.
+Covenant results are included in the quarter report with the measured coverage and leverage ratios and plain-language breach reasons. A borrower may ask its represented creditor to restructure a loan or waive covenants; the lender evaluates the request using its risk appetite and the borrower's current distress and cash-flow position. Collateral seizure, default declaration, cross-default, arrears, and formal insolvency remain future systems.
 
 The credit market distinguishes committed revolving facilities from new term-loan offers. A lender is represented by a legal organization plus a lending policy record containing remaining lending capacity and a broad risk-appetite profile. A loan offer names one lender, one legal borrower, a principal amount, quarterly interest rate, maturity quarter, expiry quarter, and optional collateral description.
 
@@ -295,3 +295,22 @@ The opening scenario includes two illustrative lender offers with different pric
 A debt instrument with a committed facility limit may be drawn in an explicit quarter command. The drawdown increases the facility principal and the legal borrower's cash and debt balances by the same amount. Aggregate outstanding principal may never exceed the committed limit. Term loans without a facility limit cannot be redrawn.
 
 Drawdown proceeds are recorded as a financing cash inflow in the borrower's cash bridge. They are applied after the current quarter's interest report is calculated, so new borrowing affects interest from the following quarter. A drawdown cannot fund another command in the same quarter: affordability checks for projects and principal repayments use opening cash. This avoids implicit ordering and makes financing decisions auditable. The facility's undrawn commitment is the difference between its limit and outstanding principal.
+
+
+## 24. Debt refinancing
+
+A borrower may replace one outstanding debt instrument with an available lender offer for the same legal entity. The replacement offer must cover the old principal plus a one-time refinancing fee (default 100 basis points; configurable from 0 to 1,000 basis points). The old instrument is settled in full and retained in the ledger with zero principal; the new instrument records its lender, principal, rate, maturity, and covenant package.
+
+Refinancing is one atomic quarter action. The offer is consumed, the new lender's cash and capacity are debited, and the old creditor receives the payoff when it is represented in the lender system. The old lender's available capacity is restored by the principal returned. The borrower receives only the net proceeds after payoff and fee. The debt ledger and legal borrower's debt balance are reconciled in the same transaction. Refinancing replaces an existing liability rather than counting as a separate ordinary loan acceptance, so an active covenant restriction does not by itself prevent a genuine replacement transaction. A new covenant package begins monitoring in the quarter after refinancing; the current quarter's interest remains based on opening debt.
+
+The quarter report records the old and new instrument IDs, principal settled, fee, and net cash released. The current implementation does not yet model early-termination penalties beyond the explicit refinancing fee, collateral release/re-registration, or a lender's right to block a payoff.
+
+## 25. Creditor-approved restructuring
+
+A borrower with debt originated by a represented lender may submit one restructuring proposal per instrument in a quarter. It may request a later maturity, a lower quarterly interest rate, a lower existing scheduled principal installment (including a temporary zero-principal period), and/or a covenant waiver. A proposal cannot increase principal, raise the rate, accelerate maturity, or increase scheduled amortization.
+
+The creditor evaluates the proposal after the current quarter's operating and covenant report. Growth lenders are most willing to restructure distressed or weak-credit borrowers; balanced lenders require a covenant breach or materially weak credit; conservative lenders require an active covenant breach and positive operating cash contribution. Rejected proposals leave the instrument unchanged. Accepted terms begin after the current quarter report, preserving the original quarter's interest and scheduled-payment calculation.
+
+A covenant waiver removes the instrument's covenant terms and clears its breach streak/status. Any contractual rate premium already applied remains part of the loan rate unless the approved restructuring explicitly reduces that rate. The report records the lender's decision, previous and revised terms, waiver outcome, and reason. Restructuring does not erase principal or silently move cash between the holding company and a subsidiary.
+
+These are initial deterministic negotiation rules for gameplay, not a full legal workout model. Lender-specific negotiation history, collateral enforcement, guarantees, cross-default, arrears, insolvency, and asset seizure remain future work.
