@@ -55,7 +55,7 @@ function getScheduledDebtRepayments(state: GameState): ResolvedDebtRepayment[] {
       repayments.push({ debtId: debt.id, principalCents: debt.principalCents, repaymentType: 'maturity' });
       return repayments;
     }
-    const scheduled = debt.scheduledPrincipalCentsPerQuarter ?? 0;
+    const scheduled = (debt.arrearsPrincipalCents ?? 0) + (debt.scheduledPrincipalCentsPerQuarter ?? 0);
     if (scheduled > 0) repayments.push({
       debtId: debt.id,
       principalCents: moneyFromCents(Math.min(debt.principalCents, scheduled)),
@@ -177,10 +177,6 @@ function validateCommands(state: GameState, commands: QuarterCommands): Validati
   const scheduledByDebt = new Map(scheduledRepayments.map((item) => [item.debtId, item.principalCents]));
   const seenDebtRepayments = new Set<string>();
   const repaymentByBorrower = new Map<string, number>();
-  for (const repayment of scheduledRepayments) {
-    const debt = state.debts.find((item) => item.id === repayment.debtId)!;
-    repaymentByBorrower.set(debt.borrowerId, (repaymentByBorrower.get(debt.borrowerId) ?? 0) + repayment.principalCents);
-  }
   for (const repayment of commands.debtRepayments ?? []) {
     if (seenDebtRepayments.has(repayment.debtId)) {
       issues.push(issue('command.debt_repayment_duplicate', 'Only one principal repayment per debt instrument is allowed in a quarter.', repayment.debtId));
@@ -788,10 +784,57 @@ export function advanceQuarter(state: GameState, commands: QuarterCommands = {})
     if (creditDecisions.length > 0) report.creditDecisions = creditDecisions;
 
     const refinancingDebtIds = new Set((commands.refinanceDebts ?? []).map((item) => item.debtId));
-    const debtRepayments: ResolvedDebtRepayment[] = [
-      ...getScheduledDebtRepayments(candidate).filter((item) => !refinancingDebtIds.has(item.debtId)),
-      ...(commands.debtRepayments ?? []).map((item) => ({ ...item, repaymentType: 'voluntary' as const })),
-    ];
+    const scheduledDue = getScheduledDebtRepayments(candidate)
+      .filter((item) => !refinancingDebtIds.has(item.debtId));
+    const voluntaryRepayments: ResolvedDebtRepayment[] = (commands.debtRepayments ?? [])
+      .map((item) => ({ ...item, repaymentType: 'voluntary' as const }));
+    const scheduledByBorrower = new Map<string, number>();
+    const voluntaryByBorrower = new Map<string, number>();
+    for (const due of scheduledDue) {
+      const debt = candidate.debts.find((item) => item.id === due.debtId)!;
+      scheduledByBorrower.set(debt.borrowerId, (scheduledByBorrower.get(debt.borrowerId) ?? 0) + due.principalCents);
+    }
+    for (const payment of voluntaryRepayments) {
+      const debt = candidate.debts.find((item) => item.id === payment.debtId)!;
+      voluntaryByBorrower.set(debt.borrowerId, (voluntaryByBorrower.get(debt.borrowerId) ?? 0) + payment.principalCents);
+    }
+    const arrearsLines: NonNullable<QuarterReport['debtArrears']> = [];
+    const unpaidDebtIds = new Set<string>();
+    for (const due of scheduledDue) {
+      const debt = candidate.debts.find((item) => item.id === due.debtId)!;
+      const borrower = candidate.organizations.find((item) => item.id === debt.borrowerId)!;
+      const projectReserve = debt.borrowerId === candidate.holding.organizationId ? cashCommitted : 0;
+      const available = borrower.cashCents - (voluntaryByBorrower.get(debt.borrowerId) ?? 0) - projectReserve;
+      if (available < (scheduledByBorrower.get(debt.borrowerId) ?? 0)) {
+        unpaidDebtIds.add(due.debtId);
+        const overdueQuarters = (debt.overdueQuarters ?? 0) + 1;
+        const status = overdueQuarters >= 2 ? 'defaulted' as const : 'overdue' as const;
+        arrearsLines.push({
+          debtId: debt.id, borrowerId: debt.borrowerId,
+          unpaidDueCents: moneyFromCents(due.principalCents),
+          totalArrearsCents: moneyFromCents(Math.min(debt.principalCents, due.principalCents)),
+          overdueQuarters, status,
+        });
+      }
+    }
+    const missedByDebt = new Map(arrearsLines.map((line) => [line.debtId, line]));
+    const paidScheduled = scheduledDue.filter((due) => !unpaidDebtIds.has(due.debtId));
+    const debtRepayments: ResolvedDebtRepayment[] = [...paidScheduled, ...voluntaryRepayments];
+    if (arrearsLines.length > 0) {
+      candidate = {
+        ...candidate,
+        debts: candidate.debts.map((debt) => {
+          const missed = missedByDebt.get(debt.id);
+          if (missed) return { ...debt, arrearsPrincipalCents: missed.totalArrearsCents,
+            overdueQuarters: missed.overdueQuarters, paymentStatus: missed.status };
+          if ((debt.overdueQuarters ?? 0) > 0 && paidScheduled.some((item) => item.debtId === debt.id)) {
+            return { ...debt, arrearsPrincipalCents: moneyFromCents(0), overdueQuarters: 0, paymentStatus: 'current' as const };
+          }
+          return debt;
+        }),
+      };
+      report.debtArrears = arrearsLines;
+    }
     if (debtRepayments.length > 0) {
       const repaymentByBorrower = new Map<string, number>();
       for (const repayment of debtRepayments) {
@@ -802,7 +845,7 @@ export function advanceQuarter(state: GameState, commands: QuarterCommands = {})
         ...candidate,
         debts: candidate.debts.map((debt) => {
           const repayment = debtRepayments.filter((item) => item.debtId === debt.id).reduce((sum, item) => sum + item.principalCents, 0);
-          return repayment > 0 ? { ...debt, principalCents: moneyFromCents(debt.principalCents - repayment) } : debt;
+          return repayment > 0 ? { ...debt, principalCents: moneyFromCents(debt.principalCents - repayment), arrearsPrincipalCents: moneyFromCents(0), overdueQuarters: 0, paymentStatus: debt.principalCents - repayment === 0 ? 'settled' as const : 'current' as const } : debt;
         }),
         organizations: candidate.organizations.map((organization) => {
           const repayment = repaymentByBorrower.get(organization.id) ?? 0;
