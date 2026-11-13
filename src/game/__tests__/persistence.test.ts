@@ -54,7 +54,7 @@ describe('campaign save core', () => {
     const created = await createCampaignSave(initializeGame(2035), metadata, testDigest);
     expect(created.ok).toBe(true);
     if (!created.ok) return;
-    const tampered = { ...created.value, state: { ...created.value.state, quarter: 99 } };
+    const tampered = { ...created.value, state: { ...created.value.state, seed: created.value.state.seed + 1 } };
     const loaded = await loadCampaignSave(JSON.stringify(tampered), compatibility, testDigest);
     expect(loaded.ok).toBe(false);
     if (!loaded.ok) expect(loaded.error.code).toBe('save.checksum_mismatch');
