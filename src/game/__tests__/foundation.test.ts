@@ -886,3 +886,49 @@ describe('customer relationship and renewal intelligence', () => {
     expect(first.state.playerIntelligence).toEqual(second.state.playerIntelligence);
   });
 });
+
+describe('independent lender underwriting', () => {
+  it('prices and sizes offers from borrower-specific credit quality and lender policy', () => {
+    const state = initializeGame();
+    const result = advanceQuarter(state, { requestCredit: [{
+      borrowerId: 'nodeworks', requestedPrincipalCents: 500_000_000,
+      termQuarters: 8, collateralDescription: 'Data-center equipment',
+    }] });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    const decisions = result.report.creditDecisions!;
+    expect(decisions).toHaveLength(2);
+    expect(decisions.every((item) => item.creditScore >= 300 && item.creditScore <= 850)).toBe(true);
+    expect(decisions.every((item) => item.status === 'offered')).toBe(true);
+    expect(decisions[0]!.quarterlyInterestRate).toBeGreaterThan(0);
+    expect(result.state.loanOffers.filter((offer) => offer.borrowerId === 'nodeworks')).toHaveLength(2);
+    expect(validateGameState(result.state)).toEqual([]);
+  });
+
+  it('keeps a cash-rich holding and an operating subsidiary on separate credit assessments', () => {
+    const state = initializeGame();
+    const result = advanceQuarter(state, { requestCredit: [
+      { borrowerId: 'nodeworks', requestedPrincipalCents: 200_000_000, termQuarters: 6 },
+      { borrowerId: 'meridian-group', requestedPrincipalCents: 200_000_000, termQuarters: 6 },
+    ] });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    const decisions = result.report.creditDecisions!;
+    const nodeworks = decisions.filter((item) => item.borrowerId === 'nodeworks');
+    const meridian = decisions.filter((item) => item.borrowerId === 'meridian-group');
+    expect(nodeworks[0]!.creditScore).not.toBe(meridian[0]!.creditScore);
+    expect(meridian.some((item) => item.status === 'rejected')).toBe(true);
+  });
+
+  it('rejects malformed or duplicate requests atomically', () => {
+    const state = initializeGame();
+    const before = JSON.stringify(state);
+    const result = advanceQuarter(state, { requestCredit: [
+      { borrowerId: 'nodeworks', requestedPrincipalCents: 100, termQuarters: 4 },
+      { borrowerId: 'nodeworks', requestedPrincipalCents: 200, termQuarters: 4 },
+    ] });
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.issues.some((item) => item.code === 'command.credit_request_duplicate')).toBe(true);
+    expect(JSON.stringify(state)).toBe(before);
+  });
+});
