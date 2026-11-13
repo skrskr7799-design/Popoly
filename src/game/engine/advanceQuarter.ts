@@ -263,6 +263,9 @@ function validateCommands(state: GameState, commands: QuarterCommands): Validati
     if (refinanceDebtIds.has(proposal.debtId)) {
       issues.push(issue('command.debt_restructure_refinance_conflict', 'A debt cannot be restructured and refinanced in the same quarter.', proposal.debtId));
     }
+    if (debt.maturityQuarter !== undefined && debt.maturityQuarter <= state.quarter) {
+      issues.push(issue('command.debt_restructure_maturity_due', 'A debt due for mandatory repayment this quarter cannot be restructured after its maturity has arrived.', proposal.debtId));
+    }
     const hasTerms = proposal.requestedMaturityQuarter !== undefined ||
       proposal.requestedQuarterlyInterestRate !== undefined ||
       proposal.requestedScheduledPrincipalCentsPerQuarter !== undefined;
