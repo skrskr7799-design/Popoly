@@ -1,3 +1,4 @@
+import 'fake-indexeddb/auto';
 import { describe, expect, it } from 'vitest';
 import { initializeGame } from '../engine/initialize';
 import { advanceQuarter } from '../engine/advanceQuarter';
@@ -5,6 +6,7 @@ import { canonicalJson } from '../persistence/canonicalJson';
 import { createCampaignSave, serializeCampaignSave } from '../persistence/save';
 import { loadCampaignSave } from '../persistence/load';
 import { restoreCampaign } from '../persistence/restore';
+import { IndexedDbCampaignSaveRepository } from '../persistence/indexedDbRepository';
 import type { CampaignSaveRepository } from '../persistence/repository';
 import type { CampaignSaveV1, PersistenceResult } from '../persistence/types';
 import type { DigestProvider, LoadCompatibility } from '../persistence/types';
@@ -188,3 +190,98 @@ describe('campaign save core', () => {
   });
 
 });
+
+async function makeIndexedDbSave(campaignId: string, quarter: number, updatedAt: string): Promise<CampaignSaveV1> {
+  const state = initializeGame(2035);
+  state.quarter = quarter;
+  const created = await createCampaignSave(state, {
+    campaignId,
+    createdAt: '2035-01-01T00:00:00.000Z',
+    updatedAt,
+    simulationVersion: '0.1.0',
+  });
+  if (!created.ok) throw new Error(created.error.message);
+  return created.value;
+}
+
+async function corruptIndexedDbCurrent(databaseName: string, campaignId: string): Promise<void> {
+  const database = await new Promise<IDBDatabase>((resolve, reject) => {
+    const request = indexedDB.open(databaseName, 1);
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => reject(request.error);
+  });
+  await new Promise<void>((resolve, reject) => {
+    const transaction = database.transaction('campaigns', 'readwrite');
+    const store = transaction.objectStore('campaigns');
+    const request = store.get(campaignId);
+    request.onsuccess = () => {
+      const record = request.result as { current: string; previous: string | null };
+      store.put({ ...record, current: '{broken' , campaignId });
+    };
+    transaction.oncomplete = () => resolve();
+    transaction.onerror = () => reject(transaction.error);
+    transaction.onabort = () => reject(transaction.error ?? new Error('Corruption transaction aborted.'));
+  });
+  database.close();
+}
+
+describe('IndexedDB campaign repository', () => {
+  it('commits, lists, reads, rotates and deletes campaign revisions', async () => {
+    const databaseName = 'popoly-idb-basic-test';
+    const repository = new IndexedDbCampaignSaveRepository({ databaseName });
+    const first = await makeIndexedDbSave('idb-basic', 1, '2035-01-01T00:00:00.000Z');
+    const second = await makeIndexedDbSave('idb-basic', 2, '2035-04-01T00:00:00.000Z');
+
+    expect(await repository.commit(first)).toEqual({ ok: true, value: undefined });
+    expect(await repository.commit(second)).toEqual({ ok: true, value: undefined });
+
+    const current = await repository.read('idb-basic', 'current');
+    const previous = await repository.read('idb-basic', 'previous');
+    expect(current).toEqual({ ok: true, value: serializeCampaignSave(second) });
+    expect(previous).toEqual({ ok: true, value: serializeCampaignSave(first) });
+
+    const listed = await repository.list();
+    expect(listed.ok).toBe(true);
+    if (listed.ok) {
+      expect(listed.value).toEqual([{
+        campaignId: 'idb-basic',
+        updatedAt: '2035-04-01T00:00:00.000Z',
+        quarter: 2,
+        scenarioId: second.scenarioId,
+        scenarioVersion: second.scenarioVersion,
+      }]);
+    }
+
+    expect(await repository.delete('idb-basic')).toEqual({ ok: true, value: undefined });
+    expect(await repository.read('idb-basic', 'current')).toEqual({ ok: true, value: null });
+  });
+
+  it('preserves the last known-good backup when the current IndexedDB record is corrupt', async () => {
+    const databaseName = 'popoly-idb-corruption-test';
+    const repository = new IndexedDbCampaignSaveRepository({ databaseName });
+    const first = await makeIndexedDbSave('idb-corrupt', 1, '2035-01-01T00:00:00.000Z');
+    const second = await makeIndexedDbSave('idb-corrupt', 2, '2035-04-01T00:00:00.000Z');
+    const third = await makeIndexedDbSave('idb-corrupt', 3, '2035-07-01T00:00:00.000Z');
+
+    expect((await repository.commit(first)).ok).toBe(true);
+    expect((await repository.commit(second)).ok).toBe(true);
+    await corruptIndexedDbCurrent(databaseName, 'idb-corrupt');
+    expect((await repository.commit(third)).ok).toBe(true);
+
+    const previous = await repository.read('idb-corrupt', 'previous');
+    expect(previous).toEqual({ ok: true, value: serializeCampaignSave(first) });
+  });
+
+  it('rejects a stale concurrent write instead of silently overwriting the first commit', async () => {
+    const repository = new IndexedDbCampaignSaveRepository({ databaseName: 'popoly-idb-concurrency-test' });
+    const first = await makeIndexedDbSave('idb-concurrent', 1, '2035-01-01T00:00:00.000Z');
+    const second = await makeIndexedDbSave('idb-concurrent', 2, '2035-04-01T00:00:00.000Z');
+
+    const results = await Promise.all([repository.commit(first), repository.commit(second)]);
+    expect(results.filter((result) => result.ok)).toHaveLength(1);
+    expect(results.filter((result) => !result.ok)).toHaveLength(1);
+    const rejected = results.find((result) => !result.ok);
+    if (rejected && !rejected.ok) expect(rejected.error.code).toBe('storage.concurrent_write');
+  });
+});
+
