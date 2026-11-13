@@ -1,30 +1,45 @@
 # Popoly: Tech Dominion
 
-Hardcore economic strategy game set in the near-future Big Tech world.
+Hardcore Big Tech economic strategy (local / LAN).
 
-Players build tech empires, trade shares, wage corporate espionage, manage reputation and fight for dominance.
-
-## Status
-
-**Phase 0 complete** — Project scaffold + Design Document.
-
-See **[DESIGN.md](./DESIGN.md)** for the full vision, systems and architecture. This is the source of truth.
-
-## Stack
-
-- Vite + React 19 + TypeScript
-- Zustand
-- Tailwind CSS v4
-- Framer Motion
-- lucide-react
-
-## Getting Started
+## Quick start (dev)
 
 ```bash
 npm install
 npm run dev
 ```
 
-## Development Roadmap
+## Docker (home LAN, no nginx)
 
-See DESIGN.md section 8.
+Build and run:
+
+```bash
+docker compose up --build -d
+```
+
+Open on this machine:
+
+```text
+http://localhost:3000
+```
+
+From phone / tablet on the same Wi‑Fi:
+
+1. Find your PC IP (e.g. `ipconfig` / `hostname -I`)
+2. Open `http://<PC-IP>:3000`
+
+Stop:
+
+```bash
+docker compose down
+```
+
+Rebuild after code changes:
+
+```bash
+docker compose up --build -d
+```
+
+## Stack
+
+Vite + React 19 + TypeScript + Zustand + Tailwind v4
