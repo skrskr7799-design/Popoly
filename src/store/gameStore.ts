@@ -1,9 +1,16 @@
 import { create } from 'zustand';
-import type { GameState, Player, Company, ShareHolding, Loan, CompanySecret } from '../entities/types';
+import type {
+  GameState,
+  Player,
+  Company,
+  Loan,
+  CompanySecret,
+} from '../entities/types';
 import { INITIAL_COMPANIES } from '../data/companies';
 import { GAME_EVENTS, pickWeightedEvent } from '../data/events';
 
 interface GameStore extends GameState {
+  winnerId: string | null;
   initGame: (playerNames: string[]) => void;
   nextTurn: () => void;
   addLog: (message: string) => void;
@@ -14,18 +21,22 @@ interface GameStore extends GameState {
   upgradeIntelligence: () => boolean;
   performEspionage: (companyId: string) => boolean;
   leakSecret: (companyId: string, secretId: string) => boolean;
+  raiseSecurity: (companyId: string) => boolean;
   getPlayerShares: (playerId: string, companyId: string) => number;
   getOwnershipPercent: (playerId: string, companyId: string) => number;
   getKnownSecrets: (playerId: string, companyId: string) => CompanySecret[];
+  getNetWorth: (playerId: string) => number;
+  getScore: (playerId: string) => number;
   recalculateControl: () => void;
   payDividends: () => void;
   accrueInterest: () => void;
   triggerEvent: () => void;
   syncCreditWithReputation: () => void;
+  checkVictory: () => void;
   runBotTurn: () => void;
 }
 
-const initialState: GameState = {
+const initialState: GameState & { winnerId: string | null } = {
   turn: 0,
   phase: 'innovation_boom',
   players: [],
@@ -34,6 +45,7 @@ const initialState: GameState = {
   actionPointsRemaining: 0,
   log: [],
   status: 'setup',
+  winnerId: null,
 };
 
 function createInitialCompanies(): Company[] {
@@ -91,10 +103,11 @@ export const useGameStore = create<GameStore>((set, get) => ({
       status: 'playing',
       turn: 1,
       actionPointsRemaining: 3,
+      winnerId: null,
       log: [
         'Game initialized. Welcome to Popoly: Tech Dominion.',
-        '8 companies listed. Espionage network available.',
-        'Upgrade Intelligence or run ops against companies.',
+        'Espionage, loans, events and corporate warfare are live.',
+        'Victory checked from round 12 by score (net worth + control + rep).',
         "--- You's turn ---",
       ],
     });
@@ -102,7 +115,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
 
   addLog: (message: string) => {
     set((state) => ({
-      log: [...state.log, message].slice(-180),
+      log: [...state.log, message].slice(-200),
     }));
   },
 
@@ -124,6 +137,28 @@ export const useGameStore = create<GameStore>((set, get) => ({
     return company.secrets.filter(
       (s) => s.leaked || (s.discoveredBy && s.discoveredBy.includes(playerId))
     );
+  },
+
+  getNetWorth: (playerId) => {
+    const player = get().players.find((p) => p.id === playerId);
+    if (!player) return 0;
+    const { companies } = get();
+    let sharesValue = 0;
+    for (const h of player.shares) {
+      const c = companies.find((x) => x.id === h.companyId);
+      if (c) sharesValue += c.sharePrice * h.amount;
+    }
+    const debt = player.loans.reduce((s, l) => s + l.remaining, 0);
+    return player.cash + sharesValue - debt;
+  },
+
+  getScore: (playerId) => {
+    const player = get().players.find((p) => p.id === playerId);
+    if (!player) return 0;
+    const net = get().getNetWorth(playerId);
+    const controlBonus = player.controlledCompanyIds.length * 3_500_000;
+    const repBonus = player.reputation * 40_000;
+    return net + controlBonus + repBonus;
   },
 
   recalculateControl: () => {
@@ -154,11 +189,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
     const { currentPlayerIndex, players, companies, actionPointsRemaining } = state;
     const player = players[currentPlayerIndex];
     const company = companies.find((c) => c.id === companyId);
-    if (!player || !company || amount <= 0) return false;
-    if (actionPointsRemaining < 1) {
-      state.addLog('Not enough Action Points.');
-      return false;
-    }
+    if (!player || !company || amount <= 0 || actionPointsRemaining < 1) return false;
     const cost = company.sharePrice * amount;
     if (player.cash < cost) {
       state.addLog(`${player.name} needs $${cost.toLocaleString()}.`);
@@ -193,16 +224,9 @@ export const useGameStore = create<GameStore>((set, get) => ({
     const { currentPlayerIndex, players, companies, actionPointsRemaining } = state;
     const player = players[currentPlayerIndex];
     const company = companies.find((c) => c.id === companyId);
-    if (!player || !company || amount <= 0) return false;
-    if (actionPointsRemaining < 1) {
-      state.addLog('Not enough Action Points.');
-      return false;
-    }
+    if (!player || !company || amount <= 0 || actionPointsRemaining < 1) return false;
     const owned = state.getPlayerShares(player.id, companyId);
-    if (owned < amount) {
-      state.addLog(`${player.name} only owns ${owned} shares.`);
-      return false;
-    }
+    if (owned < amount) return false;
     const proceeds = company.sharePrice * amount;
     const updatedPlayers = players.map((p) => {
       if (p.id !== player.id) return p;
@@ -222,8 +246,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
       actionPointsRemaining: actionPointsRemaining - 1,
     });
     get().recalculateControl();
-    const newPrice = updatedCompanies.find((c) => c.id === companyId)?.sharePrice;
-    get().addLog(`${player.name} sold ${amount} ${company.name} → $${newPrice}`);
+    get().addLog(`${player.name} sold ${amount} ${company.name}`);
     return true;
   },
 
@@ -231,14 +254,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
     const state = get();
     const { currentPlayerIndex, players, actionPointsRemaining } = state;
     const player = players[currentPlayerIndex];
-    if (!player || amount < 500_000) {
-      state.addLog('Minimum loan is $500,000.');
-      return false;
-    }
-    if (actionPointsRemaining < 1) {
-      state.addLog('Not enough Action Points.');
-      return false;
-    }
+    if (!player || amount < 500_000 || actionPointsRemaining < 1) return false;
     const currentDebt = player.loans.reduce((sum, l) => sum + l.remaining, 0);
     const maxDebt = getMaxDebt(player.creditRating, player.reputation);
     if (currentDebt + amount > maxDebt) {
@@ -293,32 +309,68 @@ export const useGameStore = create<GameStore>((set, get) => ({
     const state = get();
     const { currentPlayerIndex, players, actionPointsRemaining } = state;
     const player = players[currentPlayerIndex];
-    if (!player) return false;
-    if (actionPointsRemaining < 1) {
-      state.addLog('Not enough Action Points.');
-      return false;
-    }
+    if (!player || actionPointsRemaining < 1) return false;
     if (player.intelligenceLevel >= 8) {
-      state.addLog('Intelligence Network already at maximum.');
+      state.addLog('Intelligence already maxed.');
       return false;
     }
     const cost = player.intelligenceLevel * 1_200_000;
     if (player.cash < cost) {
-      state.addLog(`Need $${cost.toLocaleString()} to upgrade Intelligence.`);
+      state.addLog(`Need $${cost.toLocaleString()} to upgrade Intel.`);
       return false;
     }
     const updatedPlayers = players.map((p) =>
       p.id === player.id
-        ? {
-            ...p,
-            cash: p.cash - cost,
-            intelligenceLevel: p.intelligenceLevel + 1,
-          }
+        ? { ...p, cash: p.cash - cost, intelligenceLevel: p.intelligenceLevel + 1 }
         : p
     );
     set({ players: updatedPlayers, actionPointsRemaining: actionPointsRemaining - 1 });
     get().addLog(
-      `${player.name} upgraded Intelligence Network to level ${player.intelligenceLevel + 1}.`
+      `${player.name} upgraded Intelligence to level ${player.intelligenceLevel + 1}.`
+    );
+    return true;
+  },
+
+  raiseSecurity: (companyId) => {
+    const state = get();
+    const { currentPlayerIndex, players, companies, actionPointsRemaining } = state;
+    const player = players[currentPlayerIndex];
+    const company = companies.find((c) => c.id === companyId);
+    if (!player || !company || actionPointsRemaining < 1) return false;
+
+    // Only controller or major shareholder can meaningfully raise security
+    const ownership = state.getOwnershipPercent(player.id, companyId);
+    if (ownership < 25 && company.controlledBy !== player.id) {
+      state.addLog('Need at least 25% ownership or control to raise security.');
+      return false;
+    }
+    if (company.securityLevel >= 9) {
+      state.addLog('Security already very high.');
+      return false;
+    }
+
+    const cost = 600_000 + company.securityLevel * 250_000;
+    if (player.cash < cost) {
+      state.addLog(`Raising security costs $${cost.toLocaleString()}.`);
+      return false;
+    }
+
+    const updatedCompanies = companies.map((c) =>
+      c.id === companyId
+        ? { ...c, securityLevel: Math.min(10, c.securityLevel + 1) }
+        : c
+    );
+    const updatedPlayers = players.map((p) =>
+      p.id === player.id ? { ...p, cash: p.cash - cost } : p
+    );
+
+    set({
+      companies: updatedCompanies,
+      players: updatedPlayers,
+      actionPointsRemaining: actionPointsRemaining - 1,
+    });
+    get().addLog(
+      `${player.name} raised ${company.name} security to ${company.securityLevel + 1}.`
     );
     return true;
   },
@@ -328,13 +380,8 @@ export const useGameStore = create<GameStore>((set, get) => ({
     const { currentPlayerIndex, players, companies, actionPointsRemaining } = state;
     const player = players[currentPlayerIndex];
     const company = companies.find((c) => c.id === companyId);
-    if (!player || !company) return false;
-    if (actionPointsRemaining < 1) {
-      state.addLog('Not enough Action Points.');
-      return false;
-    }
+    if (!player || !company || actionPointsRemaining < 1) return false;
 
-    // Cost scales with security and current intel
     const baseCost = 400_000 + company.securityLevel * 180_000;
     const cost = Math.round(baseCost * (1 - (player.intelligenceLevel - 1) * 0.06));
     if (player.cash < cost) {
@@ -342,13 +389,10 @@ export const useGameStore = create<GameStore>((set, get) => ({
       return false;
     }
 
-    // Success chance
     const intelFactor = player.intelligenceLevel * 12;
     const securityFactor = company.securityLevel * 11;
-    const baseChance = 0.28 + (intelFactor - securityFactor) / 100;
-    const chance = Math.max(0.08, Math.min(0.82, baseChance));
+    const chance = Math.max(0.08, Math.min(0.82, 0.28 + (intelFactor - securityFactor) / 100));
 
-    // Spend AP + cash first
     let updatedPlayers = players.map((p) =>
       p.id === player.id ? { ...p, cash: p.cash - cost } : p
     );
@@ -357,12 +401,9 @@ export const useGameStore = create<GameStore>((set, get) => ({
       actionPointsRemaining: actionPointsRemaining - 1,
     });
 
-    const roll = Math.random();
-    if (roll > chance) {
-      // Failure
+    if (Math.random() > chance) {
       const detected = Math.random() < 0.35 + company.securityLevel * 0.04;
       if (detected) {
-        // Reputation hit for the spy
         updatedPlayers = get().players.map((p) =>
           p.id === player.id
             ? { ...p, reputation: Math.max(0, p.reputation - 6) }
@@ -370,51 +411,44 @@ export const useGameStore = create<GameStore>((set, get) => ({
         );
         set({ players: updatedPlayers });
         get().addLog(
-          `❌ ${player.name}'s op against ${company.name} failed and was DETECTED. Reputation -6.`
+          `❌ ${player.name}'s op on ${company.name} failed and was DETECTED. Rep -6.`
         );
       } else {
-        get().addLog(`❌ ${player.name}'s op against ${company.name} failed (no useful intel).`);
+        get().addLog(`❌ ${player.name}'s op on ${company.name} failed.`);
       }
       return false;
     }
 
-    // Success: try to uncover an unknown secret
-    const unknownSecrets = company.secrets.filter(
+    const unknown = company.secrets.filter(
       (s) => !s.leaked && !(s.discoveredBy ?? []).includes(player.id)
     );
-
-    if (unknownSecrets.length === 0) {
-      get().addLog(
-        `✅ ${player.name} ran a successful op on ${company.name} but found no new secrets.`
-      );
+    if (unknown.length === 0) {
+      get().addLog(`✅ ${player.name} found no new secrets at ${company.name}.`);
       return true;
     }
 
-    // Prefer higher severity secrets when intel is high
-    const sorted = [...unknownSecrets].sort((a, b) => b.severity - a.severity);
-    const pickIndex = player.intelligenceLevel >= 4 ? 0 : Math.floor(Math.random() * sorted.length);
-    const secret = sorted[Math.min(pickIndex, sorted.length - 1)];
+    const sorted = [...unknown].sort((a, b) => b.severity - a.severity);
+    const pick =
+      player.intelligenceLevel >= 4
+        ? sorted[0]
+        : sorted[Math.floor(Math.random() * sorted.length)];
 
     const updatedCompanies = get().companies.map((c) => {
       if (c.id !== companyId) return c;
       return {
         ...c,
         secrets: c.secrets.map((s) =>
-          s.id === secret.id
-            ? {
-                ...s,
-                discoveredBy: [...(s.discoveredBy ?? []), player.id],
-              }
+          s.id === pick.id
+            ? { ...s, discoveredBy: [...(s.discoveredBy ?? []), player.id] }
             : s
         ),
       };
     });
-
     set({ companies: updatedCompanies });
     get().addLog(
-      `✅ ${player.name} uncovered a secret at ${company.name} (severity ${secret.severity}/10).`
+      `✅ ${player.name} uncovered severity-${pick.severity} secret at ${company.name}.`
     );
-    get().addLog(`   "${secret.description}"`);
+    get().addLog(`   "${pick.description}"`);
     return true;
   },
 
@@ -423,35 +457,24 @@ export const useGameStore = create<GameStore>((set, get) => ({
     const { currentPlayerIndex, players, companies, actionPointsRemaining } = state;
     const player = players[currentPlayerIndex];
     const company = companies.find((c) => c.id === companyId);
-    if (!player || !company) return false;
-    if (actionPointsRemaining < 1) {
-      state.addLog('Not enough Action Points.');
-      return false;
-    }
+    if (!player || !company || actionPointsRemaining < 1) return false;
 
     const secret = company.secrets.find((s) => s.id === secretId);
-    if (!secret) return false;
-    if (secret.leaked) {
-      state.addLog('This secret is already public.');
-      return false;
-    }
-    const known =
-      secret.discoveredBy?.includes(player.id) || false;
-    if (!known) {
-      state.addLog('You have not discovered this secret yet.');
+    if (!secret || secret.leaked) return false;
+    if (!(secret.discoveredBy ?? []).includes(player.id)) {
+      state.addLog('You have not discovered this secret.');
       return false;
     }
 
-    // Leak cost (smaller)
     const cost = 250_000;
     if (player.cash < cost) {
-      state.addLog(`Leaking requires $${cost.toLocaleString()}.`);
+      state.addLog(`Leak requires $${cost.toLocaleString()}.`);
       return false;
     }
 
-    // Apply damage based on severity
-    const priceHit = 1 - secret.severity * 0.035; // up to ~31% drop on severity 9
-    const repHit = secret.severity * 3;
+    const priceHit = 1 - secret.severity * 0.04; // stronger
+    const repHit = secret.severity * 3.5;
+    const cashFlowHit = 1 - secret.severity * 0.025;
 
     const updatedCompanies = companies.map((c) => {
       if (c.id !== companyId) return c;
@@ -461,22 +484,30 @@ export const useGameStore = create<GameStore>((set, get) => ({
         sharePrice: newPrice,
         valuation: newPrice * c.totalShares,
         reputation: Math.max(0, c.reputation - repHit),
+        cashFlow: Math.max(10, Math.round(c.cashFlow * cashFlowHit)),
         secrets: c.secrets.map((s) =>
           s.id === secretId ? { ...s, leaked: true } : s
         ),
       };
     });
 
-    // Small reputation gain for the leaker (or loss if too dirty — keep simple for now)
-    const updatedPlayers = players.map((p) =>
-      p.id === player.id
-        ? {
-            ...p,
-            cash: p.cash - cost,
-            reputation: Math.min(100, p.reputation + 2),
-          }
-        : p
-    );
+    // Hurt the controlling player's personal reputation too
+    let updatedPlayers = players.map((p) => {
+      if (p.id === player.id) {
+        return {
+          ...p,
+          cash: p.cash - cost,
+          reputation: Math.min(100, p.reputation + 3),
+        };
+      }
+      if (company.controlledBy && p.id === company.controlledBy) {
+        return {
+          ...p,
+          reputation: Math.max(0, p.reputation - Math.round(secret.severity * 1.8)),
+        };
+      }
+      return p;
+    });
 
     set({
       companies: updatedCompanies,
@@ -485,12 +516,15 @@ export const useGameStore = create<GameStore>((set, get) => ({
     });
 
     get().addLog(
-      `📢 ${player.name} LEAKED a severity-${secret.severity} secret about ${company.name}!`
+      `📢 LEAK by ${player.name} on ${company.name} (severity ${secret.severity})!`
     );
     get().addLog(`   "${secret.description}"`);
-    get().addLog(
-      `   ${company.name} share price and reputation took a heavy hit.`
-    );
+    if (company.controlledBy) {
+      const ctrl = players.find((p) => p.id === company.controlledBy);
+      if (ctrl) {
+        get().addLog(`   ${ctrl.name}'s reputation also took a hit as controller.`);
+      }
+    }
     get().recalculateControl();
     return true;
   },
@@ -503,12 +537,11 @@ export const useGameStore = create<GameStore>((set, get) => ({
       for (const holding of player.shares) {
         const company = companies.find((c) => c.id === holding.companyId);
         if (!company || company.cashFlow <= 0) continue;
-        const perShare = company.cashFlow / company.totalShares;
-        dividend += Math.floor(perShare * holding.amount);
+        dividend += Math.floor((company.cashFlow / company.totalShares) * holding.amount);
       }
       if (dividend > 0) {
         totalPaid += dividend;
-        addLog(`${player.name} received $${dividend.toLocaleString()} dividends.`);
+        addLog(`${player.name} +$${dividend.toLocaleString()} dividends`);
       }
       return { ...player, cash: player.cash + dividend };
     });
@@ -549,7 +582,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
   },
 
   triggerEvent: () => {
-    if (Math.random() > 0.72) {
+    if (Math.random() > 0.7) {
       get().addLog('No major market event this round.');
       return;
     }
@@ -600,30 +633,78 @@ export const useGameStore = create<GameStore>((set, get) => ({
     get().recalculateControl();
   },
 
+  checkVictory: () => {
+    const { turn, players, status } = get();
+    if (status !== 'playing' || turn < 12) return;
+
+    // After round 12, highest score wins (or continue until someone is far ahead)
+    const scores = players.map((p) => ({
+      id: p.id,
+      name: p.name,
+      score: get().getScore(p.id),
+    }));
+    scores.sort((a, b) => b.score - a.score);
+
+    const leader = scores[0];
+    const second = scores[1];
+
+    // Decisive lead or hard stop at round 20
+    if (turn >= 20 || (leader.score > second.score * 1.35 && turn >= 12)) {
+      set({ status: 'finished', winnerId: leader.id });
+      get().addLog(`🏆 ${leader.name} wins with score $${(leader.score / 1e6).toFixed(1)}M!`);
+    }
+  },
+
   runBotTurn: () => {
     let guard = 0;
-    while (get().actionPointsRemaining > 0 && guard < 6) {
+    while (get().actionPointsRemaining > 0 && guard < 7) {
       guard++;
       const { currentPlayerIndex, players, companies } = get();
       const bot = players[currentPlayerIndex];
       if (!bot || !bot.isBot) break;
 
-      // Sometimes upgrade intel or spy
-      if (bot.intelligenceLevel < 4 && bot.cash > 3_000_000 && Math.random() > 0.7) {
-        if (get().upgradeIntelligence()) continue;
-      }
-      if (Math.random() > 0.75) {
-        const target = companies[Math.floor(Math.random() * companies.length)];
-        if (get().performEspionage(target.id)) continue;
+      // 1. Protect controlled companies
+      for (const cid of bot.controlledCompanyIds) {
+        const c = companies.find((x) => x.id === cid);
+        if (c && c.securityLevel < 6 && bot.cash > 2_000_000 && Math.random() > 0.55) {
+          if (get().raiseSecurity(cid)) continue;
+        }
       }
 
+      // 2. Upgrade intel sometimes
+      if (bot.intelligenceLevel < 5 && bot.cash > 4_000_000 && Math.random() > 0.65) {
+        if (get().upgradeIntelligence()) continue;
+      }
+
+      // 3. Spy / leak
+      if (Math.random() > 0.55) {
+        // Prefer high-value or rival-controlled companies
+        const targets = [...companies].sort(() => Math.random() - 0.5);
+        for (const t of targets) {
+          const known = get().getKnownSecrets(bot.id, t.id);
+          const high = known.find((s) => !s.leaked && s.severity >= 7);
+          if (high && Math.random() > 0.4) {
+            if (get().leakSecret(t.id, high.id)) break;
+          } else if (Math.random() > 0.5) {
+            if (get().performEspionage(t.id)) break;
+          }
+        }
+        if (get().actionPointsRemaining <= 0) break;
+      }
+
+      // 4. Market actions
       const scored = companies
         .map((c) => {
           const owned = get().getPlayerShares(bot.id, c.id);
           const ownership = (owned / c.totalShares) * 100;
           const valueScore = c.cashFlow / Math.max(c.sharePrice, 1);
-          const controlBonus = ownership >= 30 && ownership < 50 ? 2.8 : ownership > 0 ? 1.3 : 1;
-          return { company: c, score: valueScore * controlBonus * (0.8 + Math.random() * 0.4), owned };
+          const controlBonus =
+            ownership >= 30 && ownership < 50 ? 3.0 : ownership > 0 ? 1.4 : 1;
+          return {
+            company: c,
+            score: valueScore * controlBonus * (0.75 + Math.random() * 0.5),
+            owned,
+          };
         })
         .sort((a, b) => b.score - a.score);
 
@@ -644,18 +725,22 @@ export const useGameStore = create<GameStore>((set, get) => ({
           }
         }
       }
-      if (!acted && bot.shares.length > 0 && Math.random() > 0.65) {
+
+      if (!acted && bot.shares.length > 0 && Math.random() > 0.7) {
         const holding = bot.shares[Math.floor(Math.random() * bot.shares.length)];
-        const sellQty = Math.min(25, holding.amount);
+        const sellQty = Math.min(30, holding.amount);
         if (sellQty > 0) get().sellShares(holding.companyId, sellQty);
       } else if (!acted) break;
     }
+
     const bot = get().players[get().currentPlayerIndex];
     if (bot?.isBot) get().addLog(`${bot.name} finished its turn.`);
   },
 
   nextTurn: () => {
     const state = get();
+    if (state.status === 'finished') return;
+
     const { currentPlayerIndex, players, turn } = state;
     const nextIndex = (currentPlayerIndex + 1) % players.length;
     const isNewRound = nextIndex === 0;
@@ -666,6 +751,8 @@ export const useGameStore = create<GameStore>((set, get) => ({
       state.syncCreditWithReputation();
       state.triggerEvent();
       state.addLog(`=== Round ${turn + 1} begins ===`);
+      state.checkVictory();
+      if (get().status === 'finished') return;
     }
 
     const nextPlayer = players[nextIndex];
@@ -681,11 +768,14 @@ export const useGameStore = create<GameStore>((set, get) => ({
         get().runBotTurn();
         setTimeout(() => {
           const current = get();
-          if (current.players[current.currentPlayerIndex]?.id === nextPlayer.id) {
+          if (
+            current.status === 'playing' &&
+            current.players[current.currentPlayerIndex]?.id === nextPlayer.id
+          ) {
             get().nextTurn();
           }
-        }, 420);
-      }, 260);
+        }, 400);
+      }, 240);
     }
   },
 }));
