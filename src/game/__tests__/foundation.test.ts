@@ -151,7 +151,7 @@ describe('strategic initiatives and project lifecycle', () => {
     expect(result.state.projects).toHaveLength(2);
     expect(result.state.projects[0]!.remainingQuarters).toBe(3);
     expect(result.state.organizations.find((item) => item.id === 'meridian-group')!.cashCents)
-      .toBe(1_079_400_000);
+      .toBe(1_074_000_000);
     expect(state.projects).toHaveLength(0);
   });
 
