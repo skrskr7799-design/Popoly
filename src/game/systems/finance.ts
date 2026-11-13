@@ -114,7 +114,7 @@ export function calculateEntityCashBridge(
     interestIncomeCents,
     principalReceivedCents,
     investmentCashFlowCents,
-    financingCashFlowCents,
+    financingCashFlowCents: moneyFromCents(financingCashFlowCents + principalReceivedCents),
     netCashChangeCents,
     closingCashCents: moneyFromCents(organization.cashCents + netCashChangeCents),
   };
