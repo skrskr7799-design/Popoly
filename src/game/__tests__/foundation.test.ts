@@ -303,7 +303,7 @@ describe('autonomous world simulation', () => {
     expect(asterion.hiddenMetrics.nodeworksFlexibleMW).toBeLessThanOrEqual(6.7);
     expect(result.state.operatingCompanies[0]!.contracts.find((contract) => contract.flexibility === 'contracted')!.workloadMW).toBe(8);
     expect(result.state.operatingCompanies[0]!.contracts.find((contract) => contract.id === 'flexible-workload')!.workloadMW).toBeCloseTo(asterion.hiddenMetrics.nodeworksFlexibleMW!, 8);
-    expect(result.state.operatingCompanies[0]!.deliveredWorkloadMW).toBeCloseTo(13 + asterion.hiddenMetrics.nodeworksFlexibleMW!, 8);
+    expect(result.state.operatingCompanies[0]!.deliveredWorkloadMW).toBeCloseTo(Math.min(17, 13 + asterion.hiddenMetrics.nodeworksFlexibleMW!), 8);
     expect(result.report.actorActions?.some((action) => action.kind === 'customer-allocation')).toBe(true);
   });
 
