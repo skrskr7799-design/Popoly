@@ -4,6 +4,7 @@ import { calculateOperatingQuarter } from '../systems/economy';
 import { buildQuarterReport } from '../systems/quarterReport';
 import { createRandomState, nextRandom } from '../engine/random';
 import { validateGameState } from '../domain/invariants';
+import { advanceQuarter } from '../engine/advanceQuarter';
 
 describe('The Compute Bottleneck opening state', () => {
   it('initializes with valid ownership and entity references', () => {
@@ -70,5 +71,63 @@ describe('The Compute Bottleneck opening state', () => {
     const state = initializeGame();
     state.ownership[0] = { ...state.ownership[0]!, shares: 7_199_999 };
     expect(validateGameState(state).some((issue) => issue.code === 'ownership.share_ledger_mismatch')).toBe(true);
+  });
+});
+
+
+describe('atomic quarter transition', () => {
+  it('commits one quarter and applies entity cash bridges without merging legal entities', () => {
+    const state = initializeGame();
+    const result = advanceQuarter(state);
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.report.quarter).toBe(1);
+    expect(result.state.quarter).toBe(2);
+    expect(result.state.organizations.find((item) => item.id === 'nodeworks')!.cashCents).toBe(639_616_000);
+    expect(result.state.organizations.find((item) => item.id === 'meridian-group')!.cashCents).toBe(1_394_000_000);
+    expect(state.quarter).toBe(1);
+    expect(state.organizations.find((item) => item.id === 'nodeworks')!.cashCents).toBe(420_000_000);
+  });
+
+  it('accepts a workload decision and resolves revenue from delivered workload', () => {
+    const state = initializeGame();
+    const result = advanceQuarter(state, {
+      workloadDecisions: [{ companyId: 'nodeworks', desiredWorkloadMW: 10 }],
+    });
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.report.companies[0]!.operations.deliveredWorkloadMW).toBe(10);
+    expect(result.report.companies[0]!.operations.revenueCents).toBe(505_000_000);
+    expect(result.state.operatingCompanies[0]!.deliveredWorkloadMW).toBe(10);
+  });
+
+  it('rejects invalid commands atomically and leaves the original state unchanged', () => {
+    const state = initializeGame();
+    const before = JSON.stringify(state);
+    const result = advanceQuarter(state, {
+      workloadDecisions: [{ companyId: 'nodeworks', desiredWorkloadMW: 99 }],
+    });
+
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.issues[0]!.code).toBe('command.workload_out_of_range');
+    expect(JSON.stringify(state)).toBe(before);
+  });
+
+  it('rejects duplicate decisions for the same company', () => {
+    const state = initializeGame();
+    const result = advanceQuarter(state, {
+      workloadDecisions: [
+        { companyId: 'nodeworks', desiredWorkloadMW: 10 },
+        { companyId: 'nodeworks', desiredWorkloadMW: 12 },
+      ],
+    });
+
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.issues.some((item) => item.code === 'command.workload_duplicate')).toBe(true);
+    expect(state.quarter).toBe(1);
   });
 });
