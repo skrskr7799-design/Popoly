@@ -2,6 +2,7 @@ import 'fake-indexeddb/auto';
 import { describe, expect, it } from 'vitest';
 import { CampaignSession, GUIDED_CAMPAIGN_QUARTERS } from '../campaign/session';
 import { IndexedDbCampaignSaveRepository } from '../persistence/indexedDbRepository';
+import type { MoneyCents } from '../domain/types';
 import type { DigestProvider } from '../persistence/types';
 
 const digest: DigestProvider = async (data) => {
@@ -29,7 +30,7 @@ describe('CampaignSession', () => {
     expect(session.stage).toBe('guided');
 
     const snapshot = session.state;
-    snapshot.organizations[0]!.cashCents = 0 as typeof snapshot.organizations[number]['cashCents'];
+    snapshot.organizations[0]!.cashCents = 0 as MoneyCents;
     expect(session.state.organizations[0]!.cashCents).not.toBe(0);
   });
 
