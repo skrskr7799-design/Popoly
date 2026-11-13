@@ -3,7 +3,7 @@ import { moneyFromCents } from '../domain/money';
 import type { GameState, StrategicProjectState, ValidationIssue } from '../domain/types';
 import { getInitiativeDefinition } from '../scenario/initiatives';
 import { advanceAutonomousActors, getRivalRenewalBid } from '../systems/actors';
-import { buildQuarterReport, type ContractNegotiationResult, type ContractRenewalResult, type CreditDecisionReportLine, type CovenantReportLine, type QuarterReport } from '../systems/quarterReport';
+import { buildQuarterReport, type ContractNegotiationResult, type ContractRenewalResult, type CreditDecisionReportLine, type CovenantReportLine, type DebtRestructuringReportLine, type QuarterReport } from '../systems/quarterReport';
 import { calculateCreditAssessment } from '../systems/finance';
 
 export interface WorkloadDecision {
@@ -266,7 +266,10 @@ function validateCommands(state: GameState, commands: QuarterCommands): Validati
     const hasTerms = proposal.requestedMaturityQuarter !== undefined ||
       proposal.requestedQuarterlyInterestRate !== undefined ||
       proposal.requestedScheduledPrincipalCentsPerQuarter !== undefined;
-    if (!hasTerms) issues.push(issue('command.debt_restructure_terms_missing', 'A restructuring proposal must change at least one financial term.', proposal.debtId));
+    if (!hasTerms && proposal.requestCovenantWaiver !== true) issues.push(issue('command.debt_restructure_terms_missing', 'A restructuring proposal must change a financial term or request a covenant waiver.', proposal.debtId));
+    if (proposal.requestCovenantWaiver !== undefined && typeof proposal.requestCovenantWaiver !== 'boolean') {
+      issues.push(issue('command.debt_restructure_waiver_invalid', 'Covenant waiver request must be boolean.', proposal.debtId));
+    }
     if (proposal.requestedMaturityQuarter !== undefined &&
         (!Number.isInteger(proposal.requestedMaturityQuarter) ||
           proposal.requestedMaturityQuarter <= Math.max(state.quarter, debt.maturityQuarter ?? state.quarter) ||
@@ -1030,6 +1033,55 @@ export function advanceQuarter(state: GameState, commands: QuarterCommands = {})
       }),
     };
     if (covenantUpdates.length > 0) report.covenantUpdates = covenantUpdates;
+
+    const restructuringResults: DebtRestructuringReportLine[] = [];
+    candidate = {
+      ...candidate,
+      debts: candidate.debts.map((debt) => {
+        const proposal = (commands.restructureDebts ?? []).find((item) => item.debtId === debt.id);
+        if (!proposal || !debt.lenderId) return debt;
+        const lender = candidate.lenders.find((item) => item.organizationId === debt.lenderId);
+        const operatingCashFlow = report.companies.find((item) => item.companyId === debt.borrowerId)?.operations.operatingCashContributionCents ?? moneyFromCents(0);
+        const assessment = calculateCreditAssessment(candidate, debt.borrowerId, operatingCashFlow);
+        const distressed = debt.covenantStatus === 'breached' || debt.covenantStatus === 'grace';
+        const materiallyWeak = (assessment?.score ?? 850) < 600;
+        const approved = lender?.riskAppetite === 'growth'
+          ? distressed || (assessment?.score ?? 850) < 650
+          : lender?.riskAppetite === 'balanced'
+            ? debt.covenantStatus === 'breached' || materiallyWeak
+            : debt.covenantStatus === 'breached' && operatingCashFlow > 0;
+        const reason = approved
+          ? proposal.requestCovenantWaiver
+            ? 'The lender approved a covenant waiver after reviewing the borrower’s distress and recovery capacity.'
+            : 'The lender approved revised repayment terms to reduce near-term debt-service pressure.'
+          : 'The lender declined the request because the borrower does not meet its restructuring criteria.';
+        restructuringResults.push({
+          debtId: debt.id, borrowerId: debt.borrowerId, lenderId: debt.lenderId,
+          status: approved ? 'accepted' : 'rejected',
+          previousQuarterlyInterestRate: debt.quarterlyInterestRate,
+          ...(approved && proposal.requestedQuarterlyInterestRate !== undefined ? { newQuarterlyInterestRate: proposal.requestedQuarterlyInterestRate } : {}),
+          ...(debt.maturityQuarter !== undefined ? { previousMaturityQuarter: debt.maturityQuarter } : {}),
+          ...(approved && proposal.requestedMaturityQuarter !== undefined ? { newMaturityQuarter: proposal.requestedMaturityQuarter } : {}),
+          ...(debt.scheduledPrincipalCentsPerQuarter !== undefined ? { previousScheduledPrincipalCentsPerQuarter: debt.scheduledPrincipalCentsPerQuarter } : {}),
+          ...(approved && proposal.requestedScheduledPrincipalCentsPerQuarter !== undefined
+            ? { newScheduledPrincipalCentsPerQuarter: moneyFromCents(proposal.requestedScheduledPrincipalCentsPerQuarter) } : {}),
+          ...(approved && proposal.requestCovenantWaiver ? { covenantWaived: true } : {}),
+          reason,
+        });
+        if (!approved) return debt;
+        return {
+          ...debt,
+          ...(proposal.requestedMaturityQuarter !== undefined ? { maturityQuarter: proposal.requestedMaturityQuarter } : {}),
+          ...(proposal.requestedQuarterlyInterestRate !== undefined ? { quarterlyInterestRate: proposal.requestedQuarterlyInterestRate } : {}),
+          ...(proposal.requestedScheduledPrincipalCentsPerQuarter !== undefined
+            ? { scheduledPrincipalCentsPerQuarter: moneyFromCents(proposal.requestedScheduledPrincipalCentsPerQuarter) } : {}),
+          ...(proposal.requestCovenantWaiver ? {
+            covenantTerms: undefined, covenantStatus: 'compliant' as const, covenantBreachStreak: 0,
+          } : {}),
+        };
+      }),
+    };
+    if (restructuringResults.length > 0) report.debtRestructurings = restructuringResults;
 
     const autonomousTurn = advanceAutonomousActors(candidate, serviceSnapshot);
     candidate = autonomousTurn.state;
