@@ -39,9 +39,9 @@ Resolve the core design questions: world scale, regions, and map representation;
 
 ## Phase 3 — Simulation and technical foundation
 
-**Specification baseline:** [TECHNICAL_SPEC.md](TECHNICAL_SPEC.md) defines the target engine boundary, commands, deterministic quarter resolution, information model, persistence, and testing strategy. [ECONOMY_MODEL.md](ECONOMY_MODEL.md) defines the first-pass accounting and operating model.
+**Specification baseline:** [TECHNICAL_SPEC.md](TECHNICAL_SPEC.md) defines the target engine boundary, commands, deterministic quarter resolution, information model, persistence, and testing strategy. [ECONOMY_MODEL.md](ECONOMY_MODEL.md) defines the first-pass accounting and operating model. [SCENARIO_DATA.md](SCENARIO_DATA.md) defines the initial world and balance hypotheses. [MIGRATION_MAP.md](MIGRATION_MAP.md) maps the legacy prototype to the new architecture.
 
-- [ ] inspect the current source tree and establish a migration map;
+- [x] inspect the current source tree and establish a migration map;
 - [ ] define domain types, canonical units, and authoritative state;
 - [ ] implement validated player commands and leadership capacity;
 - [ ] implement deterministic quarter orchestration and seeded randomness;
