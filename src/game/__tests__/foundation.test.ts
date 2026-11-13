@@ -388,15 +388,51 @@ describe('committed credit facility drawdowns', () => {
     const meridian = result.state.organizations.find((item) => item.id === 'meridian-group')!;
     const nodeworks = result.state.organizations.find((item) => item.id === 'nodeworks')!;
     const bridge = result.report.entityCashBridges.find((item) => item.organizationId === 'meridian-group')!;
+    const bank = result.state.organizations.find((item) => item.id === 'northstar-commercial-bank')!;
+    const bankBridge = result.report.entityCashBridges.find((item) => item.organizationId === 'northstar-commercial-bank')!;
+    const bankLendingPolicy = result.state.lenders.find((item) => item.organizationId === 'northstar-commercial-bank')!;
     expect(debt.principalCents).toBe(500_000_000);
     expect(meridian.debtCents).toBe(500_000_000);
     expect(meridian.cashCents).toBe(1_594_000_000);
     expect(nodeworks.cashCents).toBe(639_616_000);
+    expect(bank.cashCents).toBe(bankBridge.closingCashCents);
+    expect(bank.cashCents).toBe(2_306_000_000);
+    expect(bankLendingPolicy.availableCapacityCents).toBe(1_000_000_000);
     expect(bridge.interestExpenseCents).toBe(6_000_000);
     expect(bridge.financingCashFlowCents).toBe(200_000_000);
+    expect(bankBridge.financingCashFlowCents).toBe(-200_000_000);
     expect(result.report.debtDrawdowns).toEqual([{
-      debtId: 'meridian-revolver', borrowerId: 'meridian-group', principalCents: 200_000_000,
+      debtId: 'meridian-revolver', borrowerId: 'meridian-group',
+      lenderId: 'northstar-commercial-bank', principalCents: 200_000_000,
     }]);
+  });
+
+  it('rejects a drawdown when the named lender has insufficient lending capacity', () => {
+    const opening = initializeGame();
+    const state = {
+      ...opening,
+      lenders: opening.lenders.map((lender) => lender.organizationId === 'northstar-commercial-bank'
+        ? { ...lender, availableCapacityCents: moneyFromCents(0) } : lender),
+    };
+    const result = advanceQuarter(state, {
+      debtDrawdowns: [{ debtId: 'meridian-revolver', principalCents: 100_000_000 }],
+    });
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.issues.some((item) => item.code === 'command.lender_capacity_insufficient')).toBe(true);
+  });
+
+  it('rejects a drawdown when the named lender lacks cash liquidity', () => {
+    const opening = initializeGame();
+    const state = {
+      ...opening,
+      organizations: opening.organizations.map((organization) => organization.id === 'northstar-commercial-bank'
+        ? { ...organization, cashCents: moneyFromCents(0) } : organization),
+    };
+    const result = advanceQuarter(state, {
+      debtDrawdowns: [{ debtId: 'meridian-revolver', principalCents: 100_000_000 }],
+    });
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.issues.some((item) => item.code === 'command.lender_capacity_insufficient')).toBe(true);
   });
 
   it('rejects a drawdown above the committed limit and leaves the quarter untouched', () => {
@@ -1262,6 +1298,39 @@ describe('debt refinancing and lender-led restructuring', () => {
     expect(validateGameState(result.state)).toEqual([]);
   });
 
+  it('settles overdue principal arrears when the old instrument is fully refinanced', () => {
+    const opening = initializeGame();
+    const prepared = {
+      ...opening,
+      organizations: opening.organizations.map((item) => item.id === 'nodeworks'
+        ? { ...item, cashCents: moneyFromCents(0) } : item),
+      operatingCompanies: opening.operatingCompanies.map((company) => ({
+        ...company, deliveredWorkloadMW: 0,
+        cashCosts: { operationsAndStaffingCents: moneyFromCents(0), maintenanceCents: moneyFromCents(0),
+          networkAndConnectivityCents: moneyFromCents(0), overheadComplianceInsuranceCents: moneyFromCents(0) },
+      })),
+      debts: opening.debts.map((debt) => debt.id === 'nodeworks-infrastructure-debt'
+        ? { ...debt, lenderId: 'northstar-commercial-bank', quarterlyInterestRate: 0,
+            arrearsPrincipalCents: moneyFromCents(50_000_000), overdueQuarters: 1, paymentStatus: 'overdue' as const }
+        : debt),
+      lenders: opening.lenders.map((lender) => lender.organizationId === 'northstar-commercial-bank'
+        ? { ...lender, availableCapacityCents: moneyFromCents(2_000_000_000) } : lender),
+      loanOffers: opening.loanOffers.map((offer) => offer.id === 'northstar-nodeworks-q1'
+        ? { ...offer, principalCents: moneyFromCents(1_500_000_000) } : offer),
+    };
+    const result = advanceQuarter(prepared, { refinanceDebts: [{
+      debtId: 'nodeworks-infrastructure-debt', offerId: 'northstar-nodeworks-q1',
+    }] });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    const settled = result.state.debts.find((debt) => debt.id === 'nodeworks-infrastructure-debt')!;
+    expect(settled.principalCents).toBe(0);
+    expect(settled.arrearsPrincipalCents).toBe(0);
+    expect(settled.paymentStatus).toBe('settled');
+    expect(settled.overdueQuarters).toBe(0);
+    expect(validateGameState(result.state)).toEqual([]);
+  });
+
   it('refuses to refinance an instrument while accrued interest arrears remain unpaid', () => {
     const opening = initializeGame();
     const prepared = {
@@ -1375,6 +1444,35 @@ describe('opening lender relationships', () => {
 });
 
 
+describe('debt arrears reporting', () => {
+  it('includes both unpaid interest and principal in total arrears', () => {
+    const opening = initializeGame();
+    const prepared = {
+      ...opening,
+      organizations: opening.organizations.map((item) => item.id === 'nodeworks'
+        ? { ...item, cashCents: moneyFromCents(0), debtCents: moneyFromCents(100_000_000) } : item),
+      operatingCompanies: opening.operatingCompanies.map((company) => ({
+        ...company, deliveredWorkloadMW: 0,
+        cashCosts: { operationsAndStaffingCents: moneyFromCents(0), maintenanceCents: moneyFromCents(0),
+          networkAndConnectivityCents: moneyFromCents(0), overheadComplianceInsuranceCents: moneyFromCents(0) },
+      })),
+      debts: opening.debts.map((debt) => debt.id === 'nodeworks-infrastructure-debt'
+        ? { ...debt, principalCents: moneyFromCents(100_000_000), quarterlyInterestRate: 0,
+            arrearsPrincipalCents: moneyFromCents(50_000_000), arrearsInterestCents: moneyFromCents(25_000_000) }
+        : debt),
+    };
+    const result = advanceQuarter(prepared);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.report.debtArrears?.[0]).toMatchObject({
+      debtId: 'nodeworks-infrastructure-debt',
+      unpaidInterestCents: 25_000_000,
+      unpaidDueCents: 50_000_000,
+      totalArrearsCents: 75_000_000,
+    });
+  });
+});
+
 describe('contractual cross-default', () => {
   it('activates only on opted-in instruments of the same legal borrower and releases after cure', () => {
     const opening = initializeGame();
@@ -1423,6 +1521,48 @@ describe('contractual cross-default', () => {
     expect(cured.report.crossDefaults?.some((line) =>
       line.affectedDebtId === optedIn.id && line.action === 'released')).toBe(true);
     expect(validateGameState(cured.state)).toEqual([]);
+  });
+
+  it('records the release and activation when the cross-default source switches', () => {
+    const opening = initializeGame();
+    const prepared = {
+      ...opening,
+      organizations: opening.organizations.map((item) => item.id === 'nodeworks'
+        ? { ...item, cashCents: moneyFromCents(1_000_000), debtCents: moneyFromCents(300_000_000) } : item),
+      operatingCompanies: opening.operatingCompanies.map((company) => ({
+        ...company, deliveredWorkloadMW: 0,
+        cashCosts: { operationsAndStaffingCents: moneyFromCents(0), maintenanceCents: moneyFromCents(0),
+          networkAndConnectivityCents: moneyFromCents(0), overheadComplianceInsuranceCents: moneyFromCents(0) },
+      })),
+      debts: [
+        ...opening.debts.map((debt) => debt.id === 'nodeworks-infrastructure-debt'
+          ? { ...debt, principalCents: moneyFromCents(100_000_000), quarterlyInterestRate: 0,
+              arrearsPrincipalCents: moneyFromCents(1_000_000), overdueQuarters: 2, paymentStatus: 'defaulted' as const }
+          : debt),
+        { id: 'nodeworks-second-default', borrowerId: 'nodeworks', lenderId: 'northstar-commercial-bank',
+          principalCents: moneyFromCents(100_000_000), quarterlyInterestRate: 0,
+          arrearsPrincipalCents: moneyFromCents(1_000_000), overdueQuarters: 2, paymentStatus: 'defaulted' as const },
+        { id: 'nodeworks-cross-defaulted-loan', borrowerId: 'nodeworks', lenderId: 'northstar-commercial-bank',
+          principalCents: moneyFromCents(100_000_000), quarterlyInterestRate: 0, crossDefaultClause: true,
+          crossDefaultedByDebtId: 'nodeworks-infrastructure-debt', paymentStatus: 'current' as const },
+      ],
+    };
+    const result = advanceQuarter(prepared);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    const affected = result.state.debts.find((debt) => debt.id === 'nodeworks-cross-defaulted-loan')!;
+    expect(result.state.debts.find((debt) => debt.id === 'nodeworks-infrastructure-debt')?.paymentStatus).toBe('current');
+    expect(result.state.debts.find((debt) => debt.id === 'nodeworks-second-default')?.paymentStatus).toBe('defaulted');
+    expect(affected.crossDefaultedByDebtId).toBe('nodeworks-second-default');
+    expect(result.report.crossDefaults).toContainEqual({
+      affectedDebtId: affected.id, triggerDebtId: 'nodeworks-infrastructure-debt',
+      borrowerId: 'nodeworks', lenderId: 'northstar-commercial-bank', action: 'released',
+    });
+    expect(result.report.crossDefaults).toContainEqual({
+      affectedDebtId: affected.id, triggerDebtId: 'nodeworks-second-default',
+      borrowerId: 'nodeworks', lenderId: 'northstar-commercial-bank', action: 'activated',
+    });
+    expect(validateGameState(result.state)).toEqual([]);
   });
 });
 
