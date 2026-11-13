@@ -21,6 +21,28 @@ export function validateGameState(state: GameState): ValidationIssue[] {
     }
   }
 
+  const debtIds = new Set<string>();
+  const debtByBorrower = new Map<string, number>();
+  for (const debt of state.debts) {
+    if (debtIds.has(debt.id)) {
+      issues.push({ code: 'finance.debt_id_duplicate', message: 'Debt instrument IDs must be unique.', entityId: debt.id });
+    }
+    debtIds.add(debt.id);
+    if (!organizationIds.has(debt.borrowerId) || !Number.isSafeInteger(debt.principalCents) ||
+        debt.principalCents < 0 || !Number.isFinite(debt.quarterlyInterestRate) ||
+        debt.quarterlyInterestRate < 0 ||
+        (debt.facilityLimitCents !== undefined &&
+          (!Number.isSafeInteger(debt.facilityLimitCents) || debt.facilityLimitCents < debt.principalCents))) {
+      issues.push({ code: 'finance.debt_invalid', message: 'Debt instrument has an invalid borrower, principal, interest rate, or facility limit.', entityId: debt.id });
+    }
+    debtByBorrower.set(debt.borrowerId, (debtByBorrower.get(debt.borrowerId) ?? 0) + debt.principalCents);
+  }
+  for (const organization of state.organizations) {
+    if ((debtByBorrower.get(organization.id) ?? 0) !== organization.debtCents) {
+      issues.push({ code: 'finance.debt_ledger_mismatch', message: 'Organization debt balance does not match the sum of its debt instruments.', entityId: organization.id });
+    }
+  }
+
   for (const company of state.operatingCompanies) {
     if (!organizationIds.has(company.organizationId)) {
       issues.push({ code: 'company.organization_missing', message: 'Operating company references a missing organization.', entityId: company.organizationId });
