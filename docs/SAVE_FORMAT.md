@@ -135,7 +135,8 @@ The persistence core depends on an adapter/repository interface, not directly on
 - read current revision;
 - read previous revision;
 - atomically commit a new current revision and rotate the prior current revision to previous;
-- delete a campaign only through an explicit repository operation.
+- delete a campaign only through an explicit repository operation;
+- atomically create-only commit imported campaigns so an ID collision cannot overwrite an existing record, including when two imports race.
 
 The current and previous revisions for one campaign must be updated in a single read/write transaction. Before rotating, the adapter verifies the existing current revision's structure, checksum, and domain invariants; if it is damaged, the last retained previous revision is preserved instead of replacing it with corrupt data. The adapter compares the preflight revision with the value read inside the write transaction and reports a concurrent-write conflict rather than overwriting a newer revision. A failed transaction must roll back both changes. Keep storage records separate from domain types.
 
@@ -146,6 +147,10 @@ The repository must expose failures as structured errors. Do not silently fall b
 Provide JSON export for a validated current revision and JSON import through the full load pipeline. The portable file is the envelope itself; do not invent a second interchange format.
 
 Export must not expose IndexedDB implementation details. Import must preserve the campaign ID unless an explicit duplicate/copy workflow is later designed.
+
+## 9A. JSON transfer behavior
+
+`exportCampaignSave` reads only the current revision, validates it through the normal load pipeline, and returns the canonical envelope JSON. It must not export a corrupt or unsupported revision. `importCampaignSave` runs the same decoder, checksum, compatibility, and domain validation before writing. It preserves the envelope campaign ID and refuses collisions. The repository enforces create-only semantics inside the write transaction so concurrent imports cannot overwrite one another after a successful preflight check.
 
 ## 10. Initial module boundaries
 
@@ -190,7 +195,9 @@ The persistence foundation is not complete until tests cover:
 - domain invariant failures prevent restoration;
 - failed writes preserve the previous committed revision;
 - recovery loads the previous valid revision without modifying the corrupt current revision;
-- JSON import/export round trip;
+- JSON import/export round trip across separate repositories;
+- import rejects checksum damage without writing;
+- import rejects campaign-ID collisions and concurrent duplicate imports without overwriting existing data;
 - deterministic continuation: advance a campaign, save/load into a fresh engine instance, apply identical subsequent commands, and compare resulting states and reports.
 
 Deterministic continuation is a required test, not an assumption. The current `GameState` contains a seed but no explicit mutable PRNG cursor. The existing `src/game/engine/random.ts` exposes a pure PRNG state API, while the current `advanceQuarter` path does not import it. Before asserting deterministic continuation, audit all engine/system/scenario paths for hidden mutable state and nondeterministic sources, then test the exact continuation behavior. If a mutable random stream is introduced later, its complete state must become part of authoritative GameState and be covered by a GameState schema migration.
