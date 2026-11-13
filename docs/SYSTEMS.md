@@ -78,3 +78,26 @@ These are examples of design intent, not implemented mechanics.
 ## 9. Scope discipline
 
 Start with a small number of systems that create a complete and interesting loop. Add depth only when playtests show that it improves decisions, emergent outcomes, or strategic variety.
+
+
+## Implemented engine layer — current branch
+
+The first playable engine slice now includes a transactional quarter resolver, a scenario-driven strategic initiative catalogue, project progression, and a deterministic autonomous-actor pass.
+
+### Strategic initiatives and projects
+- Initiative definitions own their leadership cost, initial cash commitment, duration, and completion effect.
+- Quarter commands can launch multiple initiatives, subject to the holding's leadership capacity and opening cash.
+- Active projects progress automatically; newly launched projects do not lose a quarter of duration on their launch turn.
+- Completion effects currently cover physical capacity, equipment commissioning, firm power reservations, operational resilience, and market-study intelligence.
+- Project costs are charged to the holding entity. Subsidiary operating cash remains legally separate.
+- The quarter report records leadership usage, launches, completions, and project cash commitments.
+
+### Autonomous actor pass
+- Asterion's true compute demand grows within the scenario's forecast band; flexible demand is recalculated from its contract commitments.
+- Kestrel can independently initiate and complete a capacity expansion pipeline.
+- Solara adjusts regional energy pricing in response to grid utilization.
+- The Infrastructure Authority can open a concentration review when the regional grid crosses its review threshold.
+- Actor truth remains in hidden world state. The quarter report exposes concise action summaries, not hidden metric values.
+- Actor outcomes are deterministic for the same world seed and quarter.
+
+This is an initial simulation layer, not the final economic model. In particular, rival procurement competition, contract reallocation, financing choices, project dependencies, regulatory consequences, and information-quality mechanics remain future work.
