@@ -32,6 +32,7 @@ export interface CreditDecisionReportLine {
   requestedPrincipalCents: MoneyCents;
   offeredPrincipalCents?: MoneyCents;
   quarterlyInterestRate?: number;
+  crossDefaultClause?: boolean;
   creditScore: number;
   creditRating: 'AAA' | 'AA' | 'A' | 'BBB' | 'BB' | 'B' | 'CCC';
   status: 'offered' | 'rejected';
@@ -68,6 +69,7 @@ export interface LoanAcceptanceReportLine {
   principalCents: MoneyCents;
   quarterlyInterestRate: number;
   maturityQuarter: number;
+  crossDefaultClause: boolean;
 }
 
 export interface DebtDrawdownReportLine {
