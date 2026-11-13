@@ -94,7 +94,7 @@ The first playable engine slice now includes a transactional quarter resolver, a
 
 ### Autonomous actor pass
 - Asterion's true compute demand grows within the scenario's forecast band; flexible demand is recalculated from its contract commitments.
-- Kestrel can independently initiate and complete a capacity expansion pipeline.
+- Kestrel can independently initiate a capacity expansion pipeline. Completion requires 2 MW of the same immediate firm-power headroom used by NodeWorks; if the player or another actor consumes it first, Kestrel's completed build waits for power.
 - Solara adjusts regional energy pricing in response to grid utilization.
 - The Infrastructure Authority can open a concentration review when the regional grid crosses its review threshold.
 - Actor truth remains in hidden world state. The quarter report exposes concise action summaries, not hidden metric values.
