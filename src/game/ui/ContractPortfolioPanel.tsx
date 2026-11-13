@@ -2,12 +2,30 @@ import type { OperatingCompanyState, Organization } from '../domain/types';
 import type { QuarterReport } from '../systems/quarterReport';
 import { formatMoney, formatQuarter } from './format';
 
+export interface ContractRenewalDraft {
+  enabled: boolean;
+  priceDollars: string;
+  workloadMW: string;
+  termQuarters: string;
+}
+
+function createRenewalDraft(companyContract: OperatingCompanyState['contracts'][number]): ContractRenewalDraft {
+  return {
+    enabled: false,
+    priceDollars: String(companyContract.priceCentsPerMWQuarter / 100),
+    workloadMW: String(companyContract.workloadMW),
+    termQuarters: '4',
+  };
+}
+
 export function ContractPortfolioPanel({
-  company, organizations, report,
+  company, organizations, report, drafts, onDraftChange,
 }: {
   company: OperatingCompanyState | undefined;
   organizations: Organization[];
   report: QuarterReport;
+  drafts: Record<string, ContractRenewalDraft>;
+  onDraftChange: (contractId: string, draft: ContractRenewalDraft) => void;
 }) {
   if (!company) return null;
 
@@ -59,6 +77,34 @@ export function ContractPortfolioPanel({
           </div>
           <div className="pop-contract-track"><i style={{ width: `${fill}%` }} /></div>
           {delivery && delivery.serviceCreditCents > 0 && <small className="pop-contract-credit">Service credits: {formatMoney(delivery.serviceCreditCents)}</small>}
+          {renewalDue && (() => {
+            const draft = drafts[contract.id] ?? createRenewalDraft(contract);
+            return <div className="pop-renewal-editor">
+              <label className="pop-renewal-enable">
+                <input type="checkbox" checked={draft.enabled}
+                  onChange={(event) => onDraftChange(contract.id, { ...draft, enabled: event.currentTarget.checked })} />
+                Prepare renewal proposal
+              </label>
+              <div className="pop-renewal-fields">
+                <label><span>Offered price · USD / MW-quarter</span>
+                  <input type="number" min="1" step="1000" value={draft.priceDollars} disabled={!draft.enabled}
+                    onChange={(event) => onDraftChange(contract.id, { ...draft, priceDollars: event.currentTarget.value })} />
+                </label>
+                <label><span>Guaranteed workload · MW</span>
+                  <input type="number" min="0.1" max={contract.workloadMW} step="0.1" value={draft.workloadMW} disabled={!draft.enabled}
+                    onChange={(event) => onDraftChange(contract.id, { ...draft, workloadMW: event.currentTarget.value })} />
+                </label>
+                <label><span>New term</span>
+                  <select value={draft.termQuarters} disabled={!draft.enabled}
+                    onChange={(event) => onDraftChange(contract.id, { ...draft, termQuarters: event.currentTarget.value })}>
+                    {Array.from({ length: 7 }, (_, index) => index + 2).map((term) =>
+                      <option key={term} value={term}>{term} quarters</option>)}
+                  </select>
+                </label>
+              </div>
+              <small className="pop-renewal-note">The customer may accept, counter, or reject the offer. A competing provider may win the renewal.</small>
+            </div>;
+          })()}
         </article>;
       })}
       {company.contracts.length === 0 && <p className="pop-muted">No active customer contracts.</p>}
