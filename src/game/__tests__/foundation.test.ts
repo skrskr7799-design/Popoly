@@ -164,6 +164,56 @@ describe('atomic quarter transition', () => {
     expect(lowVolume.report.contractRenewals?.[0]?.status).toBe('rejected');
   });
 
+  it('connects a rival renewal win to contract expiry, lost guaranteed revenue and customer reallocation', () => {
+    let state = initializeGame(2035);
+    const first = advanceQuarter(state);
+    expect(first.ok).toBe(true);
+    if (!first.ok) return;
+    state = first.state;
+
+    const renewA = advanceQuarter(state, { contractRenewals: [{
+      contractId: 'asterion-contract-a', offeredPriceCentsPerMWQuarter: 53_000_000,
+      offeredWorkloadMW: 8, termQuarters: 4,
+    }] });
+    expect(renewA.ok).toBe(true);
+    if (!renewA.ok) return;
+    expect(renewA.report.contractRenewals?.[0]?.status).toBe('accepted');
+    state = renewA.state;
+
+    const loseB = advanceQuarter(state, { contractRenewals: [{
+      contractId: 'asterion-contract-b', offeredPriceCentsPerMWQuarter: 48_500_000,
+      offeredWorkloadMW: 5, termQuarters: 4,
+    }] });
+    expect(loseB.ok).toBe(true);
+    if (!loseB.ok) return;
+    expect(loseB.report.contractRenewals?.[0]).toEqual(expect.objectContaining({
+      status: 'rejected', competitorBidAvailable: true, competitorProviderId: 'kestrel-compute',
+    }));
+    state = loseB.state;
+
+    let finalQuarter: ReturnType<typeof advanceQuarter> | undefined;
+    while (state.quarter <= 5) {
+      finalQuarter = advanceQuarter(state);
+      expect(finalQuarter.ok).toBe(true);
+      if (!finalQuarter.ok) return;
+      state = finalQuarter.state;
+    }
+
+    expect(finalQuarter?.ok && finalQuarter.report.actorActions?.some((action) => action.kind === 'contract-expired')).toBe(true);
+    expect(finalQuarter?.ok && finalQuarter.report.actorActions?.some((action) => action.kind === 'customer-allocation')).toBe(true);
+    const asterion = state.actors.find((actor) => actor.organizationId === 'asterion-ai')!;
+    expect(asterion.hiddenMetrics.nodeworksContractMW).toBe(8);
+    expect(asterion.hiddenMetrics.kestrelContractMW).toBe(15);
+    expect(state.operatingCompanies[0]!.contracts.some((contract) => contract.id === 'asterion-contract-a')).toBe(true);
+    expect(state.operatingCompanies[0]!.contracts.some((contract) => contract.id === 'asterion-contract-b')).toBe(false);
+
+    const nextQuarter = buildQuarterReport(state);
+    const nextFulfilled = nextQuarter.companies[0]!.operations.fulfilledContracts;
+    expect(nextFulfilled.some((line) => line.contractId === 'asterion-contract-a')).toBe(true);
+    expect(nextFulfilled.some((line) => line.contractId === 'asterion-contract-b')).toBe(false);
+    expect(state.playerIntelligence.some((item) => item.metric === 'contractRenewalRisk:asterion-contract-b')).toBe(false);
+  });
+
   it('lets Kestrel submit a confidential renewal bid when it has enough spare capacity', () => {
     let state = initializeGame(2035);
     const first = advanceQuarter(state);
