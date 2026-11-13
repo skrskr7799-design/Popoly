@@ -103,6 +103,55 @@ describe('atomic quarter transition', () => {
     expect(result.state.operatingCompanies[0]!.deliveredWorkloadMW).toBe(10);
   });
 
+  it('accepts a competitive flexible-contract price offer effective next quarter', () => {
+    const state = initializeGame();
+    const originalPrice = state.operatingCompanies[0]!.contracts.find((item) => item.id === 'flexible-workload')!.priceCentsPerMWQuarter;
+    const result = advanceQuarter(state, {
+      contractOffers: [{ contractId: 'flexible-workload', offeredPriceCentsPerMWQuarter: 43_000_000 }],
+    });
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.report.companies[0]!.operations.revenueCents).toBe(816_500_000);
+    expect(result.report.contractNegotiations).toEqual([expect.objectContaining({
+      contractId: 'flexible-workload', status: 'accepted', offeredPriceCents: 43_000_000,
+    })]);
+    expect(originalPrice).toBe(41_500_000);
+    expect(result.state.operatingCompanies[0]!.contracts.find((item) => item.id === 'flexible-workload')!.priceCentsPerMWQuarter).toBe(43_000_000);
+  });
+
+  it('returns a customer counteroffer without silently changing contract terms', () => {
+    const state = initializeGame();
+    const result = advanceQuarter(state, {
+      contractOffers: [{ contractId: 'flexible-workload', offeredPriceCentsPerMWQuarter: 47_000_000 }],
+    });
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.report.contractNegotiations?.[0]).toEqual(expect.objectContaining({
+      status: 'countered', counterPriceCents: 44_000_000,
+    }));
+    expect(result.state.operatingCompanies[0]!.contracts.find((item) => item.id === 'flexible-workload')!.priceCentsPerMWQuarter).toBe(41_500_000);
+  });
+
+  it('rejects an uncompetitive contract offer and validates duplicate or fixed-contract offers atomically', () => {
+    const state = initializeGame();
+    const before = JSON.stringify(state);
+    const result = advanceQuarter(state, {
+      contractOffers: [
+        { contractId: 'flexible-workload', offeredPriceCentsPerMWQuarter: 60_000_000 },
+        { contractId: 'asterion-contract-a', offeredPriceCentsPerMWQuarter: 40_000_000 },
+        { contractId: 'flexible-workload', offeredPriceCentsPerMWQuarter: 42_000_000 },
+      ],
+    });
+
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.issues.some((item) => item.code === 'command.contract_not_flexible')).toBe(true);
+    expect(result.issues.some((item) => item.code === 'command.contract_offer_duplicate')).toBe(true);
+    expect(JSON.stringify(state)).toBe(before);
+  });
+
   it('rejects invalid commands atomically and leaves the original state unchanged', () => {
     const state = initializeGame();
     const before = JSON.stringify(state);
