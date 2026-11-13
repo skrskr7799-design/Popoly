@@ -43,8 +43,8 @@ export function createComputeBottleneckState(seed = 2035): GameState {
         overheadComplianceInsuranceCents: moneyFromDollars(580_000),
       },
       contracts: [
-        { id: 'asterion-contract-a', customerId: 'asterion-ai', providerId: 'nodeworks', workloadMW: 8, priceCentsPerMWQuarter: moneyFromDollars(510_000), flexibility: 'contracted' },
-        { id: 'asterion-contract-b', customerId: 'asterion-ai', providerId: 'nodeworks', workloadMW: 5, priceCentsPerMWQuarter: moneyFromDollars(485_000), flexibility: 'contracted' },
+        { id: 'asterion-contract-a', customerId: 'asterion-ai', providerId: 'nodeworks', workloadMW: 8, priceCentsPerMWQuarter: moneyFromDollars(510_000), flexibility: 'contracted', termEndQuarter: 4, renewalNoticeQuarters: 2, minimumWorkloadMW: 7.5 },
+        { id: 'asterion-contract-b', customerId: 'asterion-ai', providerId: 'nodeworks', workloadMW: 5, priceCentsPerMWQuarter: moneyFromDollars(485_000), flexibility: 'contracted', termEndQuarter: 5, renewalNoticeQuarters: 2, minimumWorkloadMW: 4 },
         { id: 'flexible-workload', customerId: 'asterion-ai', providerId: 'nodeworks', workloadMW: 4, priceCentsPerMWQuarter: moneyFromDollars(415_000), flexibility: 'flexible' },
       ],
     }],
@@ -55,7 +55,7 @@ export function createComputeBottleneckState(seed = 2035): GameState {
     }],
     actors: [
       { organizationId: 'kestrel-compute', goals: ['expand-capacity', 'protect-anchor-contracts', 'preserve-liquidity'], hiddenMetrics: { effectiveCapacityMinMW: 22, effectiveCapacityMaxMW: 26, effectiveCapacityMW: 24, expansionPipelineQuarters: 0, deliveredWorkloadMinMW: 17, deliveredWorkloadMaxMW: 21, currentWorkloadMW: 19, reliabilityMin: 0.96, reliabilityMax: 0.98, reliability: 0.975, priceCentsPerMWQuarter: 40_500_000 } },
-      { organizationId: 'asterion-ai', goals: ['secure-reliable-compute', 'diversify-suppliers', 'reduce-unit-cost'], hiddenMetrics: { demandMW: 28, nodeworksContractMW: 13, kestrelContractMW: 10, flexibleDemandMW: 5, nodeworksFlexibleMW: 4, kestrelFlexibleMW: 0, otherFlexibleMW: 1, otherProviderCapacityMW: 16, otherProviderReliability: 0.965, otherProviderPriceCentsPerMWQuarter: 43_000_000, maxFlexiblePriceCentsPerMWQuarter: 44_000_000 } },
+      { organizationId: 'asterion-ai', goals: ['secure-reliable-compute', 'diversify-suppliers', 'reduce-unit-cost'], hiddenMetrics: { demandMW: 28, nodeworksContractMW: 13, kestrelContractMW: 10, flexibleDemandMW: 5, nodeworksFlexibleMW: 4, kestrelFlexibleMW: 0, otherFlexibleMW: 1, otherProviderCapacityMW: 16, otherProviderReliability: 0.965, otherProviderPriceCentsPerMWQuarter: 43_000_000, maxFlexiblePriceCentsPerMWQuarter: 44_000_000, 'renewalMaxPrice:asterion-contract-a': 53_500_000, 'renewalMaxPrice:asterion-contract-b': 51_000_000, 'renewalMinVolume:asterion-contract-a': 7.5, 'renewalMinVolume:asterion-contract-b': 4 } },
       { organizationId: 'solara-grid', goals: ['grid-stability', 'predictable-revenue', 'regulatory-compliance'], hiddenMetrics: { regionalHeadroomMW: 6 } },
       { organizationId: 'silicon-vein', goals: ['maximize-margin', 'prioritize-strategic-buyers'], hiddenMetrics: { deliveryLeadQuarters: 2, rushPremium: 0.25 } },
       { organizationId: 'regional-infrastructure-authority', goals: ['grid-resilience', 'competition', 'regional-jobs', 'investment'], hiddenMetrics: {} },
