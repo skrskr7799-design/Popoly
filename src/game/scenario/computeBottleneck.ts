@@ -43,8 +43,8 @@ export function createComputeBottleneckState(seed = 2035): GameState {
         overheadComplianceInsuranceCents: moneyFromDollars(580_000),
       },
       contracts: [
-        { id: 'asterion-contract-a', customerId: 'asterion-ai', providerId: 'nodeworks', workloadMW: 8, priceCentsPerMWQuarter: moneyFromDollars(510_000), flexibility: 'contracted', termEndQuarter: 4, renewalNoticeQuarters: 2, minimumWorkloadMW: 7.5 },
-        { id: 'asterion-contract-b', customerId: 'asterion-ai', providerId: 'nodeworks', workloadMW: 5, priceCentsPerMWQuarter: moneyFromDollars(485_000), flexibility: 'contracted', termEndQuarter: 5, renewalNoticeQuarters: 2, minimumWorkloadMW: 4 },
+        { id: 'asterion-contract-a', customerId: 'asterion-ai', providerId: 'nodeworks', workloadMW: 8, priceCentsPerMWQuarter: moneyFromDollars(510_000), flexibility: 'contracted', termEndQuarter: 4, renewalNoticeQuarters: 2, minimumWorkloadMW: 7.5, slaTargetReliability: 0.98, slaServiceCreditBps: 500 },
+        { id: 'asterion-contract-b', customerId: 'asterion-ai', providerId: 'nodeworks', workloadMW: 5, priceCentsPerMWQuarter: moneyFromDollars(485_000), flexibility: 'contracted', termEndQuarter: 5, renewalNoticeQuarters: 2, minimumWorkloadMW: 4, slaTargetReliability: 0.98, slaServiceCreditBps: 500 },
         { id: 'flexible-workload', customerId: 'asterion-ai', providerId: 'nodeworks', workloadMW: 4, priceCentsPerMWQuarter: moneyFromDollars(415_000), flexibility: 'flexible' },
       ],
     }],
