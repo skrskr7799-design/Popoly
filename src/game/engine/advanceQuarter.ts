@@ -809,15 +809,16 @@ export function advanceQuarter(state: GameState, commands: QuarterCommands = {})
     const interestReceivedByLender = new Map<string, number>();
     const unpaidInterestByDebt = new Map<string, number>();
 
-    // Interest is serviced first, in the stable order of the debt ledger.
+    // Each instrument is serviced in ledger order: its interest first, then its own scheduled principal.
+    const scheduledByDebt = new Map(scheduledDue.map((due) => [due.debtId, due]));
     for (const debt of candidate.debts) {
       const accrued = interestAccrualByDebt.get(debt.id) ?? 0;
       const openingArrears = debt.arrearsInterestCents ?? 0;
       const totalDue = openingArrears + accrued;
-      const available = availableByBorrower.get(debt.borrowerId) ?? 0;
+      let available = availableByBorrower.get(debt.borrowerId) ?? 0;
       const paid = Math.min(Math.max(0, available), totalDue);
       const closingArrears = totalDue - paid;
-      availableByBorrower.set(debt.borrowerId, available - paid);
+      available -= paid;
       if (paid > 0) {
         interestPaidByBorrower.set(debt.borrowerId, (interestPaidByBorrower.get(debt.borrowerId) ?? 0) + paid);
         if (debt.lenderId) interestReceivedByLender.set(debt.lenderId,
@@ -832,19 +833,18 @@ export function advanceQuarter(state: GameState, commands: QuarterCommands = {})
         closingInterestArrearsCents: moneyFromCents(closingArrears),
         missedContractualService: closingArrears > 0,
       });
+
+      const principalDue = scheduledByDebt.get(debt.id);
+      if (principalDue) {
+        if (available >= principalDue.principalCents) {
+          available -= principalDue.principalCents;
+        } else {
+          unpaidPrincipalByDebt.set(debt.id, Math.min(debt.principalCents, principalDue.principalCents));
+        }
+      }
+      availableByBorrower.set(debt.borrowerId, available);
     }
     const arrearsLines: NonNullable<QuarterReport['debtArrears']> = [];
-    const unpaidPrincipalByDebt = new Map<string, number>();
-    // Only after all interest has been allocated do scheduled/maturity principal payments run.
-    for (const due of scheduledDue) {
-      const debt = candidate.debts.find((item) => item.id === due.debtId)!;
-      const available = availableByBorrower.get(debt.borrowerId) ?? 0;
-      if (available >= due.principalCents) {
-        availableByBorrower.set(debt.borrowerId, available - due.principalCents);
-      } else {
-        unpaidPrincipalByDebt.set(debt.id, Math.min(debt.principalCents, due.principalCents));
-      }
-    }
 
     // Voluntary principal repayments are explicit commitments, but rank behind all contractual service.
     for (const payment of voluntaryRepayments) {
