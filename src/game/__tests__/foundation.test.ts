@@ -289,6 +289,36 @@ describe('autonomous world simulation', () => {
       action.actorId === 'kestrel-compute' && action.kind === 'capacity-expansion-delayed')).toBe(true);
   });
 
+  it('reallocates only flexible Asterion demand using price, reliability, capacity and concentration', () => {
+    const result = advanceQuarter(initializeGame(2035));
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    const asterion = result.state.actors.find((actor) => actor.organizationId === 'asterion-ai')!;
+    const allocationTotal = (asterion.hiddenMetrics.nodeworksFlexibleMW ?? 0) + (asterion.hiddenMetrics.kestrelFlexibleMW ?? 0) + (asterion.hiddenMetrics.otherFlexibleMW ?? 0);
+    const flexibleDemand = asterion.hiddenMetrics.flexibleDemandMW ?? 0;
+    expect(allocationTotal).toBeCloseTo(flexibleDemand, 8);
+    expect(asterion.hiddenMetrics.nodeworksFlexibleMW).toBeGreaterThan(0);
+    expect(asterion.hiddenMetrics.kestrelFlexibleMW).toBeGreaterThan(0);
+    expect(asterion.hiddenMetrics.otherFlexibleMW).toBeGreaterThan(0);
+    expect(asterion.hiddenMetrics.nodeworksFlexibleMW).toBeLessThanOrEqual(6.7);
+    expect(result.state.operatingCompanies[0]!.contracts.find((contract) => contract.flexibility === 'contracted')!.workloadMW).toBe(8);
+    expect(result.state.operatingCompanies[0]!.contracts.find((contract) => contract.id === 'flexible-workload')!.workloadMW).toBeCloseTo(asterion.hiddenMetrics.nodeworksFlexibleMW!, 8);
+    expect(result.state.operatingCompanies[0]!.deliveredWorkloadMW).toBeCloseTo(13 + asterion.hiddenMetrics.nodeworksFlexibleMW!, 8);
+    expect(result.report.actorActions?.some((action) => action.kind === 'customer-allocation')).toBe(true);
+  });
+
+  it('keeps customer allocation deterministic and does not expose rival allocation metrics in public action text', () => {
+    const first = advanceQuarter(initializeGame(77));
+    const second = advanceQuarter(initializeGame(77));
+    expect(first.ok).toBe(true);
+    expect(second.ok).toBe(true);
+    if (!first.ok || !second.ok) return;
+    const firstCustomer = first.state.actors.find((actor) => actor.organizationId === 'asterion-ai')!;
+    const secondCustomer = second.state.actors.find((actor) => actor.organizationId === 'asterion-ai')!;
+    expect(firstCustomer.hiddenMetrics).toEqual(secondCustomer.hiddenMetrics);
+    const action = first.report.actorActions?.find((item) => item.kind === 'customer-allocation');
+    expect(action?.summary).not.toMatch(/[0-9]/);
+  });
   it('produces the same autonomous world outcome from the same seed and quarter', () => {
     const first = advanceQuarter(initializeGame(12345));
     const second = advanceQuarter(initializeGame(12345));
