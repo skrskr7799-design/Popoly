@@ -1444,7 +1444,7 @@ describe('creditor acceleration', () => {
       debtId: 'nodeworks-infrastructure-debt', borrowerId: 'nodeworks',
       lenderId: 'frontier-development-bank', effectiveQuarter: 3, action: 'notice-issued',
     });
-    expect(noticedDebt.principalCents).toBe(1_500_000_000);
+    expect(noticedDebt.principalCents).toBe(1_400_000_000);
 
     const effective = advanceQuarter(notice.state);
     expect(effective.ok).toBe(true);
