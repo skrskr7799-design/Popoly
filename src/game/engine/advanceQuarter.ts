@@ -794,24 +794,26 @@ export function advanceQuarter(state: GameState, commands: QuarterCommands = {})
       .filter((item) => !refinancingDebtIds.has(item.debtId));
     const voluntaryRepayments: ResolvedDebtRepayment[] = (commands.debtRepayments ?? [])
       .map((item) => ({ ...item, repaymentType: 'voluntary' as const }));
-    const scheduledByBorrower = new Map<string, number>();
     const voluntaryByBorrower = new Map<string, number>();
-    for (const due of scheduledDue) {
-      const debt = candidate.debts.find((item) => item.id === due.debtId)!;
-      scheduledByBorrower.set(debt.borrowerId, (scheduledByBorrower.get(debt.borrowerId) ?? 0) + due.principalCents);
-    }
     for (const payment of voluntaryRepayments) {
       const debt = candidate.debts.find((item) => item.id === payment.debtId)!;
       voluntaryByBorrower.set(debt.borrowerId, (voluntaryByBorrower.get(debt.borrowerId) ?? 0) + payment.principalCents);
     }
+    // Allocate opening liquidity in debt-ledger order. A shortfall on one
+    // instrument must not incorrectly put every other instrument into arrears.
+    const availableByBorrower = new Map(candidate.organizations.map((borrower) => {
+      const projectReserve = borrower.id === candidate.holding.organizationId ? cashCommitted : 0;
+      return [borrower.id, borrower.cashCents -
+        (voluntaryByBorrower.get(borrower.id) ?? 0) - projectReserve] as const;
+    }));
     const arrearsLines: NonNullable<QuarterReport['debtArrears']> = [];
     const unpaidDebtIds = new Set<string>();
     for (const due of scheduledDue) {
       const debt = candidate.debts.find((item) => item.id === due.debtId)!;
-      const borrower = candidate.organizations.find((item) => item.id === debt.borrowerId)!;
-      const projectReserve = debt.borrowerId === candidate.holding.organizationId ? cashCommitted : 0;
-      const available = borrower.cashCents - (voluntaryByBorrower.get(debt.borrowerId) ?? 0) - projectReserve;
-      if (available < (scheduledByBorrower.get(debt.borrowerId) ?? 0)) {
+      const available = availableByBorrower.get(debt.borrowerId) ?? 0;
+      if (available >= due.principalCents) {
+        availableByBorrower.set(debt.borrowerId, available - due.principalCents);
+      } else {
         unpaidDebtIds.add(due.debtId);
         const overdueQuarters = (debt.overdueQuarters ?? 0) + 1;
         const status = overdueQuarters >= 2 ? 'defaulted' as const : 'overdue' as const;
