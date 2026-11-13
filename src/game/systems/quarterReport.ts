@@ -95,6 +95,14 @@ export interface DebtInterestReportLine {
   missedContractualService: boolean;
 }
 
+export interface CrossDefaultReportLine {
+  affectedDebtId: string;
+  triggerDebtId: string;
+  borrowerId: string;
+  lenderId?: string;
+  action: 'activated' | 'released';
+}
+
 export interface DebtArrearsReportLine {
   debtId: string;
   borrowerId: string;
@@ -120,6 +128,7 @@ export interface QuarterReport {
   contractRenewals?: ContractRenewalResult[];
   debtRepayments?: DebtRepaymentReportLine[];
   debtArrears?: DebtArrearsReportLine[];
+  crossDefaults?: CrossDefaultReportLine[];
   debtInterestService?: DebtInterestReportLine[];
   debtDrawdowns?: DebtDrawdownReportLine[];
   loanAcceptances?: LoanAcceptanceReportLine[];
