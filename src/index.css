@@ -24,7 +24,9 @@ button { font: inherit; }
 .pop-live-dot,.pop-status i { width: 6px; height: 6px; border-radius: 50%; background: #70d8b4; box-shadow: 0 0 12px #70d8b477; }
 .pop-side-nav { display: flex; flex-direction: column; gap: 5px; }
 .pop-nav-label { margin: 15px 9px 7px; color: #586a80; font-size: 9px; letter-spacing: .15em; }
-.pop-nav-item { display: flex; align-items: center; gap: 11px; padding: 11px 10px; border-radius: 8px; color: #8797aa; font-size: 12px; }
+.pop-nav-item { display: flex; align-items: center; gap: 11px; width: 100%; padding: 11px 10px; border: 0; border-radius: 8px; color: #8797aa; background: transparent; text-align: left; font-size: 12px; cursor: pointer; }
+.pop-nav-item:hover { color: #c6f1e4; background: #122321; }
+.pop-main [id] { scroll-margin-top: 24px; }
 .pop-nav-item.active { color: #c6f1e4; background: #16302e; }
 .pop-sidebar-bottom { margin-top: auto; padding: 17px 9px 0; border-top: 1px solid #1d2939; display: grid; gap: 7px; color: #74869a; font-size: 9px; letter-spacing: .12em; }
 .pop-sidebar-bottom small { color: #53647a; letter-spacing: 0; font-size: 10px; }
@@ -108,7 +110,8 @@ button { font: inherit; }
 .pop-intel:last-child { border-bottom: 0; padding-bottom: 0; }
 .pop-intel > div:first-child strong,.pop-intel > div:first-child span,.pop-intel-value strong,.pop-intel-value small { display: block; }
 .pop-intel > div:first-child strong { color: #cbd7e3; font-size: 10px; text-transform: capitalize; }
-.pop-intel > div:first-child span { margin-top: 4px; color: #75879c; font-size: 9px; }
+.pop-intel > div:first-child span { display: block; margin-top: 4px; color: #75879c; font-size: 9px; }
+.pop-intel > div:first-child small { display: block; margin-top: 5px; color: #687d91; font-size: 8px; line-height: 1.4; }
 .pop-intel-value { text-align: right; }
 .pop-intel-value strong { color: #a5d9c7; font-size: 12px; }
 .pop-intel-value small { margin-top: 4px; color: #75879c; font-size: 9px; }
