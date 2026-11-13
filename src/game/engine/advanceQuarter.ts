@@ -191,6 +191,10 @@ function validateCommands(state: GameState, commands: QuarterCommands): Validati
     repaymentByBorrower.set(debt.borrowerId, (repaymentByBorrower.get(debt.borrowerId) ?? 0) + repayment.principalCents);
   }
 
+  const borrowerHasBorrowingRestriction = (borrowerId: string) => state.debts.some((debt) =>
+    debt.borrowerId === borrowerId && debt.covenantTerms?.restrictAdditionalBorrowing === true &&
+    debt.covenantStatus === 'breached');
+
   const seenDebtDrawdowns = new Set<string>();
   const drawdownByFacility = new Map<string, number>();
   for (const drawdown of commands.debtDrawdowns ?? []) {
@@ -202,6 +206,10 @@ function validateCommands(state: GameState, commands: QuarterCommands): Validati
     const facility = state.debts.find((item) => item.id === drawdown.debtId);
     if (!facility) {
       issues.push(issue('command.debt_unknown', 'Credit drawdown references an unknown debt instrument.', drawdown.debtId));
+      continue;
+    }
+    if (borrowerHasBorrowingRestriction(facility.borrowerId)) {
+      issues.push(issue('command.covenant_borrowing_restricted', 'A breached debt covenant currently restricts additional borrowing by this legal entity.', facility.borrowerId));
       continue;
     }
     if (facility.facilityLimitCents === undefined) {
@@ -231,6 +239,9 @@ function validateCommands(state: GameState, commands: QuarterCommands): Validati
     if (!borrower || borrower.kind === 'lender') {
       issues.push(issue('command.credit_borrower_invalid', 'Credit request must identify an existing non-lender legal entity.', request.borrowerId));
     }
+    if (borrower && borrowerHasBorrowingRestriction(request.borrowerId)) {
+      issues.push(issue('command.covenant_borrowing_restricted', 'A breached debt covenant currently restricts new credit requests for this legal entity.', request.borrowerId));
+    }
     if (!Number.isSafeInteger(request.requestedPrincipalCents) || request.requestedPrincipalCents <= 0) {
       issues.push(issue('command.credit_amount_invalid', 'Requested principal must be a positive integer number of cents.', request.borrowerId));
     }
@@ -254,6 +265,10 @@ function validateCommands(state: GameState, commands: QuarterCommands): Validati
     const offer = state.loanOffers.find((item) => item.id === acceptance.offerId);
     if (!offer) {
       issues.push(issue('command.loan_offer_unknown', 'Loan acceptance references an unknown offer.', acceptance.offerId));
+      continue;
+    }
+    if (borrowerHasBorrowingRestriction(offer.borrowerId)) {
+      issues.push(issue('command.covenant_borrowing_restricted', 'A breached debt covenant currently restricts additional borrowing by this legal entity.', offer.borrowerId));
       continue;
     }
     if (offer.status !== 'available') {
@@ -626,11 +641,19 @@ export function advanceQuarter(state: GameState, commands: QuarterCommands = {})
           : lender.riskAppetite === 'growth' ? -0.001 : 0;
         const rate = Math.max(0.005, lender.baseQuarterlyInterestRate + riskSpread + appetiteAdjustment);
         const offerId = `${lender.organizationId}-${borrower.id}-q${candidate.quarter}`;
+        const covenantTerms = {
+          minimumDebtServiceCoverage: lender.riskAppetite === 'conservative' ? 1.3 : lender.riskAppetite === 'growth' ? 1.05 : 1.15,
+          maximumDebtToAnnualCashFlow: lender.riskAppetite === 'conservative' ? 3.0 : lender.riskAppetite === 'growth' ? 4.5 : 3.75,
+          restrictAdditionalBorrowing: true,
+          graceQuarters: lender.riskAppetite === 'conservative' ? 0 : 1,
+          breachRatePremium: 0.004,
+        };
         const offer = {
           id: offerId, lenderId: lender.organizationId, borrowerId: borrower.id,
           principalCents: moneyFromCents(amount), quarterlyInterestRate: Number(rate.toFixed(6)),
           maturityQuarter: candidate.quarter + request.termQuarters,
           expiresAfterQuarter: candidate.quarter + 1,
+          covenantTerms,
           ...(request.collateralDescription ? { collateralDescription: request.collateralDescription } : {}),
           creditScore: assessment.score, creditRating: assessment.rating, status: 'available' as const,
         };
@@ -761,6 +784,11 @@ export function advanceQuarter(state: GameState, commands: QuarterCommands = {})
           id: `loan-${offer.id}`, borrowerId: offer.borrowerId,
           principalCents: offer.principalCents, quarterlyInterestRate: offer.quarterlyInterestRate,
           maturityQuarter: offer.maturityQuarter,
+          covenantTerms: offer.covenantTerms ? { ...offer.covenantTerms } : undefined,
+          covenantStartQuarter: candidate.quarter + 1,
+          covenantBreachStreak: 0,
+          covenantStatus: 'compliant' as const,
+          covenantPenaltyApplied: false,
         }))],
       };
       const adjustBridge = (bridge: typeof report.entityCashBridges[number]) => {
@@ -811,6 +839,46 @@ export function advanceQuarter(state: GameState, commands: QuarterCommands = {})
     const renewals = resolveContractRenewals(candidate, commands.contractRenewals ?? []);
     candidate = renewals.state;
     report.contractRenewals = renewals.results;
+    const covenantUpdates = [];
+    candidate = {
+      ...candidate,
+      debts: candidate.debts.map((debt) => {
+        const terms = debt.covenantTerms;
+        if (!terms || (debt.covenantStartQuarter ?? 1) > report.quarter || debt.principalCents <= 0) return debt;
+        const borrower = candidate.organizations.find((item) => item.id === debt.borrowerId);
+        const operatingCashFlow = report.companies.find((item) => item.companyId === debt.borrowerId)?.operations.operatingCashContributionCents ?? moneyFromCents(0);
+        const borrowerDebts = candidate.debts.filter((item) => item.borrowerId === debt.borrowerId && item.principalCents > 0);
+        const interestAndScheduled = borrowerDebts.reduce((sum, item) =>
+          sum + Math.round(item.principalCents * item.quarterlyInterestRate) + (item.scheduledPrincipalCentsPerQuarter ?? 0), 0);
+        const dscr = interestAndScheduled > 0 ? operatingCashFlow / interestAndScheduled : operatingCashFlow > 0 ? 10 : 0;
+        const annualCashFlowProxy = Math.max(operatingCashFlow * 4, borrower?.cashCents ?? 0, 1);
+        const leverage = (borrower?.debtCents ?? 0) / annualCashFlowProxy;
+        const reasons: string[] = [];
+        if (terms.minimumDebtServiceCoverage !== undefined && dscr < terms.minimumDebtServiceCoverage) reasons.push('debt-service coverage below covenant minimum');
+        if (terms.maximumDebtToAnnualCashFlow !== undefined && leverage > terms.maximumDebtToAnnualCashFlow) reasons.push('debt-to-annual-cash-flow above covenant maximum');
+        const breached = reasons.length > 0;
+        const breachStreak = breached ? (debt.covenantBreachStreak ?? 0) + 1 : 0;
+        const graceQuarters = terms.graceQuarters ?? 0;
+        const status = !breached ? 'compliant' as const : breachStreak <= graceQuarters ? 'grace' as const : 'breached' as const;
+        const applyPenalty = status === 'breached' && !debt.covenantPenaltyApplied && (terms.breachRatePremium ?? 0) > 0;
+        const penalty = applyPenalty ? terms.breachRatePremium ?? 0 : 0;
+        covenantUpdates.push({
+          debtId: debt.id, borrowerId: debt.borrowerId, status, breachStreak,
+          debtServiceCoverage: Number.isFinite(dscr) ? dscr : 0,
+          debtToAnnualCashFlow: Number.isFinite(leverage) ? leverage : 0,
+          reasons, ...(penalty > 0 ? { ratePenaltyApplied: penalty } : {}),
+        });
+        return {
+          ...debt,
+          quarterlyInterestRate: debt.quarterlyInterestRate + penalty,
+          covenantBreachStreak: breachStreak,
+          covenantStatus: status,
+          covenantPenaltyApplied: debt.covenantPenaltyApplied === true || applyPenalty,
+        };
+      }),
+    };
+    if (covenantUpdates.length > 0) report.covenantUpdates = covenantUpdates;
+
     const autonomousTurn = advanceAutonomousActors(candidate, serviceSnapshot);
     candidate = autonomousTurn.state;
     const closingCash = new Map(report.entityCashBridges.map((bridge) => [
