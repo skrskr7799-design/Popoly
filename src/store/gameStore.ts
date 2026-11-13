@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import type { GameState, Player, Company, ShareHolding, Loan } from '../entities/types';
 import { INITIAL_COMPANIES } from '../data/companies';
+import { GAME_EVENTS, pickWeightedEvent, type GameEvent } from '../data/events';
 
 interface GameStore extends GameState {
   initGame: (playerNames: string[]) => void;
@@ -15,6 +16,8 @@ interface GameStore extends GameState {
   recalculateControl: () => void;
   payDividends: () => void;
   accrueInterest: () => void;
+  triggerEvent: () => void;
+  syncCreditWithReputation: () => void;
   runBotTurn: () => void;
 }
 
@@ -49,11 +52,16 @@ function applyPriceImpact(company: Company, amount: number, isBuy: boolean): Com
   };
 }
 
-function getInterestRate(creditRating: number): number {
-  // Higher rating = lower interest. Base 8%.
-  const base = 0.08;
-  const modifier = (70 - creditRating) * 0.0015;
-  return Math.max(0.04, Math.min(0.18, base + modifier));
+/** Interest rate now strongly influenced by reputation + creditRating */
+function getInterestRate(creditRating: number, reputation: number): number {
+  const base = 0.075;
+  const creditMod = (70 - creditRating) * 0.0018;
+  const repMod = (50 - reputation) * 0.0012;
+  return Math.max(0.035, Math.min(0.22, base + creditMod + repMod));
+}
+
+function getMaxDebt(creditRating: number, reputation: number): number {
+  return (creditRating * 180_000) + (reputation * 80_000);
 }
 
 export const useGameStore = create<GameStore>((set, get) => ({
@@ -83,7 +91,8 @@ export const useGameStore = create<GameStore>((set, get) => ({
       actionPointsRemaining: 3,
       log: [
         'Game initialized. Welcome to Popoly: Tech Dominion.',
-        '8 companies listed. Starting capital: $10M. Bank is open for loans.',
+        '8 companies listed. Starting capital: $10M. Bank is open.',
+        'Events can trigger at the start of rounds.',
         "--- You's turn ---",
       ],
     });
@@ -91,7 +100,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
 
   addLog: (message: string) => {
     set((state) => ({
-      log: [...state.log, message].slice(-140),
+      log: [...state.log, message].slice(-160),
     }));
   },
 
@@ -176,7 +185,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
     get().recalculateControl();
     const newPrice = updatedCompanies.find((c) => c.id === companyId)?.sharePrice;
     get().addLog(
-      `${player.name} bought ${amount} ${company.name} @ $${company.sharePrice} → $${newPrice} (spent $${cost.toLocaleString()})`
+      `${player.name} bought ${amount} ${company.name} @ $${company.sharePrice} → $${newPrice}`
     );
     return true;
   },
@@ -224,7 +233,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
     get().recalculateControl();
     const newPrice = updatedCompanies.find((c) => c.id === companyId)?.sharePrice;
     get().addLog(
-      `${player.name} sold ${amount} ${company.name} @ $${company.sharePrice} → $${newPrice} (gained $${proceeds.toLocaleString()})`
+      `${player.name} sold ${amount} ${company.name} @ $${company.sharePrice} → $${newPrice}`
     );
     return true;
   },
@@ -243,17 +252,16 @@ export const useGameStore = create<GameStore>((set, get) => ({
       return false;
     }
 
-    // Limit total debt roughly by credit rating
     const currentDebt = player.loans.reduce((sum, l) => sum + l.remaining, 0);
-    const maxDebt = player.creditRating * 200_000; // e.g. 70 rating → $14M max
+    const maxDebt = getMaxDebt(player.creditRating, player.reputation);
     if (currentDebt + amount > maxDebt) {
       state.addLog(
-        `${player.name} credit limit reached (max ~$${(maxDebt / 1e6).toFixed(1)}M).`
+        `${player.name} credit limit reached (~$${(maxDebt / 1e6).toFixed(1)}M). Improve reputation or credit.`
       );
       return false;
     }
 
-    const rate = getInterestRate(player.creditRating);
+    const rate = getInterestRate(player.creditRating, player.reputation);
     const loan: Loan = {
       id: `loan-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
       from: 'bank',
@@ -275,7 +283,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
     });
 
     get().addLog(
-      `${player.name} took a bank loan of $${amount.toLocaleString()} at ${(rate * 100).toFixed(1)}% interest.`
+      `${player.name} took $${amount.toLocaleString()} loan at ${(rate * 100).toFixed(1)}% (rep & credit affect rate).`
     );
     return true;
   },
@@ -297,24 +305,16 @@ export const useGameStore = create<GameStore>((set, get) => ({
 
     const updatedPlayers = players.map((p) => {
       if (p.id !== player.id) return p;
-
       const newLoans = p.loans
         .map((l) =>
           l.id === loanId ? { ...l, remaining: l.remaining - repayAmount } : l
         )
         .filter((l) => l.remaining > 0);
-
-      return {
-        ...p,
-        cash: p.cash - repayAmount,
-        loans: newLoans,
-      };
+      return { ...p, cash: p.cash - repayAmount, loans: newLoans };
     });
 
     set({ players: updatedPlayers });
-    get().addLog(
-      `${player.name} repaid $${repayAmount.toLocaleString()} of loan (${loanId.slice(-5)}).`
-    );
+    get().addLog(`${player.name} repaid $${repayAmount.toLocaleString()}.`);
     return true;
   },
 
@@ -339,98 +339,150 @@ export const useGameStore = create<GameStore>((set, get) => ({
 
     if (totalPaid > 0) {
       set({ players: updatedPlayers });
-      addLog(`Total dividends this round: $${totalPaid.toLocaleString()}.`);
+      addLog(`Total dividends: $${totalPaid.toLocaleString()}.`);
     }
   },
 
   accrueInterest: () => {
     const { players, addLog } = get();
-    let anyInterest = false;
+    let any = false;
 
     const updatedPlayers = players.map((player) => {
       if (player.loans.length === 0) return player;
-
       const newLoans = player.loans.map((loan) => {
-        const interest = Math.floor(loan.remaining * loan.interestRate * 0.25); // quarterly-ish feel per round
+        const interest = Math.floor(loan.remaining * loan.interestRate * 0.25);
         if (interest > 0) {
-          anyInterest = true;
+          any = true;
           addLog(
-            `${player.name} loan interest accrued: +$${interest.toLocaleString()} (${(loan.interestRate * 100).toFixed(1)}%)`
+            `${player.name} interest +$${interest.toLocaleString()} (${(loan.interestRate * 100).toFixed(1)}%)`
           );
         }
         return { ...loan, remaining: loan.remaining + interest };
       });
-
       return { ...player, loans: newLoans };
     });
 
-    if (anyInterest) set({ players: updatedPlayers });
+    if (any) set({ players: updatedPlayers });
+  },
+
+  syncCreditWithReputation: () => {
+    // Slow drift of creditRating toward reputation influence
+    const { players } = get();
+    const updated = players.map((p) => {
+      const target = 50 + Math.round((p.reputation - 50) * 0.4);
+      const next = p.creditRating + Math.sign(target - p.creditRating);
+      return { ...p, creditRating: Math.max(20, Math.min(95, next)) };
+    });
+    set({ players: updated });
+  },
+
+  triggerEvent: () => {
+    // ~70% chance of an event each new round
+    if (Math.random() > 0.72) {
+      get().addLog('No major market event this round.');
+      return;
+    }
+
+    const event = pickWeightedEvent(GAME_EVENTS);
+    get().addLog(`⚡ EVENT: ${event.title}`);
+    get().addLog(`   ${event.description}`);
+
+    const { companies, players } = get();
+    let updatedCompanies = [...companies];
+    let updatedPlayers = [...players];
+
+    const applyToCompany = (c: Company, e: GameEvent): Company => {
+      let next = { ...c };
+      if (e.effects.sharePriceMult) {
+        next.sharePrice = Math.max(5, Math.round(c.sharePrice * e.effects.sharePriceMult));
+        next.valuation = next.sharePrice * next.totalShares;
+      }
+      if (e.effects.cashFlowMult) {
+        next.cashFlow = Math.max(10, Math.round(c.cashFlow * e.effects.cashFlowMult));
+      }
+      if (e.effects.reputationDelta) {
+        next.reputation = Math.max(0, Math.min(100, c.reputation + e.effects.reputationDelta));
+      }
+      if (e.effects.securityDelta) {
+        next.securityLevel = Math.max(1, Math.min(10, c.securityLevel + e.effects.securityDelta));
+      }
+      return next;
+    };
+
+    if (event.target === 'global') {
+      updatedCompanies = companies.map((c) => applyToCompany(c, event));
+      if (event.effects.creditRatingDelta) {
+        updatedPlayers = players.map((p) => ({
+          ...p,
+          creditRating: Math.max(
+            20,
+            Math.min(95, p.creditRating + (event.effects.creditRatingDelta ?? 0))
+          ),
+        }));
+      }
+    } else if (event.target === 'sector' && event.sector) {
+      updatedCompanies = companies.map((c) =>
+        c.sector === event.sector ? applyToCompany(c, event) : c
+      );
+    }
+
+    set({ companies: updatedCompanies, players: updatedPlayers });
+    get().recalculateControl();
   },
 
   runBotTurn: () => {
-    const state = get();
     let guard = 0;
 
     while (get().actionPointsRemaining > 0 && guard < 6) {
       guard++;
-      const { currentPlayerIndex, players, companies, actionPointsRemaining } = get();
+      const { currentPlayerIndex, players, companies } = get();
       const bot = players[currentPlayerIndex];
       if (!bot || !bot.isBot) break;
 
-      // Score companies: prefer high cashFlow relative to price, and ones we can push toward control
       const scored = companies
         .map((c) => {
-          const owned = state.getPlayerShares(bot.id, c.id);
+          const owned = get().getPlayerShares(bot.id, c.id);
           const ownership = (owned / c.totalShares) * 100;
           const valueScore = c.cashFlow / Math.max(c.sharePrice, 1);
-          const controlBonus = ownership >= 30 && ownership < 50 ? 2.5 : ownership > 0 ? 1.2 : 1;
-          const random = 0.85 + Math.random() * 0.3;
+          const controlBonus = ownership >= 30 && ownership < 50 ? 2.8 : ownership > 0 ? 1.3 : 1;
+          const random = 0.8 + Math.random() * 0.4;
           return { company: c, score: valueScore * controlBonus * random, owned };
         })
         .sort((a, b) => b.score - a.score);
 
       let acted = false;
 
-      // Try to buy the best looking company
       for (const { company, owned } of scored) {
-        if (actionPointsRemaining <= 0) break;
-
+        if (get().actionPointsRemaining <= 0) break;
         const qty = owned > 0 && owned < company.totalShares * 0.5 ? 50 : 10;
         const cost = company.sharePrice * qty;
 
         if (bot.cash >= cost) {
-          const ok = get().buyShares(company.id, qty);
-          if (ok) {
+          if (get().buyShares(company.id, qty)) {
             acted = true;
             break;
           }
-        } else if (bot.cash < 2_000_000 && bot.loans.length < 2) {
-          // Sometimes take a loan if poor
-          const loanAmount = 2_000_000;
-          if (get().takeLoan(loanAmount)) {
+        } else if (bot.cash < 2_500_000 && bot.loans.length < 2) {
+          if (get().takeLoan(2_000_000)) {
             acted = true;
             break;
           }
         }
       }
 
-      // Occasional sell if overexposed or needs cash
-      if (!acted && bot.shares.length > 0 && Math.random() > 0.7) {
+      if (!acted && bot.shares.length > 0 && Math.random() > 0.65) {
         const holding = bot.shares[Math.floor(Math.random() * bot.shares.length)];
-        const sellQty = Math.min(20, holding.amount);
-        if (sellQty > 0) {
-          get().sellShares(holding.companyId, sellQty);
+        const sellQty = Math.min(25, holding.amount);
+        if (sellQty > 0 && get().sellShares(holding.companyId, sellQty)) {
           acted = true;
         }
       }
 
-      if (!acted) break; // nothing sensible to do
+      if (!acted) break;
     }
 
     const bot = get().players[get().currentPlayerIndex];
-    if (bot?.isBot) {
-      get().addLog(`${bot.name} finished its turn.`);
-    }
+    if (bot?.isBot) get().addLog(`${bot.name} finished its turn.`);
   },
 
   nextTurn: () => {
@@ -442,6 +494,8 @@ export const useGameStore = create<GameStore>((set, get) => ({
     if (isNewRound) {
       state.accrueInterest();
       state.payDividends();
+      state.syncCreditWithReputation();
+      state.triggerEvent();
       state.addLog(`=== Round ${turn + 1} begins ===`);
     }
 
@@ -456,7 +510,6 @@ export const useGameStore = create<GameStore>((set, get) => ({
     state.addLog(`--- ${nextPlayer.name}'s turn ---`);
 
     if (nextPlayer.isBot) {
-      // Run bot actions, then auto-advance
       setTimeout(() => {
         get().runBotTurn();
         setTimeout(() => {
@@ -464,8 +517,8 @@ export const useGameStore = create<GameStore>((set, get) => ({
           if (current.players[current.currentPlayerIndex]?.id === nextPlayer.id) {
             get().nextTurn();
           }
-        }, 450);
-      }, 280);
+        }, 420);
+      }, 260);
     }
   },
 }));
