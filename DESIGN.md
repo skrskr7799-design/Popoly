@@ -1,230 +1,149 @@
 # Popoly: Tech Dominion — Design Document
 
-**Version:** 0.1  
+**Version:** 0.3  
 **Last updated:** 2026-11-13  
-**Status:** Living document — source of truth for development
+**Status:** Living document — source of truth
 
 ---
 
 ## 1. Vision
 
-**Popoly** is a hardcore economic strategy browser game set in the near-future Big Tech world (≈ 2032–2040).
+Hardcore economic strategy set in near-future Big Tech (~2035).  
+Players are rival tech moguls competing through companies, shares, capital, reputation, and corporate espionage.
 
-Players are rival tech moguls competing for dominance through companies, shares, capital, reputation, and corporate espionage.
+Not a Monopoly clone. Deep calculation, high agency, friends will fight.
 
-It is **not** a classic Monopoly clone.  
-It is a deep, calculation-heavy game where friends will fight, scheme, and hate each other by the end of the session.
-
-**Core pillars:**
-- Deep, dynamic economy
-- Meaningful player agency and calculation
-- High-stakes corporate warfare (including dirty secrets)
-- Hybrid victory conditions
-- Beautiful, modern UI
-- Architecture ready for future multiplayer + optional blockchain layer
+**Pillars:** deep economy · meaningful decisions · corporate warfare (including dirt) · hybrid victory · modern UI · multiplayer-ready architecture · optional future blockchain layer
 
 ---
 
 ## 2. Target Experience
 
-- 2–4 players (bots for now, multiplayer later)
-- Session length: 60–120+ minutes (hardcore)
+- 2–4 players (bots now, multiplayer later)
+- 60–120+ min hardcore sessions
 - High skill ceiling
-- Strong social deduction + economic pressure
-- "I lost because of a bad decision, not because of pure luck"
+- "I lost because of decisions, not pure luck"
 
 ---
 
-## 3. Theme & Setting
+## 3. Implemented Systems (current build)
 
-**Year:** ~2035  
-**World:** Hyper-connected global tech ecosystem.  
-AI, compute, biotech, space infrastructure, energy, data and platforms are the new oil.
+### Market
+- 8 companies across 8 sectors
+- Buy / sell shares (costs 1 AP)
+- Dynamic prices (flow impact, phase-scaled)
+- Control at ≥50% ownership
+- Dividends from company cashFlow each new round
 
-Players control tech empires.  
-Companies are living entities with shares, talent, reputation, technologies and vulnerabilities.
+### Financing
+- Bank loans ($1M / $2M / $5M)
+- Interest depends on credit rating + reputation + economy phase
+- Debt limits scale with credit + reputation
+- Interest accrues each round
+- Repay anytime (no AP cost currently)
 
----
+### Reputation & Credit
+- Player reputation affects loan rates and max debt
+- Credit rating slowly drifts toward reputation
+- Company reputation hit by scandals and some events
+- Leaking dirt damages company + controlling player reputation
 
-## 4. Core Entities
+### Economy Phases
+Cycle: Innovation Boom → Hypergrowth → Bubble → Correction → Recovery → …
 
-### 4.1 Player
-- Cash
-- Portfolio of shares
-- Owned / controlled companies
-- Reputation score
-- Intelligence Network level + active operations
-- Credit rating / outstanding loans
-- Personal modifiers (from events, scandals, achievements)
+Each phase modifies:
+- Interest rate multiplier
+- Price impact of buys/sells
+- Dividend effectiveness
+- Espionage success bias
 
-### 4.2 Company
-- Type / Sector (Platform, AI & Compute, Infrastructure, Biotech, Energy, Space, Hardware, Data...)
-- Share structure (total shares, free float, controlled by whom)
-- Development level / Tech tree progress
-- Current valuation
-- Cash flow / Dividend policy
-- Security level (affects espionage difficulty)
-- Reputation / Public trust
-- Special abilities / Technologies unlocked
-- Hidden secrets (can be discovered via high-level espionage)
+Phases advance on a soft timer (min rounds + chance).
 
-### 4.3 Shares
-- Fungible within a company
-- Price is dynamic
-- Ownership % determines control and voting power
-- Dividends
+### Events
+Weighted random events at most new rounds.  
+Sector-targeted and global. Some prefer specific phases.  
+Effects: share price, cashFlow, reputation, security, credit rating.
 
-### 4.4 Economy State
-Global phases that shift the entire game:
-1. Innovation Boom
-2. Hypergrowth
-3. Bubble
-4. Correction / Crash
-5. Recovery
+### Espionage
+- Intelligence Network level (upgradeable)
+- Run Op: pay cash + 1 AP, roll vs company security
+- Success uncovers a secret (higher intel prefers higher severity)
+- Failure can be detected → personal reputation loss
+- LEAK: publish known secret → heavy price / rep / cashFlow damage; controller also hurt
+- Raise Security: defend controlled or ≥25% owned companies
 
-Affects: interest rates, valuations, building costs, talent availability, espionage effectiveness, event probabilities.
+### Bots
+- Score companies by cashFlow/price and control proximity
+- Take loans when cash-constrained
+- Upgrade intel, spy, leak high-severity secrets
+- Raise security on controlled companies
+- Auto-play their turns
 
----
-
-## 5. Key Systems
-
-### 5.1 Hybrid Board / Structure
-Not a classic ring.  
-More open / sector-based hybrid system that supports deep strategy while keeping spatial/positional tension.
-
-(Exact topology to be refined in next design pass)
-
-### 5.2 Actions & Turn Structure
-Players have limited **Action Points / Attention** per turn.  
-Most power comes from economic and intelligence decisions, not pure movement luck.
-
-Possible action categories:
-- Corporate development
-- Market operations (buy/sell shares, IPO, secondary offerings)
-- Financing (loans, bonds, player-to-player credit)
-- Intelligence operations
-- Diplomacy / deals
-- Defensive actions
-
-### 5.3 Espionage & Counter-Espionage
-High investment → high reward.
-
-Can uncover:
-- Corporate secrets
-- Personal scandals of key figures (CEO affairs, conflicts of interest, hidden connections to rivals, etc.)
-- Technology leaks
-- Upcoming moves
-
-Successful deep ops can:
-- Crash stock price
-- Destroy reputation
-- Cause talent flight
-- Trigger regulatory attention
-- Break partnerships
-
-Failed or detected ops can backfire heavily.
-
-Security level of a company strongly affects cost and success chance.
-
-### 5.4 Reputation System
-Affects:
-- Cost and availability of credit
-- Willingness of other players to deal
-- Talent retention
-- Event outcomes
-- Share price resilience
-
-Scandals, successful products, ethical choices, and public perception all matter.
-
-### 5.5 Financing
-- Bank / Central Reserve loans (dynamic interest)
-- Player-to-player loans & convertible notes
-- Corporate bonds
-- Credit rating system
-
-### 5.6 Victory Conditions (Hybrid)
-Multiple paths, scored together:
-- Survival / last empire standing
-- Final net worth + influence
-- Control of key strategic technologies / sectors
-- Achievement of major milestones (e.g. first AGI-related breakthrough under your control)
-
-Exact scoring formula will be balanced later.
+### Victory (hybrid)
+Score = Net Worth + control bonus + reputation bonus  
+Checks from round 12. Decisive lead or hard stop around round 20.  
+Winner screen with ranking.
 
 ---
 
-## 6. Blockchain Integration (Optional Layer)
+## 4. Action Point Economy (current)
 
-**Principle:** Core game is 100% playable and complete **off-chain**.
+Default 3 AP per turn.
 
-Optional on-chain features (future):
-- Minting of significant companies / empires / legendary technologies as NFTs or tokens
-- Persistent on-chain reputation and achievements
-- Secondary market for rare assets between sessions
-- Special "Decentralized League" mode
-- Transparent major corporate actions (optional)
+Costs 1 AP:
+- Buy shares
+- Sell shares
+- Take loan
+- Upgrade Intelligence
+- Run Espionage Op
+- Leak secret
+- Raise Security
 
-This fits the Big Tech near-future theme without forcing crypto UX on every player.
+End Turn returns control to next player (bots auto-resolve).
 
 ---
 
-## 7. Technical Architecture
+## 5. Still Open / Next Design Passes
 
-### Stack
-- **Vite + React 19 + TypeScript**
-- **Zustand** — game state
-- **Tailwind CSS** + custom design system
-- **Framer Motion** — animations
-- **lucide-react** — icons
+- Hybrid board / positional layer (sectors as map nodes, adjacency, influence)
+- Player-to-player loans and negotiated deals UI
+- Stronger bot personalities / difficulty tiers
+- Economy phase UI clarity and manual transition rules if desired
+- More company differentiation (unique abilities per sector)
+- Multiplayer (authoritative state)
+- Optional blockchain layer (mint empires, persistent reputation)
 
-### Principles
-- Strong typing for all game entities
-- Pure game logic separated from UI
-- Easy to add bots
-- Architecture prepared for multiplayer (authoritative state later)
-- Clean separation for future blockchain adapter
+---
 
-### Folder Structure (target)
+## 6. Technical
+
+- Vite + React 19 + TypeScript
+- Zustand store
+- Tailwind CSS v4
+- Data-driven events, secrets, phase config
+
+Folder intent:
 ```
 src/
-  core/           # Pure game logic, rules, economy simulation
-  entities/       # Types & factories for Player, Company, etc.
-  systems/        # Espionage, Market, Reputation, Economy phases...
-  store/          # Zustand stores
-  components/     # UI
-  hooks/
-  data/           # Static data (sectors, events, technologies...)
-  utils/
-  App.tsx
+  data/       companies, events, secrets, economy phases
+  entities/   types
+  store/      gameStore (rules + state)
+  components/ (to be split further)
+  App.tsx     shell UI
 ```
 
 ---
 
-## 8. Development Phases
+## 7. Balance Notes (v0.3)
 
-**Phase 0** (current): Project setup + this design document  
-**Phase 1**: Core data models + basic turn loop + simple UI shell  
-**Phase 2**: Companies, shares, basic market  
-**Phase 3**: Economy phases + financing  
-**Phase 4**: Espionage system  
-**Phase 5**: Reputation + events  
-**Phase 6**: Bots  
-**Phase 7**: Polish, balance, hybrid board visualization  
-**Phase 8**: Multiplayer foundation  
-**Phase 9**: Optional blockchain layer
+- Starting cash: $10M
+- Leak severity 1–10 scales price hit, company rep, cashFlow, controller rep
+- Intel upgrade cost scales with level
+- Espionage cost scales with target security; higher intel reduces cost slightly and improves odds
+- Victory not checked before round 12 to allow development
+
+Tune by playing 4-player bot games and adjusting multipliers in `economy.ts`, leak formulas, and event weights.
 
 ---
 
-## 9. Open Questions / Next Design Pass
-
-- Exact topology of the hybrid board/map
-- Detailed Action Point economy
-- Concrete list of company sectors and their unique mechanics
-- Balancing formulas for share price, interest rates, espionage success
-- How personal scandals mechanically resolve
-- Exact hybrid victory scoring
-
----
-
-**This document is the source of truth.**  
-All major design decisions should be reflected here before implementation.
+**This document is the source of truth.** Update it when systems change.
