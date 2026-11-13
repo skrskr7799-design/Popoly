@@ -27,6 +27,8 @@ The chosen direction is a **hybrid model**: corporate strategy is the starting i
 | [Core Loop Specification](docs/CORE_LOOP_SPEC.md) | Quarterly player loop, leadership capacity, campaign flow, and intelligence experience |
 | [Economy Model](docs/ECONOMY_MODEL.md) | Operating economics, accounting, energy, equipment, contracts, and ownership invariants |
 | [Technical Specification](docs/TECHNICAL_SPEC.md) | Simulation engine contract, commands, deterministic resolution, persistence, and tests |
+| [Scenario Data](docs/SCENARIO_DATA.md) | Initial Meridian Group, NodeWorks, regional market, actors, and balance hypotheses |
+| [Migration Map](docs/MIGRATION_MAP.md) | Mapping from the legacy stock-market prototype to the new simulation architecture |
 
 | Document | Purpose |
 |---|---|
