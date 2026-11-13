@@ -932,9 +932,12 @@ export function advanceQuarter(state: GameState, commands: QuarterCommands = {})
     const debtRepayments: ResolvedDebtRepayment[] = [...paidScheduled, ...voluntaryRepayments];
     if (debtRepayments.length > 0) {
       const repaymentByBorrower = new Map<string, number>();
+      const principalReceiptsByLender = new Map<string, number>();
       for (const repayment of debtRepayments) {
         const debt = candidate.debts.find((item) => item.id === repayment.debtId)!;
         repaymentByBorrower.set(debt.borrowerId, (repaymentByBorrower.get(debt.borrowerId) ?? 0) + repayment.principalCents);
+        if (debt.lenderId) principalReceiptsByLender.set(debt.lenderId,
+          (principalReceiptsByLender.get(debt.lenderId) ?? 0) + repayment.principalCents);
       }
       candidate = {
         ...candidate,
@@ -955,15 +958,24 @@ export function advanceQuarter(state: GameState, commands: QuarterCommands = {})
           const repayment = repaymentByBorrower.get(organization.id) ?? 0;
           return repayment > 0 ? { ...organization, debtCents: moneyFromCents(organization.debtCents - repayment) } : organization;
         }),
+        lenders: candidate.lenders.map((lender) => {
+          const recovered = principalReceiptsByLender.get(lender.organizationId) ?? 0;
+          return recovered > 0
+            ? { ...lender, availableCapacityCents: moneyFromCents(lender.availableCapacityCents + recovered) }
+            : lender;
+        }),
       };
       const adjustBridge = (bridge: typeof report.entityCashBridges[number]) => {
         const repayment = repaymentByBorrower.get(bridge.organizationId) ?? 0;
-        if (repayment === 0) return bridge;
+        const principalReceived = principalReceiptsByLender.get(bridge.organizationId) ?? 0;
+        if (repayment === 0 && principalReceived === 0) return bridge;
+        const netPrincipalFlow = principalReceived - repayment;
         return {
           ...bridge,
-          financingCashFlowCents: moneyFromCents(bridge.financingCashFlowCents - repayment),
-          netCashChangeCents: moneyFromCents(bridge.netCashChangeCents - repayment),
-          closingCashCents: moneyFromCents(bridge.closingCashCents - repayment),
+          principalReceivedCents: moneyFromCents(bridge.principalReceivedCents + principalReceived),
+          financingCashFlowCents: moneyFromCents(bridge.financingCashFlowCents + netPrincipalFlow),
+          netCashChangeCents: moneyFromCents(bridge.netCashChangeCents + netPrincipalFlow),
+          closingCashCents: moneyFromCents(bridge.closingCashCents + netPrincipalFlow),
         };
       };
       report.entityCashBridges = report.entityCashBridges.map(adjustBridge);
@@ -974,6 +986,8 @@ export function advanceQuarter(state: GameState, commands: QuarterCommands = {})
       report.debtRepayments = debtRepayments.map((repayment) => ({
         debtId: repayment.debtId,
         borrowerId: candidate.debts.find((debt) => debt.id === repayment.debtId)!.borrowerId,
+        ...(candidate.debts.find((debt) => debt.id === repayment.debtId)!.lenderId
+          ? { lenderId: candidate.debts.find((debt) => debt.id === repayment.debtId)!.lenderId } : {}),
         principalCents: moneyFromCents(repayment.principalCents),
         repaymentType: repayment.repaymentType,
       }));
@@ -1108,7 +1122,9 @@ export function advanceQuarter(state: GameState, commands: QuarterCommands = {})
         const recovered = repaymentReceiptsByLender.get(bridge.organizationId) ?? 0;
         const flow = received - lent - payoff - fee + recovered;
         if (flow === 0) return bridge;
-        return { ...bridge, financingCashFlowCents: moneyFromCents(bridge.financingCashFlowCents + flow),
+        return { ...bridge,
+          principalReceivedCents: moneyFromCents(bridge.principalReceivedCents + recovered),
+          financingCashFlowCents: moneyFromCents(bridge.financingCashFlowCents + flow),
           netCashChangeCents: moneyFromCents(bridge.netCashChangeCents + flow),
           closingCashCents: moneyFromCents(bridge.closingCashCents + flow) };
       };
