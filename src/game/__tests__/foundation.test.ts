@@ -268,7 +268,7 @@ describe('explicit debt principal repayments', () => {
       lenderId: 'frontier-development-bank',
       principalCents: 100_000_000 as typeof state.debts[number]['principalCents'],
       quarterlyInterestRate: 0.02,
-      scheduledPrincipalCentsPerQuarter: 70_000_000 as typeof state.debts[number]['principalCents'],
+      scheduledPrincipalCentsPerQuarter: 300_000_000 as typeof state.debts[number]['principalCents'],
     });
     state.organizations = state.organizations.map((organization) => organization.id === 'nodeworks'
       ? { ...organization, cashCents: 50_000_000 as typeof organization.cashCents,
@@ -283,7 +283,7 @@ describe('explicit debt principal repayments', () => {
     expect(firstDebt.principalCents).toBe(1_370_000_000);
     expect(firstDebt.paymentStatus).toBe('current');
     expect(secondDebt.principalCents).toBe(100_000_000);
-    expect(secondDebt.arrearsPrincipalCents).toBe(70_000_000);
+    expect(secondDebt.arrearsPrincipalCents).toBe(300_000_000);
     expect(secondDebt.paymentStatus).toBe('overdue');
     expect(result.report.debtRepayments).toContainEqual({
       debtId: 'nodeworks-infrastructure-debt', borrowerId: 'nodeworks',
