@@ -178,6 +178,8 @@ A contract defines:
 
 A customer may split demand across suppliers. Supplier selection should consider price, reliability, available capacity, concentration, and strategic relationships.
 
+For the first negotiation slice, the player may propose a new price for an existing flexible customer contract. The customer evaluates it against a private reservation price and may accept, counteroffer, or reject. Accepted terms begin next quarter; current-quarter delivery and cash reporting are not rewritten retroactively. Counteroffers and rejections leave the existing contract unchanged.
+
 ## 11. Valuation and ownership
 
 Do not use the old prototype's arbitrary share-price movement as the economy.
