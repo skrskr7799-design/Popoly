@@ -3,17 +3,24 @@ import { moneyFromCents } from '../domain/money';
 import type { GameState, StrategicProjectState, ValidationIssue } from '../domain/types';
 import { getInitiativeDefinition } from '../scenario/initiatives';
 import { advanceAutonomousActors } from '../systems/actors';
-import { buildQuarterReport, type QuarterReport } from '../systems/quarterReport';
+import { buildQuarterReport, type ContractNegotiationResult, type QuarterReport } from '../systems/quarterReport';
 
 export interface WorkloadDecision {
   companyId: string;
   desiredWorkloadMW: number;
 }
 
+export interface ContractOfferCommand {
+  contractId: string;
+  offeredPriceCentsPerMWQuarter: number;
+}
+
 export interface QuarterCommands {
   workloadDecisions?: WorkloadDecision[];
   /** Initiatives to sponsor this quarter. Costs and effects come from scenario data. */
   launchInitiatives?: string[];
+  /** Price proposal for an existing flexible customer contract; accepted terms begin next quarter. */
+  contractOffers?: ContractOfferCommand[];
 }
 
 export interface AdvanceQuarterSuccess {
@@ -94,6 +101,31 @@ function validateCommands(state: GameState, commands: QuarterCommands): Validati
     }
   }
 
+  const seenContractOffers = new Set<string>();
+  for (const offer of commands.contractOffers ?? []) {
+    if (seenContractOffers.has(offer.contractId)) {
+      issues.push(issue('command.contract_offer_duplicate', 'Only one offer per contract is allowed in a quarter.', offer.contractId));
+      continue;
+    }
+    seenContractOffers.add(offer.contractId);
+    const company = state.operatingCompanies.find((item) =>
+      item.contracts.some((contract) => contract.id === offer.contractId));
+    const contract = company?.contracts.find((item) => item.id === offer.contractId);
+    if (!company || !contract) {
+      issues.push(issue('command.contract_unknown', 'Contract offer references an unknown contract.', offer.contractId));
+      continue;
+    }
+    if (contract.flexibility !== 'flexible') {
+      issues.push(issue('command.contract_not_flexible', 'Only flexible contracts can be renegotiated in this scenario.', offer.contractId));
+    }
+    if (!Number.isSafeInteger(offer.offeredPriceCentsPerMWQuarter) || offer.offeredPriceCentsPerMWQuarter <= 0) {
+      issues.push(issue('command.contract_price_invalid', 'Offered contract price must be a positive integer number of cents.', offer.contractId));
+    }
+    if (!state.actors.some((actor) => actor.organizationId === contract.customerId)) {
+      issues.push(issue('command.contract_customer_missing', 'Contract customer is not present in the autonomous world.', contract.customerId));
+    }
+  }
+
   const launches = commands.launchInitiatives ?? [];
   if (launches.includes('secure-equipment-allocation')) {
     const market = state.regionalMarkets[0];
@@ -139,6 +171,66 @@ function validateCommands(state: GameState, commands: QuarterCommands): Validati
     issues.push(issue('command.insufficient_holding_cash', 'The holding company does not have enough available cash for these commitments.', state.holding.organizationId));
   }
   return issues;
+}
+
+/**
+ * Customer evaluates a price proposal against its private reservation price.
+ * Accepted terms are applied after this quarter's report, so they affect the
+ * next operating quarter rather than rewriting already-delivered service.
+ */
+function resolveContractOffers(
+  state: GameState,
+  offers: ContractOfferCommand[],
+): { state: GameState; results: ContractNegotiationResult[] } {
+  let operatingCompanies = state.operatingCompanies;
+  const results: ContractNegotiationResult[] = [];
+
+  for (const offer of offers) {
+    let resolved = false;
+    operatingCompanies = operatingCompanies.map((company) => {
+      const contract = company.contracts.find((item) => item.id === offer.contractId);
+      if (!contract) return company;
+      resolved = true;
+      const customer = state.actors.find((actor) => actor.organizationId === contract.customerId);
+      const reservationPrice = customer?.hiddenMetrics.maxFlexiblePriceCentsPerMWQuarter ?? 44_000_000;
+      const offeredPrice = offer.offeredPriceCentsPerMWQuarter;
+
+      if (offeredPrice <= reservationPrice) {
+        results.push({
+          contractId: contract.id, providerId: contract.providerId, customerId: contract.customerId,
+          offeredPriceCents: moneyFromCents(offeredPrice), status: 'accepted',
+          message: 'Asterion accepted the revised flexible-service price. The new rate takes effect next quarter.',
+        });
+        return {
+          ...company,
+          contracts: company.contracts.map((item) => item.id === contract.id
+            ? { ...item, priceCentsPerMWQuarter: moneyFromCents(offeredPrice) }
+            : item),
+        };
+      }
+
+      if (offeredPrice <= Math.round(reservationPrice * 1.1)) {
+        results.push({
+          contractId: contract.id, providerId: contract.providerId, customerId: contract.customerId,
+          offeredPriceCents: moneyFromCents(offeredPrice), status: 'countered',
+          counterPriceCents: moneyFromCents(reservationPrice),
+          message: 'Asterion declined the proposed rate but returned a lower counteroffer.',
+        });
+      } else {
+        results.push({
+          contractId: contract.id, providerId: contract.providerId, customerId: contract.customerId,
+          offeredPriceCents: moneyFromCents(offeredPrice), status: 'rejected',
+          message: 'Asterion rejected the proposed rate as commercially uncompetitive.',
+        });
+      }
+      return company;
+    });
+    if (!resolved) {
+      throw new Error(`Validated contract offer could not be resolved: ${offer.contractId}`);
+    }
+  }
+
+  return { state: { ...state, operatingCompanies }, results };
 }
 
 /**
@@ -227,6 +319,9 @@ export function advanceQuarter(state: GameState, commands: QuarterCommands = {})
     for (const project of completed) candidate = applyProjectEffect(candidate, project);
 
     const report = buildQuarterReport(candidate);
+    const negotiations = resolveContractOffers(candidate, commands.contractOffers ?? []);
+    candidate = negotiations.state;
+    report.contractNegotiations = negotiations.results;
     const autonomousTurn = advanceAutonomousActors(candidate);
     candidate = autonomousTurn.state;
     const closingCash = new Map(report.entityCashBridges.map((bridge) => [
