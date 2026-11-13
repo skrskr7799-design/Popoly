@@ -1,4 +1,4 @@
-import type { GameState, Organization } from '../domain/types';
+import type { GameState } from '../domain/types';
 import type { QuarterReport } from '../systems/quarterReport';
 import { calculateDebtServiceObligation } from '../systems/finance';
 import { formatMoney, formatPercent, formatQuarter } from './format';
@@ -29,7 +29,6 @@ export function FinancePanel({
   const totalDebt = activeDebts.reduce((sum, debt) => sum + debt.principalCents, 0);
   const totalInterest = report.totalInterestExpenseCents;
   const scheduledService = activeDebts.reduce((sum, debt) => sum + calculateDebtServiceObligation(debt, state.quarter), 0);
-  const holding = state.organizations.find((item) => item.id === state.holding.organizationId);
   const operatingCompany = state.operatingCompanies.find((item) => item.organizationId === 'nodeworks');
   const borrowerIds = [state.holding.organizationId, ...(operatingCompany ? [operatingCompany.organizationId] : [])];
   const selectedBorrower = organizations.find((item) => item.id === creditRequest.borrowerId);
@@ -137,7 +136,6 @@ export function FinancePanel({
     <div className="pop-finance-subsection">
       <div className="pop-finance-subtitle"><strong>Available loan offers</strong><small>Acceptance is a binding financing decision</small></div>
       {availableOffers.map((offer) => {
-        const lender = state.lenders.find((item) => item.organizationId === offer.lenderId);
         const blocked = state.debts.some((debt) => debt.borrowerId === offer.borrowerId && (
           (debt.covenantTerms?.restrictAdditionalBorrowing === true && debt.covenantStatus === 'breached') ||
           debt.paymentStatus === 'defaulted' || debt.crossDefaultedByDebtId !== undefined
