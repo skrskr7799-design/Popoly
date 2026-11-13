@@ -3,7 +3,7 @@ import { moneyFromCents } from '../domain/money';
 import type { GameState, StrategicProjectState, ValidationIssue } from '../domain/types';
 import { getInitiativeDefinition } from '../scenario/initiatives';
 import { advanceAutonomousActors, getRivalRenewalBid } from '../systems/actors';
-import { buildQuarterReport, type ContractNegotiationResult, type ContractRenewalResult, type CreditDecisionReportLine, type QuarterReport } from '../systems/quarterReport';
+import { buildQuarterReport, type ContractNegotiationResult, type ContractRenewalResult, type CreditDecisionReportLine, type CovenantReportLine, type QuarterReport } from '../systems/quarterReport';
 import { calculateCreditAssessment } from '../systems/finance';
 
 export interface WorkloadDecision {
@@ -839,7 +839,7 @@ export function advanceQuarter(state: GameState, commands: QuarterCommands = {})
     const renewals = resolveContractRenewals(candidate, commands.contractRenewals ?? []);
     candidate = renewals.state;
     report.contractRenewals = renewals.results;
-    const covenantUpdates = [];
+    const covenantUpdates: CovenantReportLine[] = [];
     candidate = {
       ...candidate,
       debts: candidate.debts.map((debt) => {
