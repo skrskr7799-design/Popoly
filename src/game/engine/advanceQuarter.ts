@@ -25,15 +25,20 @@ interface ResolvedDebtRepayment extends DebtRepaymentCommand {
 }
 
 function getScheduledDebtRepayments(state: GameState): ResolvedDebtRepayment[] {
-  return state.debts.flatMap((debt) => {
-    if (debt.principalCents <= 0) return [];
+  return state.debts.reduce<ResolvedDebtRepayment[]>((repayments, debt) => {
+    if (debt.principalCents <= 0) return repayments;
     if (debt.maturityQuarter !== undefined && debt.maturityQuarter <= state.quarter) {
-      return [{ debtId: debt.id, principalCents: debt.principalCents, repaymentType: 'maturity' as const }];
+      repayments.push({ debtId: debt.id, principalCents: debt.principalCents, repaymentType: 'maturity' });
+      return repayments;
     }
     const scheduled = debt.scheduledPrincipalCentsPerQuarter ?? 0;
-    if (scheduled <= 0) return [];
-    return [{ debtId: debt.id, principalCents: Math.min(debt.principalCents, scheduled), repaymentType: 'scheduled' as const }];
-  });
+    if (scheduled > 0) repayments.push({
+      debtId: debt.id,
+      principalCents: moneyFromCents(Math.min(debt.principalCents, scheduled)),
+      repaymentType: 'scheduled',
+    });
+    return repayments;
+  }, []);
 }
 
 export interface ContractRenewalCommand {
