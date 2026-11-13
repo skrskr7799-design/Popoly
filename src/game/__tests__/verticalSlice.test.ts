@@ -29,6 +29,7 @@ const strategies: Array<{ id: string; initiativesByQuarter: string[][] }> = [
 describe('Compute Bottleneck vertical slice', () => {
   it('completes eight quarters under distinct strategic approaches and deterministic seeds', () => {
     for (const seed of [2035, 2042]) {
+      const outcomes = new Map<string, { installedITMW: number; gridAllocationMW: number; reliability: number }>();
       for (const strategy of strategies) {
         const session = CampaignSession.start({
           seed,
@@ -55,7 +56,17 @@ describe('Compute Bottleneck vertical slice', () => {
         expect(session.stage).toBe('sandbox');
         expect(validateGameState(finalState)).toEqual([]);
         expect(finalState.organizations.every((organization) => organization.cashCents >= 0)).toBe(true);
+        const nodeworks = finalState.operatingCompanies.find((company) => company.organizationId === 'nodeworks');
+        if (!nodeworks) throw new Error('NodeWorks is missing from the final campaign state.');
+        outcomes.set(strategy.id, {
+          installedITMW: nodeworks.capacity.installedITMW,
+          gridAllocationMW: nodeworks.capacity.gridAllocationMW,
+          reliability: nodeworks.capacity.reliability,
+        });
       }
+      expect(outcomes.get('scale-first')?.installedITMW).toBeGreaterThan(24);
+      expect(outcomes.get('bottleneck-control')?.gridAllocationMW).toBeGreaterThan(20);
+      expect(outcomes.get('resilience-first')?.reliability).toBeGreaterThan(0.985);
     }
   });
 });
