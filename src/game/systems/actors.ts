@@ -1,3 +1,4 @@
+import { moneyFromCents } from '../domain/money';
 import type { ActorState, GameState, RegionalMarketState } from '../domain/types';
 import { createRandomState, nextRandom } from '../engine/random';
 
@@ -87,7 +88,7 @@ export function advanceAutonomousActors(state: GameState): {
         : 0.995 + roll * 0.015;
     regionalMarkets = regionalMarkets.map((item, index) => index === 0 ? {
       ...item,
-      referenceEnergyPriceCentsPerMWh: Math.max(1, Math.round(item.referenceEnergyPriceCentsPerMWh * priceMultiplier)),
+      referenceEnergyPriceCentsPerMWh: moneyFromCents(Math.max(1, Math.round(item.referenceEnergyPriceCentsPerMWh * priceMultiplier))),
     } : item);
     actions.push({
       actorId: solara.organizationId,
