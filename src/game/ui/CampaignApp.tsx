@@ -206,7 +206,14 @@ export default function CampaignApp() {
   const importCampaign = async (file: File | null) => {
     if (!file) return;
     setStorageBusy(true);
-    const serialized = await file.text();
+    let serialized: string;
+    try {
+      serialized = await file.text();
+    } catch (error) {
+      setStorageMessage(error instanceof Error ? error.message : 'Could not read the selected JSON file.');
+      setStorageBusy(false);
+      return;
+    }
     const imported = await importCampaignSave(campaignRepository, serialized, loadCompatibility);
     if (!imported.ok) setStorageMessage(imported.error.message);
     else {
