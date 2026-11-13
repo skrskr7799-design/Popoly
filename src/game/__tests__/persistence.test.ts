@@ -7,6 +7,7 @@ import { createCampaignSave, serializeCampaignSave } from '../persistence/save';
 import { loadCampaignSave } from '../persistence/load';
 import { restoreCampaign } from '../persistence/restore';
 import { IndexedDbCampaignSaveRepository } from '../persistence/indexedDbRepository';
+import { exportCampaignSave, importCampaignSave } from '../persistence/transfer';
 import type { CampaignSaveRepository } from '../persistence/repository';
 import type { CampaignSaveV1, PersistenceResult } from '../persistence/types';
 import type { DigestProvider, LoadCompatibility } from '../persistence/types';
@@ -282,6 +283,70 @@ describe('IndexedDB campaign repository', () => {
     expect(results.filter((result) => !result.ok)).toHaveLength(1);
     const rejected = results.find((result) => !result.ok);
     if (rejected && !rejected.ok) expect(rejected.error.code).toBe('storage.concurrent_write');
+  });
+});
+
+describe('campaign JSON transfer', () => {
+  it('exports a validated campaign and imports it into a separate IndexedDB repository', async () => {
+    const source = new IndexedDbCampaignSaveRepository({ databaseName: 'popoly-export-source-test' });
+    const destination = new IndexedDbCampaignSaveRepository({ databaseName: 'popoly-import-destination-test' });
+    const save = await makeIndexedDbSave('portable-campaign', 4, '2036-01-01T00:00:00.000Z');
+    expect((await source.commit(save)).ok).toBe(true);
+
+    const exported = await exportCampaignSave(source, save.campaignId, compatibility);
+    expect(exported.ok).toBe(true);
+    if (!exported.ok) return;
+
+    const imported = await importCampaignSave(destination, exported.value, compatibility);
+    expect(imported.ok).toBe(true);
+    if (!imported.ok) return;
+    expect(imported.value.save.campaignId).toBe(save.campaignId);
+    expect(imported.value.state).toEqual(save.state);
+    expect(await destination.read(save.campaignId, 'current')).toEqual({
+      ok: true,
+      value: serializeCampaignSave(save),
+    });
+  });
+
+  it('rejects a damaged import without writing anything', async () => {
+    const destination = new IndexedDbCampaignSaveRepository({ databaseName: 'popoly-import-damaged-test' });
+    const save = await makeIndexedDbSave('damaged-import', 2, '2035-04-01T00:00:00.000Z');
+    const tampered = { ...save, state: { ...save.state, seed: save.state.seed + 1 } };
+
+    const imported = await importCampaignSave(destination, JSON.stringify(tampered), compatibility);
+    expect(imported.ok).toBe(false);
+    if (!imported.ok) expect(imported.error.code).toBe('save.checksum_mismatch');
+    expect(await destination.read(save.campaignId, 'current')).toEqual({ ok: true, value: null });
+  });
+
+  it('rejects an existing campaign ID without replacing its current revision', async () => {
+    const repository = new IndexedDbCampaignSaveRepository({ databaseName: 'popoly-import-collision-test' });
+    const existing = await makeIndexedDbSave('import-collision', 1, '2035-01-01T00:00:00.000Z');
+    const incoming = await makeIndexedDbSave('import-collision', 5, '2036-04-01T00:00:00.000Z');
+    expect((await repository.commit(existing)).ok).toBe(true);
+
+    const imported = await importCampaignSave(repository, serializeCampaignSave(incoming), compatibility);
+    expect(imported.ok).toBe(false);
+    if (!imported.ok) expect(imported.error.code).toBe('import.campaign_exists');
+    expect(await repository.read(existing.campaignId, 'current')).toEqual({
+      ok: true,
+      value: serializeCampaignSave(existing),
+    });
+  });
+
+  it('atomically rejects concurrent imports that target the same new campaign ID', async () => {
+    const repository = new IndexedDbCampaignSaveRepository({ databaseName: 'popoly-import-race-test' });
+    const first = await makeIndexedDbSave('import-race', 1, '2035-01-01T00:00:00.000Z');
+    const second = await makeIndexedDbSave('import-race', 2, '2035-04-01T00:00:00.000Z');
+
+    const results = await Promise.all([
+      importCampaignSave(repository, serializeCampaignSave(first), compatibility),
+      importCampaignSave(repository, serializeCampaignSave(second), compatibility),
+    ]);
+    expect(results.filter((result) => result.ok)).toHaveLength(1);
+    expect(results.filter((result) => !result.ok)).toHaveLength(1);
+    const rejected = results.find((result) => !result.ok);
+    if (rejected && !rejected.ok) expect(rejected.error.code).toBe('import.campaign_exists');
   });
 });
 
