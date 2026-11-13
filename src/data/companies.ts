@@ -1,5 +1,8 @@
-import type { Company, Sector } from '../entities/types';
+import type { Company } from '../entities/types';
 import { createRandomSecrets } from './secrets';
+import { SECTOR_LABELS } from './sectors';
+
+export { SECTOR_LABELS };
 
 /** Starting companies for a new game. Balanced across sectors. */
 export const INITIAL_COMPANIES: Omit<Company, 'controlledBy'>[] = [
@@ -116,14 +119,3 @@ export const INITIAL_COMPANIES: Omit<Company, 'controlledBy'>[] = [
     secrets: createRandomSecrets(2),
   },
 ];
-
-export const SECTOR_LABELS: Record<Sector, string> = {
-  platform: 'Platform',
-  ai_compute: 'AI & Compute',
-  infrastructure: 'Infrastructure',
-  biotech: 'Biotech',
-  energy: 'Energy',
-  space: 'Space',
-  hardware: 'Hardware',
-  data: 'Data',
-};
