@@ -3,7 +3,7 @@ import { moneyFromCents } from '../domain/money';
 import type { GameState, StrategicProjectState, ValidationIssue } from '../domain/types';
 import { getInitiativeDefinition } from '../scenario/initiatives';
 import { advanceAutonomousActors } from '../systems/actors';
-import { buildQuarterReport, type ContractNegotiationResult, type QuarterReport } from '../systems/quarterReport';
+import { buildQuarterReport, type ContractNegotiationResult, type ContractRenewalResult, type QuarterReport } from '../systems/quarterReport';
 
 export interface WorkloadDecision {
   companyId: string;
