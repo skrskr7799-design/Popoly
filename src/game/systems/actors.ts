@@ -4,7 +4,7 @@ import { createRandomState, nextRandom } from '../engine/random';
 
 export interface ActorAction {
   actorId: string;
-  kind: 'demand-growth' | 'capacity-expansion-started' | 'capacity-expansion-completed' | 'energy-price-adjustment' | 'regulatory-review';
+  kind: 'demand-growth' | 'capacity-expansion-started' | 'capacity-expansion-completed' | 'capacity-expansion-delayed' | 'energy-price-adjustment' | 'regulatory-review';
   summary: string;
 }
 
@@ -18,7 +18,12 @@ function actorRandom(state: GameState, actorId: string): number {
   return nextRandom(createRandomState(seed)).value;
 }
 
-function updateActor(actor: ActorState, state: GameState, actions: ActorAction[]): ActorState {
+function updateActor(
+  actor: ActorState,
+  state: GameState,
+  actions: ActorAction[],
+  immediateFirmPowerHeadroomMW: number,
+): ActorState {
   const metrics = { ...actor.hiddenMetrics };
   const actorId = actor.organizationId;
   const roll = actorRandom(state, actorId);
@@ -39,15 +44,26 @@ function updateActor(actor: ActorState, state: GameState, actions: ActorAction[]
 
   if (actorId === 'kestrel-compute') {
     const pipeline = metrics.expansionPipelineQuarters ?? 0;
-    if (pipeline > 0) {
+    if (pipeline > 1) {
       metrics.expansionPipelineQuarters = pipeline - 1;
-      if (metrics.expansionPipelineQuarters === 0) {
+    } else if (pipeline === 1) {
+      if (immediateFirmPowerHeadroomMW >= 2) {
+        metrics.expansionPipelineQuarters = 0;
         metrics.effectiveCapacityMinMW = (metrics.effectiveCapacityMinMW ?? 0) + 2;
         metrics.effectiveCapacityMaxMW = (metrics.effectiveCapacityMaxMW ?? 0) + 2;
         actions.push({
           actorId,
           kind: 'capacity-expansion-completed',
-          summary: 'Kestrel Compute brought additional capacity online.',
+          summary: 'Kestrel Compute brought additional capacity online after securing 2 MW of firm grid capacity.',
+        });
+      } else {
+        // The physical project is ready, but it cannot operate without power.
+        // Keep it at one quarter so it can complete when capacity becomes available.
+        metrics.expansionPipelineQuarters = 1;
+        actions.push({
+          actorId,
+          kind: 'capacity-expansion-delayed',
+          summary: 'Kestrel Compute completed construction but its expansion is waiting for firm grid capacity.',
         });
       }
     } else if (roll < 0.3) {
@@ -73,8 +89,21 @@ export function advanceAutonomousActors(state: GameState): {
   actions: ActorAction[];
 } {
   const actions: ActorAction[] = [];
-  const actors = state.actors.map((actor) => updateActor(actor, state, actions));
   let regionalMarkets: RegionalMarketState[] = state.regionalMarkets.map((market) => ({ ...market }));
+  const initialFirmHeadroom = regionalMarkets[0]?.immediateFirmPowerHeadroomMW ?? 0;
+  const actors = state.actors.map((actor) => updateActor(actor, state, actions, initialFirmHeadroom));
+
+  // A rival expansion consumes the same scarce firm-power headroom that the
+  // player's power initiative uses. Player-sponsored projects resolve first.
+  const kestrelCompleted = actions.some((action) =>
+    action.actorId === 'kestrel-compute' && action.kind === 'capacity-expansion-completed');
+  if (kestrelCompleted && regionalMarkets[0]) {
+    regionalMarkets = regionalMarkets.map((market, index) => index === 0 ? {
+      ...market,
+      immediateFirmPowerHeadroomMW: market.immediateFirmPowerHeadroomMW - 2,
+      committedPowerMW: market.committedPowerMW + 2,
+    } : market);
+  }
 
   const solara = actors.find((actor) => actor.organizationId === 'solara-grid');
   if (solara && regionalMarkets[0]) {
