@@ -3,6 +3,9 @@ import { initializeGame } from '../engine/initialize';
 import { canonicalJson } from '../persistence/canonicalJson';
 import { createCampaignSave, serializeCampaignSave } from '../persistence/save';
 import { loadCampaignSave } from '../persistence/load';
+import { restoreCampaign } from '../persistence/restore';
+import type { CampaignSaveRepository } from '../persistence/repository';
+import type { CampaignSaveV1, PersistenceResult } from '../persistence/types';
 import type { DigestProvider, LoadCompatibility } from '../persistence/types';
 
 const metadata = {
@@ -21,6 +24,38 @@ const testDigest: DigestProvider = async (data) => {
   for (const byte of data) hash = Math.imul(hash ^ byte, 16777619);
   return (hash >>> 0).toString(16).padStart(8, '0');
 };
+
+
+class MemoryCampaignRepository implements CampaignSaveRepository {
+  private readonly records = new Map<string, { current: string; previous: string | null }>();
+
+  async list(): Promise<PersistenceResult<{ campaignId: string; updatedAt: string; quarter: number; scenarioId: string; scenarioVersion: string }[]>> {
+    return { ok: true, value: [] };
+  }
+
+  async read(campaignId: string, revision: 'current' | 'previous' = 'current'): Promise<PersistenceResult<string | null>> {
+    return { ok: true, value: this.records.get(campaignId)?.[revision] ?? null };
+  }
+
+  async commit(save: CampaignSaveV1): Promise<PersistenceResult<void>> {
+    const existing = this.records.get(save.campaignId);
+    this.records.set(save.campaignId, {
+      current: serializeCampaignSave(save),
+      previous: existing?.current ?? existing?.previous ?? null,
+    });
+    return { ok: true, value: undefined };
+  }
+
+  async delete(campaignId: string): Promise<PersistenceResult<void>> {
+    this.records.delete(campaignId);
+    return { ok: true, value: undefined };
+  }
+
+  corruptCurrent(campaignId: string, value: string): void {
+    const record = this.records.get(campaignId);
+    if (record) this.records.set(campaignId, { ...record, current: value });
+  }
+}
 
 describe('campaign save core', () => {
   it('serializes object keys canonically regardless of insertion order', () => {
