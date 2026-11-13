@@ -48,7 +48,7 @@ export interface DebtRestructuringReportLine {
   previousQuarterlyInterestRate: number; newQuarterlyInterestRate?: number;
   previousMaturityQuarter?: number; newMaturityQuarter?: number;
   previousScheduledPrincipalCentsPerQuarter?: MoneyCents; newScheduledPrincipalCentsPerQuarter?: MoneyCents;
-  covenantWaived?: boolean; reason: string;
+  covenantWaived?: boolean; borrowerRationale?: string; reason: string;
 }
 export interface CovenantReportLine {
   debtId: string;
