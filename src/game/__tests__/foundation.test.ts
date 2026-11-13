@@ -28,6 +28,25 @@ describe('The Compute Bottleneck opening state', () => {
     expect(result.operatingCashContributionCents).toBe(251_116_000);
   });
 
+  it('applies contract-specific service credits when provider reliability misses the SLA', () => {
+    const state = initializeGame();
+    const company = state.operatingCompanies[0]!;
+    const market = state.regionalMarkets[0]!;
+    const breached = {
+      ...company,
+      capacity: { ...company.capacity, reliability: 0.97 },
+    };
+    const result = calculateOperatingQuarter(breached, market);
+
+    // Only the two fixed-term agreements carry a 98% SLA and 5% credit.
+    expect(result.grossRevenueCents).toBe(816_500_000);
+    expect(result.serviceCreditCents).toBe(313_750_000);
+    expect(result.revenueCents).toBe(502_750_000);
+    expect(result.fulfilledContracts.map((line) => line.serviceCreditCents)).toEqual([
+      204_000_000, 121_250_000, 0,
+    ]);
+  });
+
   it('recognizes revenue only for delivered workload and protects contracted demand first', () => {
     const state = initializeGame();
     const company = state.operatingCompanies[0]!;
