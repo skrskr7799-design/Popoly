@@ -105,4 +105,10 @@ The first playable engine slice now includes a transactional quarter resolver, a
 - Silicon Vein orders are tracked by buyer, quantity, placement quarter, delivery quarter, and status. Reservations cannot exceed the quarterly pool; player and rival orders compete for the same delivery windows.
 - Actor outcomes are deterministic for the same world seed and quarter.
 
+
+### Integration validation
+- A seeded twelve-quarter unattended run validates the world state after every quarter, including actor metrics, entity cash/debt integer safety, customer demand growth, contract expiries, and intelligence cleanup.
+- An end-to-end renewal scenario renews NodeWorks' larger anchor contract, loses the smaller contract to Kestrel's confidential competing bid, serves the final contracted quarter, expires the agreement, and verifies the 5 MW guaranteed-volume transfer and next-quarter contract/revenue ledger.
+- Customer relationship changes consume the resolved quarter's actual service snapshot. Renewal terms accepted after the report cannot rewrite the service history for the quarter that has already elapsed. Relationship scores stop drifting upward when no fixed customer agreement remains, and renewal-risk estimates are removed when their contracts expire.
+
 This is an initial simulation layer, not the final economic model. In particular, deeper contract negotiations and renewals, financing choices, project dependencies, regulatory consequences, and richer information-quality mechanics remain future work.
