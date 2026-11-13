@@ -2,7 +2,7 @@ import { validateGameState } from '../domain/invariants';
 import { moneyFromCents } from '../domain/money';
 import type { GameState, StrategicProjectState, ValidationIssue } from '../domain/types';
 import { getInitiativeDefinition } from '../scenario/initiatives';
-import { advanceAutonomousActors } from '../systems/actors';
+import { advanceAutonomousActors, getRivalRenewalBid } from '../systems/actors';
 import { buildQuarterReport, type ContractNegotiationResult, type ContractRenewalResult, type QuarterReport } from '../systems/quarterReport';
 
 export interface WorkloadDecision {
@@ -289,10 +289,20 @@ function resolveContractRenewals(
       const customer = state.actors.find((actor) => actor.organizationId === contract.customerId);
       const maxPrice = customer?.hiddenMetrics[`renewalMaxPrice:${contract.id}`] ?? contract.priceCentsPerMWQuarter;
       const minVolume = customer?.hiddenMetrics[`renewalMinVolume:${contract.id}`] ?? contract.minimumWorkloadMW ?? 0;
+      const rivalBid = getRivalRenewalBid(state, contract);
+      const rivalWins = !!rivalBid && renewal.offeredPriceCentsPerMWQuarter > rivalBid.offeredPriceCentsPerMWQuarter;
       if (renewal.offeredWorkloadMW < minVolume) {
         results.push({ contractId: contract.id, providerId: contract.providerId, customerId: contract.customerId,
           status: 'rejected', offeredPriceCents: moneyFromCents(renewal.offeredPriceCentsPerMWQuarter),
           offeredWorkloadMW: renewal.offeredWorkloadMW, message: 'Asterion declined the proposed guaranteed volume because it does not secure enough strategic capacity.' });
+        return company;
+      }
+      if (rivalWins) {
+        results.push({ contractId: contract.id, providerId: contract.providerId, customerId: contract.customerId,
+          status: 'rejected', offeredPriceCents: moneyFromCents(renewal.offeredPriceCentsPerMWQuarter),
+          offeredWorkloadMW: renewal.offeredWorkloadMW, competitorBidAvailable: true,
+          competitorProviderId: rivalBid!.providerId,
+          message: 'Asterion selected a credible competing proposal with sufficient available capacity. The rival price remains confidential.' });
         return company;
       }
       if (renewal.offeredPriceCentsPerMWQuarter <= maxPrice) {
