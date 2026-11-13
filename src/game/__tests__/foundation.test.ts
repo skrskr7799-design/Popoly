@@ -40,10 +40,10 @@ describe('The Compute Bottleneck opening state', () => {
 
     // Only the two fixed-term agreements carry a 98% SLA and 5% credit.
     expect(result.grossRevenueCents).toBe(816_500_000);
-    expect(result.serviceCreditCents).toBe(313_750_000);
-    expect(result.revenueCents).toBe(502_750_000);
+    expect(result.serviceCreditCents).toBe(32_525_000);
+    expect(result.revenueCents).toBe(783_975_000);
     expect(result.fulfilledContracts.map((line) => line.serviceCreditCents)).toEqual([
-      204_000_000, 121_250_000, 0,
+      20_400_000, 12_125_000, 0,
     ]);
   });
 
