@@ -1589,6 +1589,47 @@ describe('contractual cross-default', () => {
 });
 
 
+describe('complete game-state invariants', () => {
+  it('rejects malformed markets, actor metrics, intelligence ranges and operating costs', () => {
+    const state = initializeGame();
+    state.regionalMarkets[0] = { ...state.regionalMarkets[0]!, quarterHours: Number.NaN };
+    state.actors[0] = { ...state.actors[0]!, hiddenMetrics: { ...state.actors[0]!.hiddenMetrics, invalidMetric: Number.NaN } };
+    state.playerIntelligence[0] = { ...state.playerIntelligence[0]!, min: 30, max: 20 };
+    state.operatingCompanies[0] = { ...state.operatingCompanies[0]!,
+      cashCosts: { ...state.operatingCompanies[0]!.cashCosts, maintenanceCents: moneyFromCents(-1) } };
+    const issues = validateGameState(state);
+    expect(issues.some((item) => item.code === 'market.state_invalid')).toBe(true);
+    expect(issues.some((item) => item.code === 'actor.metric_invalid')).toBe(true);
+    expect(issues.some((item) => item.code === 'intelligence.estimate_invalid')).toBe(true);
+    expect(issues.some((item) => item.code === 'company.cash_cost_invalid')).toBe(true);
+  });
+
+  it('rejects duplicate identities, orphan ownership entries and negative contract prices', () => {
+    const state = initializeGame();
+    state.organizations.push({ ...state.organizations[0]!, id: 'nodeworks' });
+    state.actors.push({ ...state.actors[0]! });
+    state.ownership.push({ ownerId: 'missing-owner', companyId: 'missing-company', shares: 1, votingShares: 1 });
+    state.operatingCompanies[0] = { ...state.operatingCompanies[0]!, contracts: [
+      ...state.operatingCompanies[0]!.contracts.map((contract, index) => index === 0
+        ? { ...contract, priceCentsPerMWQuarter: moneyFromCents(-1) } : contract),
+    ] };
+    const issues = validateGameState(state);
+    expect(issues.some((item) => item.code === 'organization.id_duplicate')).toBe(true);
+    expect(issues.some((item) => item.code === 'actor.id_duplicate')).toBe(true);
+    expect(issues.some((item) => item.code === 'ownership.stake_invalid')).toBe(true);
+    expect(issues.some((item) => item.code === 'contract.value_invalid')).toBe(true);
+  });
+
+  it('rejects invalid holding-company policy and duplicate regional-market IDs', () => {
+    const state = initializeGame();
+    state.holding = { ...state.holding, leadershipCapacityPerQuarter: 0, institutionalAccess: 101 };
+    state.regionalMarkets.push({ ...state.regionalMarkets[0]! });
+    const issues = validateGameState(state);
+    expect(issues.some((item) => item.code === 'holding.state_invalid')).toBe(true);
+    expect(issues.some((item) => item.code === 'market.id_duplicate')).toBe(true);
+  });
+});
+
 describe('quarter funding and debt-service invariants', () => {
   it('aggregates revolving drawdowns and accepted offers against one lender cash and capacity budget', () => {
     const opening = initializeGame();

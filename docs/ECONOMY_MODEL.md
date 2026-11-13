@@ -301,6 +301,8 @@ Project commitments are recorded as negative investment cash flow in the holding
 
 Debt-service coverage uses the target quarter's contractual cash obligation: accrued current interest plus carried interest arrears, and scheduled principal plus principal arrears; when maturity or acceleration is effective, the full remaining principal is due. Settled instruments do not contribute debt service. The same calculation is used by underwriting and covenant monitoring so that arrears and balloon obligations cannot disappear from credit risk.
 
+Before a state is advanced or persisted, its invariant validator checks the full campaign graph: unique organization, company, actor, market, contract, debt, offer, project, and equipment-order identities; valid ownership references and share ledgers; finite market and actor metrics; bounded intelligence estimates; non-negative integer operating costs and contract prices; and a valid holding-company policy. Negative legal-entity cash is rejected until an explicit overdraft or insolvency model exists.
+
 ## 24. Debt refinancing
 
 A borrower may replace one outstanding debt instrument with an available lender offer for the same legal entity. The replacement offer must cover the old principal plus a one-time refinancing fee (default 100 basis points; configurable from 0 to 1,000 basis points). The old instrument is settled in full and retained in the ledger with zero principal; the new instrument records its lender, principal, rate, maturity, and covenant package.

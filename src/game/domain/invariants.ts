@@ -7,14 +7,49 @@ export function validateGameState(state: GameState): ValidationIssue[] {
   const issues: ValidationIssue[] = [];
   const organizationIds = new Set(state.organizations.map((item) => item.id));
   const companyIds = new Set(state.operatingCompanies.map((item) => item.organizationId));
+  const actorIds = new Set(state.actors.map((item) => item.organizationId));
+  const marketIds = new Set(state.regionalMarkets.map((item) => item.id));
+
+  if (state.schemaVersion !== 1 || typeof state.scenarioId !== 'string' || state.scenarioId.trim().length === 0 ||
+      typeof state.scenarioVersion !== 'string' || state.scenarioVersion.trim().length === 0 ||
+      !Number.isSafeInteger(state.seed) || state.seed < 0) {
+    issues.push({ code: 'state.metadata_invalid', message: 'Schema version, scenario identity, version, and non-negative integer seed must be valid.' });
+  }
+  if (organizationIds.size !== state.organizations.length) {
+    issues.push({ code: 'organization.id_duplicate', message: 'Organization IDs must be unique.' });
+  }
+  if (companyIds.size !== state.operatingCompanies.length) {
+    issues.push({ code: 'company.id_duplicate', message: 'Operating company organization IDs must be unique.' });
+  }
+  if (actorIds.size !== state.actors.length) {
+    issues.push({ code: 'actor.id_duplicate', message: 'Actor organization IDs must be unique.' });
+  }
+  if (marketIds.size !== state.regionalMarkets.length) {
+    issues.push({ code: 'market.id_duplicate', message: 'Regional market IDs must be unique.' });
+  }
 
   if (!Number.isInteger(state.quarter) || state.quarter < 1) {
     issues.push({ code: 'quarter.invalid', message: 'Quarter must be a positive integer.' });
+  }
+  if (!organizationIds.has(state.holding.organizationId) ||
+      !Number.isInteger(state.holding.leadershipCapacityPerQuarter) || state.holding.leadershipCapacityPerQuarter < 1 ||
+      !Number.isFinite(state.holding.institutionalAccess) || state.holding.institutionalAccess < 0 || state.holding.institutionalAccess > 100 ||
+      !Number.isSafeInteger(state.holding.revolverLimitCents) || state.holding.revolverLimitCents < 0 ||
+      !['balanced', 'growth', 'conservative'].includes(state.holding.strategicRiskPolicy)) {
+    issues.push({ code: 'holding.state_invalid', message: 'Holding organization, leadership capacity, institutional access, revolver limit, or risk policy is invalid.', entityId: state.holding.organizationId });
   }
 
   for (const organization of state.organizations) {
     if (!Number.isSafeInteger(organization.cashCents) || !Number.isSafeInteger(organization.debtCents)) {
       issues.push({ code: 'finance.money_not_integer', message: 'Cash and debt must use integer cents.', entityId: organization.id });
+    }
+    if (Number.isSafeInteger(organization.debtCents) && organization.debtCents < 0) {
+      issues.push({ code: 'finance.debt_negative', message: 'Reported debt cannot be negative.', entityId: organization.id });
+    }
+    if (typeof organization.id !== 'string' || organization.id.trim().length === 0 ||
+        typeof organization.name !== 'string' || organization.name.trim().length === 0 ||
+        !['holding', 'operating_company', 'supplier', 'customer', 'competitor', 'institution', 'lender'].includes(organization.kind)) {
+      issues.push({ code: 'organization.identity_invalid', message: 'Organization identity, name, or kind is invalid.', entityId: organization.id });
     }
     if (Number.isSafeInteger(organization.cashCents) && organization.cashCents < 0) {
       issues.push({ code: 'finance.cash_negative', message: 'Cash cannot be negative until an explicit overdraft or insolvency mechanism is modeled.', entityId: organization.id });
@@ -48,7 +83,7 @@ export function validateGameState(state: GameState): ValidationIssue[] {
           (!Number.isSafeInteger(debt.facilityLimitCents) || debt.facilityLimitCents < debt.principalCents))) {
       issues.push({ code: 'finance.debt_invalid', message: 'Debt instrument has an invalid borrower, principal, interest rate, or facility limit.', entityId: debt.id });
     }
-    if (debt.lenderId !== undefined && !state.lenders.some((lender) => lender.organizationId === debt.lenderId)) {
+    if (debt.lenderId !== undefined && (!organizationIds.has(debt.lenderId) || !state.lenders.some((lender) => lender.organizationId === debt.lenderId))) {
       issues.push({ code: 'finance.debt_lender_missing', message: 'Debt instrument references a missing lender policy.', entityId: debt.id });
     }
     debtByBorrower.set(debt.borrowerId, (debtByBorrower.get(debt.borrowerId) ?? 0) + debt.principalCents);
@@ -140,6 +175,29 @@ export function validateGameState(state: GameState): ValidationIssue[] {
     if (!isFiniteNonNegative(company.deliveredWorkloadMW)) {
       issues.push({ code: 'workload.invalid', message: 'Delivered workload must be finite and non-negative.', entityId: company.organizationId });
     }
+    for (const [name, value] of Object.entries(company.cashCosts ?? {})) {
+      if (!Number.isSafeInteger(value) || value < 0) {
+        issues.push({ code: 'company.cash_cost_invalid', message: `${name} must be a non-negative integer number of cents.`, entityId: company.organizationId });
+      }
+    }
+    if (company.contracts.some((contract) => contract.providerId !== company.organizationId)) {
+      issues.push({ code: 'contract.provider_mismatch', message: 'Every service contract must name its containing operating company as provider.', entityId: company.organizationId });
+    }
+  }
+
+  const ownershipPairs = new Set<string>();
+  for (const stake of state.ownership) {
+    const pair = `${stake.ownerId}::${stake.companyId}`;
+    if (ownershipPairs.has(pair)) {
+      issues.push({ code: 'ownership.stake_duplicate', message: 'An owner may have only one ownership ledger entry per company.', entityId: stake.companyId });
+    }
+    ownershipPairs.add(pair);
+    if (!organizationIds.has(stake.ownerId) || !companyIds.has(stake.companyId) ||
+        !Number.isInteger(stake.shares) || stake.shares < 0 ||
+        !Number.isInteger(stake.votingShares) || stake.votingShares < 0 ||
+        stake.votingShares > stake.shares) {
+      issues.push({ code: 'ownership.stake_invalid', message: 'Ownership stake must reference an existing owner and company and contain valid share counts.', entityId: stake.companyId });
+    }
   }
 
   for (const companyId of companyIds) {
@@ -162,14 +220,48 @@ export function validateGameState(state: GameState): ValidationIssue[] {
         entityId: companyId,
       });
     }
-    for (const stake of stakes) {
-      if (!organizationIds.has(stake.ownerId) || !Number.isInteger(stake.shares) || stake.shares < 0 ||
-          !Number.isInteger(stake.votingShares) || stake.votingShares < 0) {
-        issues.push({ code: 'ownership.stake_invalid', message: 'Ownership stake contains an invalid owner or share count.', entityId: companyId });
+  }
+
+  const regionalIds = new Set<string>();
+  for (const market of state.regionalMarkets) {
+    if (regionalIds.has(market.id)) issues.push({ code: 'market.id_duplicate', message: 'Regional market IDs must be unique.', entityId: market.id });
+    regionalIds.add(market.id);
+    if (typeof market.name !== 'string' || market.name.trim().length === 0 ||
+        !Number.isFinite(market.quarterHours) || market.quarterHours <= 0 ||
+        !isFiniteNonNegative(market.availablePowerMW) || !isFiniteNonNegative(market.committedPowerMW) ||
+        !Number.isSafeInteger(market.referenceEnergyPriceCentsPerMWh) || market.referenceEnergyPriceCentsPerMWh < 0 ||
+        !isFiniteNonNegative(market.immediateFirmPowerHeadroomMW) ||
+        !isFiniteNonNegative(market.equipmentDeliveryPoolMWEquivalentPerQuarter)) {
+      issues.push({ code: 'market.state_invalid', message: 'Regional market hours, power, energy price, headroom, or equipment pool contain invalid values.', entityId: market.id });
+    }
+  }
+
+  for (const actor of state.actors) {
+    if (!organizationIds.has(actor.organizationId) || !Array.isArray(actor.goals) ||
+        actor.goals.some((goal) => typeof goal !== 'string') ||
+        actor.hiddenMetrics === null || typeof actor.hiddenMetrics !== 'object' || Array.isArray(actor.hiddenMetrics)) {
+      issues.push({ code: 'actor.state_invalid', message: 'Actor must reference an existing organization and contain valid goals and hidden metrics.', entityId: actor.organizationId });
+      continue;
+    }
+    for (const [metric, value] of Object.entries(actor.hiddenMetrics)) {
+      if (typeof metric !== 'string' || metric.trim().length === 0 || !Number.isFinite(value)) {
+        issues.push({ code: 'actor.metric_invalid', message: 'Actor hidden metrics must have non-empty keys and finite numeric values.', entityId: actor.organizationId });
       }
     }
   }
 
+  for (const estimate of state.playerIntelligence) {
+    if (!organizationIds.has(estimate.subjectId) || typeof estimate.metric !== 'string' || estimate.metric.trim().length === 0 ||
+        !Number.isFinite(estimate.min) || !Number.isFinite(estimate.max) || estimate.min > estimate.max ||
+        !Number.isFinite(estimate.confidence) || estimate.confidence < 0 || estimate.confidence > 1 ||
+        !Number.isInteger(estimate.observedQuarter) || estimate.observedQuarter < 1 || estimate.observedQuarter > state.quarter ||
+        typeof estimate.source !== 'string' || estimate.source.trim().length === 0 ||
+        !['known', 'reported', 'estimated', 'unknown'].includes(estimate.knowledge)) {
+      issues.push({ code: 'intelligence.estimate_invalid', message: 'Intelligence estimate has an invalid subject, range, confidence, observation quarter, knowledge class, or source.', entityId: estimate.subjectId });
+    }
+  }
+
+  const contractIds = new Set<string>();
   const equipmentOrderIds = new Set<string>();
   for (const order of state.equipmentOrders) {
     if (equipmentOrderIds.has(order.id)) issues.push({ code: 'equipment.order_id_duplicate', message: 'Equipment order IDs must be unique.', entityId: order.id });
@@ -206,10 +298,12 @@ export function validateGameState(state: GameState): ValidationIssue[] {
   }
 
   for (const contract of state.operatingCompanies.flatMap((company) => company.contracts)) {
+    if (contractIds.has(contract.id)) issues.push({ code: 'contract.id_duplicate', message: 'Service contract IDs must be unique across the campaign.', entityId: contract.id });
+    contractIds.add(contract.id);
     if (!organizationIds.has(contract.customerId) || !organizationIds.has(contract.providerId)) {
       issues.push({ code: 'contract.organization_missing', message: 'Contract references a missing organization.', entityId: contract.id });
     }
-    if (!isFiniteNonNegative(contract.workloadMW) || !Number.isSafeInteger(contract.priceCentsPerMWQuarter) ||
+    if (!isFiniteNonNegative(contract.workloadMW) || !Number.isSafeInteger(contract.priceCentsPerMWQuarter) || contract.priceCentsPerMWQuarter < 0 ||
         (contract.termEndQuarter !== undefined && (!Number.isInteger(contract.termEndQuarter) || contract.termEndQuarter < 1)) ||
         (contract.renewalNoticeQuarters !== undefined && (!Number.isInteger(contract.renewalNoticeQuarters) || contract.renewalNoticeQuarters < 0)) ||
         (contract.minimumWorkloadMW !== undefined && (!isFiniteNonNegative(contract.minimumWorkloadMW) || contract.minimumWorkloadMW > contract.workloadMW)) ||

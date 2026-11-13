@@ -89,6 +89,14 @@ This file records important decisions and their rationale. Add new entries rathe
 **Rationale:** The simulation must not create lender liquidity through command ordering or understate borrower obligations by omitting overdue or maturity payments.
 
 
+## D-014 — Validate the complete campaign state graph
+
+**Status:** Accepted  
+**Decision:** Every quarter transition and future save/load boundary must validate campaign metadata, unique entity identities, ownership references, market data, actor hidden metrics, player intelligence estimates, operating costs, contract terms, and holding-company policy. Invalid numeric values and orphaned references are rejected rather than normalized silently.
+
+**Rationale:** Save integrity depends on validating the whole state graph, not only the debt and organization ledgers. Early rejection makes corrupted or unsupported state visible at the boundary where it enters the simulation.
+
+
 ## D-012 — Lender-funded revolving facility drawdowns
 
 **Status:** Accepted  
