@@ -1,6 +1,7 @@
 export type Locale = 'ru' | 'en';
 
-export const translations = {
+/** Flat string tables — keys shared by UI, logs, secrets, events */
+export const translations: Record<Locale, Record<string, string>> = {
   ru: {
     appTitle: 'Popoly',
     appSubtitle: 'Технологическое господство',
@@ -48,7 +49,11 @@ export const translations = {
     log: 'Журнал',
     language: 'Язык',
     sec: 'Охр',
-    // sectors
+    howToPlay: 'Как играть',
+    close: 'Закрыть',
+    tutorialTitle: 'Краткие правила',
+    tutorialBody:
+      'Цель — набрать максимальный счёт (капитал + контроль компаний + репутация + бонусы секторов).\n\n• Каждый ход даёт 3 очка действия (ОД): покупка/продажа акций, кредит, шпионаж, защита, прокачка разведки.\n• Контроль компании — от 50% акций. Контроль соседних секторов даёт синергию.\n• Фазы рынка меняют ставки, цены и шансы шпионажа.\n• Операции раскрывают секреты; слив бьёт по цене, репутации и контролёру.\n• Победа проверяется примерно с 12-го раунда.',
     sector_platform: 'Платформы',
     sector_ai_compute: 'ИИ и вычисления',
     sector_infrastructure: 'Инфраструктура',
@@ -57,7 +62,6 @@ export const translations = {
     sector_space: 'Космос',
     sector_hardware: 'Железо',
     sector_data: 'Данные',
-    // phases
     phase_innovation_boom: 'Инновационный бум',
     phase_hypergrowth: 'Гиперрост',
     phase_bubble: 'Пузырь',
@@ -68,7 +72,6 @@ export const translations = {
     phaseDesc_bubble: 'Оценки отрываются от денежных потоков. Хрупкость растёт.',
     phaseDesc_correction: 'Кредит дорожает. Скандалы и промахи наказываются жёстко.',
     phaseDesc_recovery: 'Стабилизация. Капитал выборочно возвращается к качеству.',
-    // sector abilities
     ab_platform: 'Сетевые эффекты',
     ab_platform_s: 'Контроль даёт влияние. Бонус к счёту; чуть сложнее шпионить.',
     ab_ai_compute: 'Ров моделей',
@@ -85,6 +88,125 @@ export const translations = {
     ab_hardware_s: 'Крепкий кэш + синергия с ИИ при контроле обоих.',
     ab_data: 'Край слежки',
     ab_data_s: 'Контролёр получает бонус к шпионажу; сектор труднее взломать.',
+    type_personal: 'личное',
+    type_scandal: 'скандал',
+    type_financial: 'финансы',
+    type_tech: 'технологии',
+    type_other: 'прочее',
+    // secrets
+    secret_ceo_rival_affair:
+      'CEO давно состоит в связи с офицером разведки, работающим на прямого конкурента.',
+    secret_founder_jets:
+      'Основатель регулярно использует корпоративные самолёты и охрану для личных вечеринок и семейных поездок.',
+    secret_cto_supplier:
+      'У CTO скрытые финансовые связи с поставщиком, который выигрывает большинство тендеров на железо.',
+    secret_board_lobby:
+      'Председатель совета лоббировал регуляторов, имея личные опционы, которые взлетят при выгодных решениях.',
+    secret_exec_investigation:
+      'Ключевой топ-менеджер под закрытым расследованием по старым нарушениям рынка ценных бумаг.',
+    secret_safety_suppress:
+      'Внутренние записки: сознательно скрывали исследования безопасности, которые отложили бы флагманский релиз.',
+    secret_data_delay:
+      'Руководство месяцами знало о крупной утечке данных пользователей и тянуло с раскрытием.',
+    secret_fake_reviews:
+      'Сфабрикованные отзывы, фейковые аккаунты и накрутка рейтингов в сторах по ключевым продуктам.',
+    secret_visa_pressure:
+      'Донос: системный недоплат и давление визами на иностранных исследователей.',
+    secret_influence_press:
+      'Компания вела скрытые кампании влияния против журналистов с критическими материалами.',
+    secret_insider_softpedal:
+      'Службе безопасности приказали замять внутреннюю угрозу, связанную со старшим продакт-менеджером.',
+    secret_revenue_inflate:
+      'Агрессивное признание выручки раздувало отчётный cash flow как минимум три квартала подряд.',
+    secret_related_party:
+      'Крупные сделки со связанными сторонами идут через структуры, которыми фактически владеют члены совета.',
+    secret_offbalance:
+      'Внебалансовые схемы прятали убыточные активы перед раундом финансирования.',
+    secret_customer_conc:
+      'Концентрация клиентов выше, чем в отчётности; уход двух клиентов обрушит прогнозы.',
+    secret_burn_rate:
+      'Внутренние модели: burn rate не бьётся с публичными заявлениями о runway при реальном найме.',
+    secret_repro_issue:
+      'В пайплайне обучения ключевой модели критическая проблема воспроизводимости, которую замалчивают.',
+    secret_weak_patents:
+      'Патентные заявки уже и уязвимее, чем говорит публичная риторика.',
+    secret_single_provider:
+      'Продакшен-инференс зависит от одного внешнего провайдера без нормального failover.',
+    secret_benchmark_cheat:
+      'Маркетинговые бенчмарки сняты на нерепрезентативном железе и с отбором сидов.',
+    secret_unmaintained_dep:
+      'Критическая open-source зависимость без поддержки; патчи безопасности месяцами не ставили.',
+    secret_researcher_exit:
+      'Ведущий исследователь флагманского проекта на поздней стадии переговоров с конкурентом.',
+    secret_sla_risk:
+      'Продления крупных enterprise-контрактов под угрозой из-за срывов SLA без эскалации.',
+    secret_gov_clawback:
+      'Госзаказчик готовит возврат финансирования из-за срыва отчётности по вехам.',
+    // events
+    event_ai-boom_title: 'ИИ-лихорадка инвестиций',
+    event_ai-boom_desc: 'Капитал хлынул в foundation-модели и инференс. ИИ-имена переоценивают вверх.',
+    event_green-wave_title: 'Зелёный мандат',
+    event_green-wave_desc: 'Субсидии и госзакупки поднимают чистую энергетику и ПО сетей.',
+    event_space-race_title: 'Гонка орбитальной инфраструктуры',
+    event_space-race_desc: 'Государства и праймы расширяют бюджеты LEO и логистики.',
+    event_cloud-expansion_title: 'Волна enterprise-облака',
+    event_cloud-expansion_desc: 'Крупные миграции ускоряются. Инфраструктура подписывает многолетние сделки.',
+    event_biotech-approval_title: 'Крупное одобрение терапии',
+    event_biotech-approval_desc: 'Знаковое одобрение поднимает весь биотех на настроении.',
+    event_platform-engagement_title: 'Отскок вовлечённости',
+    event_platform-engagement_desc: 'Метрики времени в приложениях неожиданно выросли у крупных платформ.',
+    event_antitrust_title: 'Антимонопольный удар',
+    event_antitrust_desc: 'Регуляторы открывают структурные расследования против доминирующих платформ.',
+    event_data-scandal_title: 'Волна утечек данных',
+    event_data-scandal_desc: 'Серия взломов уничтожает доверие к data- и surveillance-бизнесу.',
+    event_chip-shortage_title: 'Дефицит продвинутых чипов',
+    event_chip-shortage_desc: 'Ограничения процессов и упаковки бьют по железу и ускорителям.',
+    event_biotech-setback_title: 'Провалы клинических испытаний',
+    event_biotech-setback_desc: 'Серия поздних провалов охлаждает спекулятивный капитал в биотех.',
+    event_infra-outage_title: 'Каскадный сбой',
+    event_infra-outage_desc: 'Мультирегиональный отказ запускает SLA-кредиты и аудиты клиентов.',
+    event_space-failure_title: 'Серия неудачных запусков',
+    event_space-failure_desc: 'Аномалии подряд замораживают страхование и сдвигают манифесты.',
+    event_liquidity-crunch_title: 'Кризис ликвидности',
+    event_liquidity-crunch_desc: 'Спреды расширяются. Кэш становится редким и дорогим.',
+    event_risk-on_title: 'Risk-on настроение',
+    event_risk-on_desc: 'Рынки покупают почти всё на мягких данных и лёгких историях.',
+    event_talent-war_title: 'Война за таланты',
+    event_talent-war_desc: 'Компенсации senior-инженеров снова выросли. Маржа сжимается.',
+    event_breakthrough_title: 'Фундаментальный технологический прорыв',
+    event_breakthrough_desc: 'Реальный научный скачок переоценивает инфраструктуру и compute.',
+    event_regulatory-freeze_title: 'Регуляторная заморозка',
+    event_regulatory-freeze_desc: 'Неопределённость стопорит сделки и замедляет запуски продуктов.',
+    event_capital-wave_title: 'Волна частного капитала',
+    event_capital-wave_desc: 'Dry powder агрессивно заходит в late-stage tech.',
+    // logs
+    log_game_init: 'Игра началась. Добро пожаловать в Popoly.',
+    log_phase: 'Фаза экономики: {label} — {desc}',
+    log_systems_live: 'Шпионаж, кредиты, события, фазы и подсчёт очков активны.',
+    log_turn: '— Ход: {name} —',
+    log_need_cash: '{name}: нужно ${cost}.',
+    log_bought: '{name} купил(а) {amount} акц. {company}',
+    log_sold: '{name} продал(а) {amount} акц. {company}',
+    log_credit_limit: '{name}: лимит кредита исчерпан.',
+    log_loan: '{name} взял(а) ${amount} под {rate}%',
+    log_repay: '{name} погасил(а) ${amount}.',
+    log_need: 'Нужно ${cost}',
+    log_intel_up: '{name} улучшил(а) разведку до {level}',
+    log_need_ownership: 'Нужно 25% владения или контроль',
+    log_raise_sec: '{name} усилил(а) охрану {company}',
+    log_op_detected: '❌ {name}: операцию по {company} РАСКРЫЛИ',
+    log_op_fail: '❌ {name}: операция по {company} провалилась',
+    log_no_secrets: '✅ Новых секретов в {company} нет',
+    log_found_secret: '✅ {name} нашёл(ла) секрет sev-{sev} в {company}',
+    log_leak: '📢 СЛИВ от {name} по {company} (sev {sev})',
+    log_dividends: '{name} +${amount} дивиденды',
+    log_interest: '{name}: проценты +${amount}',
+    log_phase_change: '📉 Фаза → {label}',
+    log_no_event: 'Крупных рыночных событий в этом раунде нет.',
+    log_event: '⚡ СОБЫТИЕ: {title}',
+    log_round: '=== Раунд {n} ===',
+    log_win: '🏆 {name} побеждает со счётом ${score}M',
+    log_bot_done: '{name} завершил(а) ход.',
   },
   en: {
     appTitle: 'Popoly',
@@ -133,6 +255,11 @@ export const translations = {
     log: 'Log',
     language: 'Language',
     sec: 'Sec',
+    howToPlay: 'How to play',
+    close: 'Close',
+    tutorialTitle: 'Quick rules',
+    tutorialBody:
+      'Goal — maximize score (net worth + company control + reputation + sector bonuses).\n\n• Each turn gives 3 action points (AP): trade shares, loans, spy, defend, upgrade intel.\n• Control a company at 50%+ shares. Controlling linked sectors adds synergy.\n• Economy phases change rates, prices, and spy odds.\n• Ops reveal secrets; leaks hit price, reputation, and the controller.\n• Victory checks start around round 12.',
     sector_platform: 'Platform',
     sector_ai_compute: 'AI & Compute',
     sector_infrastructure: 'Infrastructure',
@@ -167,7 +294,121 @@ export const translations = {
     ab_hardware_s: 'Solid cash + synergy with AI compute when both controlled.',
     ab_data: 'Surveillance Edge',
     ab_data_s: 'Controller gains spy edge; sector is harder to infiltrate.',
+    type_personal: 'personal',
+    type_scandal: 'scandal',
+    type_financial: 'financial',
+    type_tech: 'tech',
+    type_other: 'other',
+    secret_ceo_rival_affair:
+      'CEO has been having a long-term affair with an intelligence officer employed by a direct rival.',
+    secret_founder_jets:
+      'Founder regularly diverts corporate jets and security details for private parties and family travel.',
+    secret_cto_supplier:
+      'CTO has an undisclosed financial relationship with a major supplier that wins most hardware RFPs.',
+    secret_board_lobby:
+      'Board chair quietly lobbied regulators while holding personal options that would spike on favorable rulings.',
+    secret_exec_investigation:
+      'Key executive is under sealed investigation for past securities violations in another jurisdiction.',
+    secret_safety_suppress:
+      'Internal memos show deliberate suppression of safety research that would have delayed a flagship launch.',
+    secret_data_delay:
+      'Executives knew about a major user-data exposure for months and coordinated a delayed disclosure strategy.',
+    secret_fake_reviews:
+      'Evidence of coordinated review bombing, fake accounts, and manipulated store rankings for core products.',
+    secret_visa_pressure:
+      'Whistleblower file alleges systematic underpayment and visa pressure on foreign research staff.',
+    secret_influence_press:
+      'Company ran covert influence campaigns targeting journalists who published critical coverage.',
+    secret_insider_softpedal:
+      'Security team was ordered to soft-pedal an insider threat case involving a senior product manager.',
+    secret_revenue_inflate:
+      'Aggressive revenue recognition has inflated reported cash flow for at least three consecutive quarters.',
+    secret_related_party:
+      'Significant related-party transactions flow through entities ultimately controlled by board members.',
+    secret_offbalance:
+      'Off-balance-sheet vehicles were used to park underperforming assets ahead of a funding round.',
+    secret_customer_conc:
+      'Customer concentration is far higher than disclosed; loss of two accounts would crater guidance.',
+    secret_burn_rate:
+      'Internal models show burn rate inconsistent with public runway claims under realistic hiring plans.',
+    secret_repro_issue:
+      'Core model training pipeline has a critical reproducibility issue that senior staff have papered over.',
+    secret_weak_patents:
+      'Key patent applications are narrower and easier to design around than public messaging suggests.',
+    secret_single_provider:
+      'Production inference stack still depends on a single external provider with no viable failover.',
+    secret_benchmark_cheat:
+      'Benchmark numbers used in marketing were run on non-representative hardware and cherry-picked seeds.',
+    secret_unmaintained_dep:
+      'A critical open-source dependency is unmaintained; security patches have been skipped for months.',
+    secret_researcher_exit:
+      'A senior researcher leading a flagship project is in advanced talks with a direct competitor.',
+    secret_sla_risk:
+      'Major enterprise contract renewals are at risk after repeated SLA misses that were never escalated.',
+    secret_gov_clawback:
+      'Government customer is preparing to claw back funding over missed milestone documentation.',
+    event_ai-boom_title: 'AI Investment Frenzy',
+    event_ai-boom_desc: 'Capital floods into foundation models and inference. AI names re-rate higher.',
+    event_green-wave_title: 'Green Energy Mandate',
+    event_green-wave_desc: 'Subsidies and procurement rules lift clean energy and grid software.',
+    event_space-race_title: 'Orbital Infrastructure Race',
+    event_space-race_desc: 'Governments and primes expand LEO and logistics budgets.',
+    event_cloud-expansion_title: 'Enterprise Cloud Wave',
+    event_cloud-expansion_desc: 'Large migrations accelerate. Infrastructure providers book multi-year deals.',
+    event_biotech-approval_title: 'Major Therapy Approval',
+    event_biotech-approval_desc: 'A landmark approval lifts the whole biotech complex on sentiment.',
+    event_platform-engagement_title: 'Engagement Rebound',
+    event_platform-engagement_desc: 'Time-spent metrics surprise to the upside across major platforms.',
+    event_antitrust_title: 'Antitrust Crackdown',
+    event_antitrust_desc: 'Regulators open structural investigations into dominant platforms.',
+    event_data-scandal_title: 'Massive Data Breach Wave',
+    event_data-scandal_desc: 'A cluster of breaches destroys trust in data and surveillance businesses.',
+    event_chip-shortage_title: 'Advanced Chip Shortage',
+    event_chip-shortage_desc: 'Process and packaging constraints hit hardware and accelerator roadmaps.',
+    event_biotech-setback_title: 'Clinical Trial Failures',
+    event_biotech-setback_desc: 'A string of late-stage failures cools speculative biotech capital.',
+    event_infra-outage_title: 'Cascade Outage',
+    event_infra-outage_desc: 'A multi-region failure triggers SLA credits and customer audits.',
+    event_space-failure_title: 'Launch Failure Cluster',
+    event_space-failure_desc: 'Back-to-back anomalies freeze insurance markets and delay manifests.',
+    event_liquidity-crunch_title: 'Liquidity Crunch',
+    event_liquidity-crunch_desc: 'Credit spreads widen. Cash becomes scarce and expensive.',
+    event_risk-on_title: 'Risk-On Sentiment',
+    event_risk-on_desc: 'Markets bid almost everything higher on soft data and easy narratives.',
+    event_talent-war_title: 'Talent War Intensifies',
+    event_talent-war_desc: 'Comp for senior engineers and researchers jumps again. Margins compress.',
+    event_breakthrough_title: 'Foundational Tech Breakthrough',
+    event_breakthrough_desc: 'A real scientific leap reprices infrastructure and compute optionality.',
+    event_regulatory-freeze_title: 'Regulatory Freeze',
+    event_regulatory-freeze_desc: 'Uncertainty freezes dealmaking and slows product launches across the board.',
+    event_capital-wave_title: 'Private Capital Wave',
+    event_capital-wave_desc: 'Dry powder deploys aggressively into late-stage tech.',
+    log_game_init: 'Game started. Welcome to Popoly.',
+    log_phase: 'Economy phase: {label} — {desc}',
+    log_systems_live: 'Espionage, loans, events, phases and scoring are live.',
+    log_turn: "--- {name}'s turn ---",
+    log_need_cash: '{name} needs ${cost}.',
+    log_bought: '{name} bought {amount} {company}',
+    log_sold: '{name} sold {amount} {company}',
+    log_credit_limit: '{name} credit limit reached.',
+    log_loan: '{name} took ${amount} @ {rate}%',
+    log_repay: '{name} repaid ${amount}.',
+    log_need: 'Need ${cost}',
+    log_intel_up: '{name} upgraded Intelligence to {level}',
+    log_need_ownership: 'Need 25% ownership or control',
+    log_raise_sec: '{name} raised {company} security',
+    log_op_detected: '❌ {name} op DETECTED on {company}',
+    log_op_fail: '❌ {name} op failed on {company}',
+    log_no_secrets: '✅ No new secrets at {company}',
+    log_found_secret: '✅ {name} found sev-{sev} secret at {company}',
+    log_leak: '📢 LEAK by {name} on {company} (sev {sev})',
+    log_dividends: '{name} +${amount} dividends',
+    log_interest: '{name} interest +${amount}',
+    log_phase_change: '📉 Phase → {label}',
+    log_no_event: 'No major market event this round.',
+    log_event: '⚡ EVENT: {title}',
+    log_round: '=== Round {n} ===',
+    log_win: '🏆 {name} wins with ${score}M score',
+    log_bot_done: '{name} finished its turn.',
   },
-} as const;
-
-export type TranslationKey = keyof typeof translations.ru;
+};
