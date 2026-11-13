@@ -3,7 +3,7 @@ import { validateGameState } from '../domain/invariants';
 import { decodeCampaignSaveShape } from './decode';
 import { verifySaveChecksum } from './checksum';
 import type { CampaignSaveV1, PersistenceError, PersistenceResult } from './types';
-import type { CampaignSaveRepository, CampaignSaveSummary, SaveRevision } from './repository';
+import type { CampaignSaveCommitOptions, CampaignSaveRepository, CampaignSaveSummary, SaveRevision } from './repository';
 
 interface StoredCampaign {
   campaignId: string;
@@ -113,7 +113,7 @@ export class IndexedDbCampaignSaveRepository implements CampaignSaveRepository {
     }
   }
 
-  async commit(save: CampaignSaveV1): Promise<PersistenceResult<void>> {
+  async commit(save: CampaignSaveV1, options: CampaignSaveCommitOptions = {}): Promise<PersistenceResult<void>> {
     let database: IDBDatabase | undefined;
     try {
       const serialized = canonicalJson(save);
@@ -131,8 +131,14 @@ export class IndexedDbCampaignSaveRepository implements CampaignSaveRepository {
         const store = transaction.objectStore(this.storeName);
         const request = store.get(save.campaignId) as IDBRequest<StoredCampaign | undefined>;
         let concurrentConflict = false;
+        let campaignExists = false;
         request.onsuccess = () => {
           const existing = request.result;
+          if (options.createOnly && existing !== undefined) {
+            campaignExists = true;
+            try { transaction.abort(); } catch { /* transaction may already be inactive */ }
+            return;
+          }
           if ((existing?.current ?? null) !== observedCurrent) {
             concurrentConflict = true;
             try { transaction.abort(); } catch { /* transaction may already be inactive */ }
@@ -155,7 +161,9 @@ export class IndexedDbCampaignSaveRepository implements CampaignSaveRepository {
         transaction.oncomplete = () => resolve({ ok: true, value: undefined });
         transaction.onerror = () => reject(transaction.error ?? new Error('Campaign save transaction failed.'));
         transaction.onabort = () => {
-          if (concurrentConflict) {
+          if (campaignExists) {
+            resolve({ ok: false, error: { code: 'storage.campaign_exists', message: 'A campaign with this ID already exists; import did not overwrite it.' } });
+          } else if (concurrentConflict) {
             resolve({ ok: false, error: { code: 'storage.concurrent_write', message: 'The campaign changed during save. Reload the latest revision and retry.' } });
           } else {
             reject(transaction.error ?? new Error('Campaign save transaction was aborted.'));
