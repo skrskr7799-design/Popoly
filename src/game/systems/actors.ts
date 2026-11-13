@@ -186,7 +186,7 @@ export function advanceAutonomousActors(state: GameState): {
     const companies = actorState.operatingCompanies.map((company) => {
       if (company.organizationId !== 'nodeworks') return company;
       const contracts = company.contracts.map((contract) => contract.id === 'flexible-workload' ? { ...contract, workloadMW: allocation.nodeworksMW } : contract);
-      return { ...company, contracts, deliveredWorkloadMW: contracts.reduce((sum, contract) => sum + contract.workloadMW, 0) };
+      return { ...company, contracts, deliveredWorkloadMW: Math.min(company.deliveredWorkloadMW, contracts.reduce((sum, contract) => sum + contract.workloadMW, 0)) };
     });
     actorState.operatingCompanies = companies;
     actions.push({ actorId: 'asterion-ai', kind: 'customer-allocation', summary: 'Asterion AI reviewed provider pricing, reliability and available capacity, then reallocated flexible compute demand.' });
