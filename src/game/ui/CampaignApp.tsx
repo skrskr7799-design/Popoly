@@ -11,14 +11,6 @@ import type { QuarterReport } from '../systems/quarterReport';
 import { formatMillions, formatPercent, formatQuarter } from './format';
 
 const money = (cents: number) => formatMillions(cents);
-const effectLabel: Record<StrategicInitiativeDefinition['effect']['type'], string> = {
-  'capacity-expansion': 'Installed + operational capacity',
-  'equipment-reservation': 'Equipment delivery allocation',
-  'firm-power': 'Additional grid allocation',
-  resilience: 'Service reliability',
-  'market-study': 'Competitor intelligence',
-};
-
 function getCash(state: GameState, id: string): number {
   return state.organizations.find((item) => item.id === id)?.cashCents ?? 0;
 }
