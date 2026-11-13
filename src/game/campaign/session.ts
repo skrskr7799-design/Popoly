@@ -17,12 +17,10 @@ export type CampaignStage = 'guided' | 'sandbox';
 export interface CampaignSessionOptions {
   seed?: number;
   campaignId?: string;
-  simulationVersion?: string;
   repository?: CampaignSaveRepository;
   now?: () => Date;
   idFactory?: () => string;
   digest?: DigestProvider;
-  compatibility?: LoadCompatibility;
 }
 
 export interface CampaignRestoreResult {
@@ -54,7 +52,6 @@ export class CampaignSession {
   private readonly repository?: CampaignSaveRepository;
   private readonly now: () => Date;
   private readonly digest?: DigestProvider;
-  private readonly compatibility: LoadCompatibility;
 
   readonly campaignId: string;
   readonly createdAt: string;
@@ -69,7 +66,6 @@ export class CampaignSession {
     repository?: CampaignSaveRepository;
     now: () => Date;
     digest?: DigestProvider;
-    compatibility: LoadCompatibility;
     recoveredFromPrevious?: boolean;
   }) {
     this.stateValue = clone(args.state);
@@ -80,7 +76,6 @@ export class CampaignSession {
     this.repository = args.repository;
     this.now = args.now;
     this.digest = args.digest;
-    this.compatibility = args.compatibility;
     this.recoveredFromPrevious = args.recoveredFromPrevious ?? false;
   }
 
@@ -94,11 +89,10 @@ export class CampaignSession {
       state: initializeGame(options.seed),
       campaignId,
       createdAt,
-      simulationVersion: options.simulationVersion ?? CAMPAIGN_SIMULATION_VERSION,
+      simulationVersion: CAMPAIGN_SIMULATION_VERSION,
       repository: options.repository,
       now,
       digest: options.digest,
-      compatibility: options.compatibility ?? defaultCompatibility,
     });
   }
 
@@ -107,7 +101,7 @@ export class CampaignSession {
     repository: CampaignSaveRepository,
     options: Pick<CampaignSessionOptions, 'now' | 'digest' | 'compatibility'> = {},
   ): Promise<PersistenceResult<CampaignRestoreResult>> {
-    const compatibility = options.compatibility ?? defaultCompatibility;
+    const compatibility = defaultCompatibility;
     const restored = await restoreCampaign(repository, campaignId, compatibility, options.digest);
     if (!restored.ok) return restored;
 
@@ -119,7 +113,6 @@ export class CampaignSession {
       repository,
       now: options.now ?? (() => new Date()),
       digest: options.digest,
-      compatibility,
       recoveredFromPrevious: restored.value.recoveredFromPrevious,
     });
     return {
