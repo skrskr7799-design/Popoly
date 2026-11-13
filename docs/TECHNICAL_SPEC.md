@@ -212,24 +212,16 @@ A report is part of the simulation output, not prose assembled ad hoc by UI comp
 
 ## 11. Persistence
 
-Define a versioned save envelope:
-- format identifier;
-- save schema version;
-- simulation/content version;
-- scenario ID and version;
-- campaign ID;
-- created / updated metadata supplied at the application boundary;
-- serialized authoritative state;
-- optional integrity checksum if justified.
+The implementation contract is defined in [SAVE_FORMAT.md](./SAVE_FORMAT.md). Persistence operates on the framework-independent Game Engine state, never on Zustand internals or UI state.
 
-Loading must:
-1. parse safely;
-2. validate envelope and payload;
-3. migrate supported older schemas in ordered migrations;
-4. validate domain invariants;
-5. reject unsupported/corrupt saves with actionable feedback.
+Keep three compatibility dimensions independent:
+- save-envelope schema version;
+- authoritative GameState schema version;
+- scenario content/rules version.
 
-Keep migrations pure and tested. Do not serialize Zustand internals as the save format.
+Loading must decode untrusted JSON structurally before domain validation, verify envelope metadata and integrity, apply only explicitly registered pure migrations, check scenario compatibility, and run the complete domain invariant validator. Unsupported or corrupt saves fail with structured errors; loading never mutates the source save.
+
+The first implementation uses IndexedDB behind a storage adapter and supports JSON import/export. It stores only authoritative GameState at stable quarter boundaries. Autosave, cloud sync, multiplayer, command replay, and legacy UI-store integration are deferred.
 
 ## 12. Testing strategy
 
