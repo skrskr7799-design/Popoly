@@ -990,7 +990,7 @@ describe('autonomous world simulation', () => {
       ? { ...actor, hiddenMetrics: { ...actor.hiddenMetrics, effectiveCapacityMW: 20, currentWorkloadMW: 19.5, priceCentsPerMWQuarter: 40_500_000 } }
       : actor);
     const result = advanceQuarter(state);
-    expect(result.ok).toBe(true);
+    expect(result.ok, JSON.stringify(result)).toBe(true);
     if (!result.ok) return;
     const kestrel = result.state.actors.find((actor) => actor.organizationId === 'kestrel-compute')!;
     expect(kestrel.hiddenMetrics.priceCentsPerMWQuarter).toBeGreaterThan(40_500_000);
@@ -1206,7 +1206,7 @@ describe('debt covenant monitoring and enforcement', () => {
     expect(loan.covenantStartQuarter).toBe(3);
     expect(loan.covenantStatus).toBe('compliant');
     const result = advanceQuarter(distressed(state));
-    expect(result.ok).toBe(true);
+    expect(result.ok, JSON.stringify(result)).toBe(true);
     if (!result.ok) return;
     const update = result.report.covenantUpdates?.find((item) => item.debtId === loanId);
     expect(update?.status).toBe('grace');
@@ -1217,7 +1217,7 @@ describe('debt covenant monitoring and enforcement', () => {
   it('restricts new borrowing and applies a one-time rate step-up after grace expires', () => {
     const { state, offer, loanId } = createFundedLoan();
     const first = advanceQuarter(distressed(state));
-    expect(first.ok).toBe(true);
+    expect(first.ok, JSON.stringify(first)).toBe(true);
     if (!first.ok) return;
     const second = advanceQuarter(distressed(first.state));
     expect(second.ok).toBe(true);
@@ -1430,7 +1430,7 @@ describe('debt refinancing and lender-led restructuring', () => {
       requestCovenantWaiver: true,
       reason: 'Temporary energy-cost shock; preserve operating continuity.',
     }] });
-    expect(restructured.ok).toBe(true);
+    expect(restructured.ok, JSON.stringify(restructured)).toBe(true);
     if (!restructured.ok) return;
     const updated = restructured.state.debts.find((item) => item.id === distressedDebt.id)!;
     expect(restructured.report.debtRestructurings?.[0]?.status).toBe('accepted');
@@ -1654,7 +1654,7 @@ describe('quarter funding and debt-service invariants', () => {
       : actor);
     state.equipmentOrders = [{
       id: 'kestrel-expansion-delivery', buyerId: 'kestrel-compute', quantityMWEquivalent: 2,
-      placedQuarter: 0, deliveryQuarter: 1, status: 'delivered',
+      placedQuarter: 1, deliveryQuarter: 1, status: 'delivered',
     }];
     const result = advanceQuarter(state);
     expect(result.ok).toBe(true);
