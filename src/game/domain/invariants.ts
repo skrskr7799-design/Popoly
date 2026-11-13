@@ -38,6 +38,8 @@ export function validateGameState(state: GameState): ValidationIssue[] {
         (debt.arrearsInterestCents !== undefined && (!Number.isSafeInteger(debt.arrearsInterestCents) || debt.arrearsInterestCents < 0)) ||
         (debt.overdueQuarters !== undefined && (!Number.isInteger(debt.overdueQuarters) || debt.overdueQuarters < 0)) ||
         (debt.paymentStatus !== undefined && !['current', 'overdue', 'defaulted', 'settled'].includes(debt.paymentStatus)) ||
+        (debt.crossDefaultClause !== undefined && typeof debt.crossDefaultClause !== 'boolean) ||
+        (debt.crossDefaultedByDebtId !== undefined && (!debtIds.has(debt.crossDefaultedByDebtId) || debt.crossDefaultedByDebtId === debt.id)) ||
         (debt.facilityLimitCents !== undefined &&
           (!Number.isSafeInteger(debt.facilityLimitCents) || debt.facilityLimitCents < debt.principalCents))) {
       issues.push({ code: 'finance.debt_invalid', message: 'Debt instrument has an invalid borrower, principal, interest rate, or facility limit.', entityId: debt.id });
@@ -65,6 +67,9 @@ export function validateGameState(state: GameState): ValidationIssue[] {
   };
   for (const debt of state.debts) {
     validateCovenants(debt.covenantTerms, debt.id);
+    if (debt.crossDefaultedByDebtId !== undefined && !state.debts.some((item) => item.id === debt.crossDefaultedByDebtId && item.borrowerId === debt.borrowerId && item.paymentStatus === 'defaulted')) {
+      issues.push({ code: 'finance.cross_default_source_invalid', message: 'Cross-default source must be a currently defaulted instrument of the same legal borrower.', entityId: debt.id });
+    }
     if ((debt.covenantStartQuarter !== undefined && (!Number.isInteger(debt.covenantStartQuarter) || debt.covenantStartQuarter < 1)) ||
         (debt.covenantBreachStreak !== undefined && (!Number.isInteger(debt.covenantBreachStreak) || debt.covenantBreachStreak < 0)) ||
         (debt.covenantStatus !== undefined && !['compliant', 'grace', 'breached'].includes(debt.covenantStatus)) ||
