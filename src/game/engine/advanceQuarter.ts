@@ -841,6 +841,9 @@ export function advanceQuarter(state: GameState, commands: QuarterCommands = {})
           available -= principalDue.principalCents;
         } else {
           unpaidPrincipalByDebt.set(debt.id, Math.min(debt.principalCents, principalDue.principalCents));
+          // A higher-priority contractual installment reserves the remaining liquidity;
+          // later instruments cannot leapfrog it just because this installment is all-or-nothing.
+          available = 0;
         }
       }
       availableByBorrower.set(debt.borrowerId, available);
