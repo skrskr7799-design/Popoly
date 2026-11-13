@@ -79,6 +79,7 @@ export interface DebtDrawdownReportLine {
 export interface DebtRepaymentReportLine {
   debtId: string;
   borrowerId: string;
+  lenderId?: string;
   principalCents: MoneyCents;
   repaymentType: 'scheduled' | 'maturity' | 'voluntary';
 }
