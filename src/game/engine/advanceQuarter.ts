@@ -418,7 +418,22 @@ export function advanceQuarter(state: GameState, commands: QuarterCommands = {})
 
     for (const project of completed) candidate = applyProjectEffect(candidate, project);
 
-    const report = buildQuarterReport(candidate);\n    const nodeworksOperations = report.companies.find((item) => item.companyId === 'nodeworks')?.operations;\n    if (nodeworksOperations) {\n      const fixedContracts = candidate.operatingCompanies.find((item) => item.organizationId === 'nodeworks')?.contracts.filter((item) => item.flexibility === 'contracted') ?? [];\n      const fixedResults = nodeworksOperations.fulfilledContracts.filter((line) => fixedContracts.some((contract) => contract.id === line.contractId));\n      const hasSlaBreach = fixedResults.some((line) => line.serviceCreditCents > 0);\n      const hasMaterialShortfall = fixedResults.some((line) => {\n        const contract = fixedContracts.find((item) => item.id === line.contractId)!;\n        return contract.workloadMW - line.deliveredMW > 0.25;\n      });\n      if (hasSlaBreach || hasMaterialShortfall) {\n        candidate = { ...candidate, organizations: candidate.organizations.map((organization) => organization.id === 'nodeworks'\n          ? { ...organization, reputation: Math.max(0, organization.reputation - (hasSlaBreach ? 1.5 : 1)) }\n          : organization) };\n      }\n    }
+    const report = buildQuarterReport(candidate);
+    const nodeworksOperations = report.companies.find((item) => item.companyId === 'nodeworks')?.operations;
+    if (nodeworksOperations) {
+      const fixedContracts = candidate.operatingCompanies.find((item) => item.organizationId === 'nodeworks')?.contracts.filter((item) => item.flexibility === 'contracted') ?? [];
+      const fixedResults = nodeworksOperations.fulfilledContracts.filter((line) => fixedContracts.some((contract) => contract.id === line.contractId));
+      const hasSlaBreach = fixedResults.some((line) => line.serviceCreditCents > 0);
+      const hasMaterialShortfall = fixedResults.some((line) => {
+        const contract = fixedContracts.find((item) => item.id === line.contractId)!;
+        return contract.workloadMW - line.deliveredMW > 0.25;
+      });
+      if (hasSlaBreach || hasMaterialShortfall) {
+        candidate = { ...candidate, organizations: candidate.organizations.map((organization) => organization.id === 'nodeworks'
+          ? { ...organization, reputation: Math.max(0, organization.reputation - (hasSlaBreach ? 1.5 : 1)) }
+          : organization) };
+      }
+    }
     const negotiations = resolveContractOffers(candidate, commands.contractOffers ?? []);
     candidate = negotiations.state;
     report.contractNegotiations = negotiations.results;
