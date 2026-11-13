@@ -38,6 +38,9 @@ export function validateGameState(state: GameState): ValidationIssue[] {
           (!Number.isSafeInteger(debt.facilityLimitCents) || debt.facilityLimitCents < debt.principalCents))) {
       issues.push({ code: 'finance.debt_invalid', message: 'Debt instrument has an invalid borrower, principal, interest rate, or facility limit.', entityId: debt.id });
     }
+    if (debt.lenderId !== undefined && !state.lenders.some((lender) => lender.organizationId === debt.lenderId)) {
+      issues.push({ code: 'finance.debt_lender_missing', message: 'Debt instrument references a missing lender policy.', entityId: debt.id });
+    }
     debtByBorrower.set(debt.borrowerId, (debtByBorrower.get(debt.borrowerId) ?? 0) + debt.principalCents);
   }
   for (const organization of state.organizations) {
