@@ -1045,11 +1045,14 @@ export function advanceQuarter(state: GameState, commands: QuarterCommands = {})
         const assessment = calculateCreditAssessment(candidate, debt.borrowerId, operatingCashFlow);
         const distressed = debt.covenantStatus === 'breached' || debt.covenantStatus === 'grace';
         const materiallyWeak = (assessment?.score ?? 850) < 600;
+        const protectivePackage =
+          (proposal.requestedMaturityQuarter ?? debt.maturityQuarter ?? 0) > (debt.maturityQuarter ?? candidate.quarter) &&
+          (proposal.requestedQuarterlyInterestRate ?? debt.quarterlyInterestRate) < debt.quarterlyInterestRate;
         const approved = lender?.riskAppetite === 'growth'
-          ? distressed || (assessment?.score ?? 850) < 650
+          ? distressed || materiallyWeak
           : lender?.riskAppetite === 'balanced'
             ? debt.covenantStatus === 'breached' || materiallyWeak
-            : debt.covenantStatus === 'breached' && operatingCashFlow > 0;
+            : debt.covenantStatus === 'breached' && (operatingCashFlow > 0 || protectivePackage);
         const reason = approved
           ? proposal.requestCovenantWaiver
             ? 'The lender approved a covenant waiver after reviewing the borrower’s distress and recovery capacity.'
