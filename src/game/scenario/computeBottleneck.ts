@@ -6,11 +6,8 @@ export const COMPUTE_BOTTLENECK_SCENARIO_VERSION = '0.1.0';
 
 export function createComputeBottleneckState(seed = 2035): GameState {
   return {
-    schemaVersion: 1,
-    scenarioId: COMPUTE_BOTTLENECK_SCENARIO_ID,
-    scenarioVersion: COMPUTE_BOTTLENECK_SCENARIO_VERSION,
-    seed,
-    quarter: 1,
+    schemaVersion: 1, scenarioId: COMPUTE_BOTTLENECK_SCENARIO_ID,
+    scenarioVersion: COMPUTE_BOTTLENECK_SCENARIO_VERSION, seed, quarter: 1,
     organizations: [
       { id: 'meridian-group', name: 'Meridian Group', kind: 'holding', cashCents: moneyFromDollars(14_000_000), debtCents: moneyFromDollars(3_000_000), reputation: 62 },
       { id: 'nodeworks', name: 'NodeWorks', kind: 'operating_company', cashCents: moneyFromDollars(4_200_000), debtCents: moneyFromDollars(14_000_000), reputation: 74 },
@@ -32,50 +29,30 @@ export function createComputeBottleneckState(seed = 2035): GameState {
       { id: 'nodeworks-infrastructure-debt', borrowerId: 'nodeworks', principalCents: moneyFromDollars(14_000_000), quarterlyInterestRate: 0.0225 },
     ],
     holding: {
-      organizationId: 'meridian-group',
-      leadershipCapacityPerQuarter: 4,
-      institutionalAccess: 55,
-      revolverLimitCents: moneyFromDollars(8_000_000),
-      strategicRiskPolicy: 'balanced',
+      organizationId: 'meridian-group', leadershipCapacityPerQuarter: 4, institutionalAccess: 55,
+      revolverLimitCents: moneyFromDollars(8_000_000), strategicRiskPolicy: 'balanced',
     },
-    operatingCompanies: [
-      {
-        organizationId: 'nodeworks',
-        issuedShares: 10_000_000,
-        capacity: {
-          installedITMW: 24,
-          gridAllocationMW: 20,
-          commissionedEquipmentMW: 23,
-          operationalLimitMW: 22,
-          reliability: 0.985,
-        },
-        deliveredWorkloadMW: 17,
-        cashCosts: {
-          energyPriceCentsPerMWh: moneyFromDollars(72),
-          operationsAndStaffingCents: moneyFromDollars(1_350_000),
-          maintenanceCents: moneyFromDollars(620_000),
-          networkAndConnectivityCents: moneyFromDollars(460_000),
-          overheadComplianceInsuranceCents: moneyFromDollars(580_000),
-        },
-        contracts: [
-          { id: 'asterion-contract-a', customerId: 'asterion-ai', providerId: 'nodeworks', workloadMW: 8, priceCentsPerMWQuarter: moneyFromDollars(510_000), flexibility: 'contracted' },
-          { id: 'asterion-contract-b', customerId: 'asterion-ai', providerId: 'nodeworks', workloadMW: 5, priceCentsPerMWQuarter: moneyFromDollars(485_000), flexibility: 'contracted' },
-          { id: 'flexible-workload', customerId: 'asterion-ai', providerId: 'nodeworks', workloadMW: 4, priceCentsPerMWQuarter: moneyFromDollars(415_000), flexibility: 'flexible' },
-        ],
+    operatingCompanies: [{
+      organizationId: 'nodeworks', issuedShares: 10_000_000,
+      capacity: { installedITMW: 24, gridAllocationMW: 20, commissionedEquipmentMW: 23, operationalLimitMW: 22, reliability: 0.985 },
+      deliveredWorkloadMW: 17,
+      cashCosts: {
+        operationsAndStaffingCents: moneyFromDollars(1_350_000),
+        maintenanceCents: moneyFromDollars(620_000),
+        networkAndConnectivityCents: moneyFromDollars(460_000),
+        overheadComplianceInsuranceCents: moneyFromDollars(580_000),
       },
-    ],
-    regionalMarkets: [
-      {
-        id: 'north-region',
-        name: 'North Regional Compute & Power Market',
-        quarterHours: 2_160,
-        availablePowerMW: 64,
-        committedPowerMW: 58,
-        referenceEnergyPriceCentsPerMWh: moneyFromDollars(72),
-        immediateFirmPowerHeadroomMW: 2,
-        equipmentDeliveryPoolMWEquivalentPerQuarter: 10,
-      },
-    ],
+      contracts: [
+        { id: 'asterion-contract-a', customerId: 'asterion-ai', providerId: 'nodeworks', workloadMW: 8, priceCentsPerMWQuarter: moneyFromDollars(510_000), flexibility: 'contracted' },
+        { id: 'asterion-contract-b', customerId: 'asterion-ai', providerId: 'nodeworks', workloadMW: 5, priceCentsPerMWQuarter: moneyFromDollars(485_000), flexibility: 'contracted' },
+        { id: 'flexible-workload', customerId: 'asterion-ai', providerId: 'nodeworks', workloadMW: 4, priceCentsPerMWQuarter: moneyFromDollars(415_000), flexibility: 'flexible' },
+      ],
+    }],
+    regionalMarkets: [{
+      id: 'north-region', name: 'North Regional Compute & Power Market', quarterHours: 2_160,
+      availablePowerMW: 64, committedPowerMW: 58, referenceEnergyPriceCentsPerMWh: moneyFromDollars(72),
+      immediateFirmPowerHeadroomMW: 2, equipmentDeliveryPoolMWEquivalentPerQuarter: 10,
+    }],
     actors: [
       { organizationId: 'kestrel-compute', goals: ['expand-capacity', 'protect-anchor-contracts', 'preserve-liquidity'], hiddenMetrics: { effectiveCapacityMinMW: 22, effectiveCapacityMaxMW: 26, deliveredWorkloadMinMW: 17, deliveredWorkloadMaxMW: 21, reliabilityMin: 0.96, reliabilityMax: 0.98 } },
       { organizationId: 'asterion-ai', goals: ['secure-reliable-compute', 'diversify-suppliers', 'reduce-unit-cost'], hiddenMetrics: { demandMW: 28, nodeworksContractMW: 13, kestrelContractMW: 10, flexibleDemandMW: 5 } },
