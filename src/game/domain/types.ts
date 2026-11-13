@@ -80,6 +80,9 @@ export interface LenderState {
   /** Remaining lending capacity, separate from the lender's cash balance. */
   availableCapacityCents: MoneyCents;
   riskAppetite: 'conservative' | 'balanced' | 'growth';
+  baseQuarterlyInterestRate: number;
+  minimumCreditScore: number;
+  maxLoanToAnnualCashFlow: number;
 }
 export interface LoanOfferState {
   id: EntityId;
@@ -90,6 +93,8 @@ export interface LoanOfferState {
   maturityQuarter: number;
   expiresAfterQuarter: number;
   collateralDescription?: string;
+  creditScore: number;
+  creditRating: 'AAA' | 'AA' | 'A' | 'BBB' | 'BB' | 'B' | 'CCC';
   status: 'available' | 'accepted' | 'expired' | 'withdrawn';
 }
 export interface StrategicProjectState {
