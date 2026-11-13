@@ -4,7 +4,7 @@ import { createRandomState, nextRandom } from '../engine/random';
 
 export interface ActorAction {
   actorId: string;
-  kind: 'demand-growth' | 'capacity-expansion-started' | 'capacity-expansion-completed' | 'capacity-expansion-delayed' | 'energy-price-adjustment' | 'regulatory-review';
+  kind: 'demand-growth' | 'capacity-expansion-started' | 'capacity-expansion-completed' | 'capacity-expansion-delayed' | 'equipment-procurement-delayed' | 'equipment-delivery-delayed' | 'energy-price-adjustment' | 'regulatory-review';
   summary: string;
 }
 
@@ -47,7 +47,10 @@ function updateActor(
     if (pipeline > 1) {
       metrics.expansionPipelineQuarters = pipeline - 1;
     } else if (pipeline === 1) {
-      if (immediateFirmPowerHeadroomMW >= 2) {
+      const orderPlacedQuarter = metrics.expansionOrderPlacedQuarter;
+      const equipmentDelivered = Number.isFinite(orderPlacedQuarter) && state.equipmentOrders.some((order) =>
+        order.buyerId === actorId && order.placedQuarter === orderPlacedQuarter && order.status === 'delivered');
+      if (immediateFirmPowerHeadroomMW >= 2 && equipmentDelivered) {
         metrics.expansionPipelineQuarters = 0;
         metrics.effectiveCapacityMinMW = (metrics.effectiveCapacityMinMW ?? 0) + 2;
         metrics.effectiveCapacityMaxMW = (metrics.effectiveCapacityMaxMW ?? 0) + 2;
@@ -57,22 +60,46 @@ function updateActor(
           summary: 'Kestrel Compute brought additional capacity online after securing 2 MW of firm grid capacity.',
         });
       } else {
-        // The physical project is ready, but it cannot operate without power.
-        // Keep it at one quarter so it can complete when capacity becomes available.
         metrics.expansionPipelineQuarters = 1;
+        const kind = !equipmentDelivered ? 'equipment-delivery-delayed' : 'capacity-expansion-delayed';
         actions.push({
           actorId,
-          kind: 'capacity-expansion-delayed',
-          summary: 'Kestrel Compute completed construction but its expansion is waiting for firm grid capacity.',
+          kind,
+          summary: !equipmentDelivered
+            ? 'Kestrel Compute has completed construction but its equipment delivery is not ready.'
+            : 'Kestrel Compute completed construction but its expansion is waiting for firm grid capacity.',
         });
       }
     } else if (roll < 0.3) {
-      metrics.expansionPipelineQuarters = 2;
-      actions.push({
-        actorId,
-        kind: 'capacity-expansion-started',
-        summary: 'Kestrel Compute secured a new capacity expansion programme.',
-      });
+      const market = state.regionalMarkets[0];
+      const deliveryQuarter = state.quarter + 2;
+      const reserved = state.equipmentOrders
+        .filter((order) => order.status === 'reserved' && order.deliveryQuarter === deliveryQuarter)
+        .reduce((sum, order) => sum + order.quantityMWEquivalent, 0);
+      const available = (market?.equipmentDeliveryPoolMWEquivalentPerQuarter ?? 0) - 2 - reserved;
+      if (available >= 2) {
+        metrics.expansionPipelineQuarters = 2;
+        metrics.expansionOrderPlacedQuarter = state.quarter;
+        state.equipmentOrders.push({
+          id: `kestrel-equipment-q${state.quarter}`,
+          buyerId: actorId,
+          quantityMWEquivalent: 2,
+          placedQuarter: state.quarter,
+          deliveryQuarter,
+          status: 'reserved',
+        });
+        actions.push({
+          actorId,
+          kind: 'capacity-expansion-started',
+          summary: 'Kestrel Compute secured equipment allocation and began a capacity expansion programme.',
+        });
+      } else {
+        actions.push({
+          actorId,
+          kind: 'equipment-procurement-delayed',
+          summary: 'Kestrel Compute could not secure a place in Silicon Vein’s constrained delivery window.',
+        });
+      }
     }
   }
 
@@ -91,7 +118,8 @@ export function advanceAutonomousActors(state: GameState): {
   const actions: ActorAction[] = [];
   let regionalMarkets: RegionalMarketState[] = state.regionalMarkets.map((market) => ({ ...market }));
   const initialFirmHeadroom = regionalMarkets[0]?.immediateFirmPowerHeadroomMW ?? 0;
-  const actors = state.actors.map((actor) => updateActor(actor, state, actions, initialFirmHeadroom));
+  const actorState = { ...state, equipmentOrders: state.equipmentOrders.map((order) => ({ ...order })) };
+  const actors = actorState.actors.map((actor) => updateActor(actor, actorState, actions, initialFirmHeadroom));
 
   // A rival expansion consumes the same scarce firm-power headroom that the
   // player's power initiative uses. Player-sponsored projects resolve first.
@@ -146,5 +174,5 @@ export function advanceAutonomousActors(state: GameState): {
     });
   }
 
-  return { state: { ...state, actors, regionalMarkets }, actions };
+  return { state: { ...state, actors, regionalMarkets, equipmentOrders: actorState.equipmentOrders }, actions };
 }
