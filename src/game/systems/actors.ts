@@ -1,10 +1,11 @@
 import { moneyFromCents } from '../domain/money';
 import type { ActorState, GameState, RegionalMarketState } from '../domain/types';
+import { calculateEffectiveCapacityMW } from './economy';
 import { createRandomState, nextRandom } from '../engine/random';
 
 export interface ActorAction {
   actorId: string;
-  kind: 'demand-growth' | 'capacity-expansion-started' | 'capacity-expansion-completed' | 'capacity-expansion-delayed' | 'equipment-procurement-delayed' | 'equipment-delivery-delayed' | 'energy-price-adjustment' | 'regulatory-review';
+  kind: 'demand-growth' | 'capacity-expansion-started' | 'capacity-expansion-completed' | 'capacity-expansion-delayed' | 'equipment-procurement-delayed' | 'equipment-delivery-delayed' | 'energy-price-adjustment' | 'regulatory-review' | 'customer-allocation';
   summary: string;
 }
 
@@ -106,6 +107,53 @@ function updateActor(
   return { ...actor, hiddenMetrics: metrics };
 }
 
+interface FlexibleAllocation { nodeworksMW: number; kestrelMW: number; otherMW: number; }
+
+/** Allocate uncommitted customer demand without changing fixed contracts. */
+function allocateAsterionFlexibleDemand(state: GameState, demandMW: number): FlexibleAllocation {
+  const customer = state.actors.find((actor) => actor.organizationId === 'asterion-ai');
+  const kestrel = state.actors.find((actor) => actor.organizationId === 'kestrel-compute');
+  const nodeworks = state.operatingCompanies.find((company) => company.organizationId === 'nodeworks');
+  if (!customer || !kestrel || !nodeworks) return { nodeworksMW: 0, kestrelMW: 0, otherMW: 0 };
+  const nodeworksFixedMW = customer.hiddenMetrics.nodeworksContractMW ?? 0;
+  const kestrelFixedMW = customer.hiddenMetrics.kestrelContractMW ?? 0;
+  const flexibleMW = Math.max(0, demandMW - nodeworksFixedMW - kestrelFixedMW);
+  const nodeworksCapacityMW = Math.max(0, calculateEffectiveCapacityMW(nodeworks) - nodeworksFixedMW);
+  const kestrelCapacityMW = Math.max(0, (kestrel.hiddenMetrics.effectiveCapacityMW ?? kestrel.hiddenMetrics.effectiveCapacityMinMW ?? 0) - (kestrel.hiddenMetrics.currentWorkloadMW ?? kestrel.hiddenMetrics.deliveredWorkloadMaxMW ?? 0));
+  const otherCapacityMW = Math.max(0, customer.hiddenMetrics.otherProviderCapacityMW ?? 0);
+  const suppliers = [
+    { id: 'nodeworks', capacity: nodeworksCapacityMW, reliability: nodeworks.capacity.reliability, price: nodeworks.contracts.find((contract) => contract.flexibility === 'flexible')?.priceCentsPerMWQuarter ?? 41_500_000, fixed: nodeworksFixedMW },
+    { id: 'kestrel', capacity: kestrelCapacityMW, reliability: kestrel.hiddenMetrics.reliability ?? 0.97, price: kestrel.hiddenMetrics.priceCentsPerMWQuarter ?? 40_500_000, fixed: kestrelFixedMW },
+    { id: 'other', capacity: otherCapacityMW, reliability: customer.hiddenMetrics.otherProviderReliability ?? 0.965, price: customer.hiddenMetrics.otherProviderPriceCentsPerMWQuarter ?? 43_000_000, fixed: 0 },
+  ].map((supplier) => {
+    const concentration = supplier.fixed / Math.max(1, demandMW);
+    const concentrationFactor = concentration >= 0.45 ? 0.72 : concentration >= 0.35 ? 0.88 : 1;
+    const priceAttractiveness = 41_500_000 / Math.max(1, supplier.price);
+    return { ...supplier, score: (supplier.reliability * 0.65 + priceAttractiveness * 0.35) * concentrationFactor, allocation: 0 };
+  });
+  let remaining = flexibleMW;
+  let active = suppliers.filter((supplier) => supplier.capacity > 0);
+  while (remaining > 1e-9 && active.length > 0) {
+    const totalScore = active.reduce((sum, supplier) => sum + supplier.score, 0);
+    if (totalScore <= 0) break;
+    const round = remaining;
+    const capped = active.filter((supplier) => round * supplier.score / totalScore >= supplier.capacity - supplier.allocation);
+    if (capped.length === 0) {
+      for (const supplier of active) supplier.allocation += round * supplier.score / totalScore;
+      remaining = 0;
+    } else {
+      for (const supplier of capped) {
+        const room = Math.max(0, supplier.capacity - supplier.allocation);
+        supplier.allocation += room;
+        remaining -= room;
+      }
+      const cappedIds = new Set(capped.map((supplier) => supplier.id));
+      active = active.filter((supplier) => !cappedIds.has(supplier.id));
+    }
+  }
+  const get = (id: string) => suppliers.find((supplier) => supplier.id === id)?.allocation ?? 0;
+  return { nodeworksMW: get('nodeworks'), kestrelMW: get('kestrel'), otherMW: get('other') };
+}
 /**
  * Advances independent actors after the current quarter's operating report.
  * Decisions are deterministic for a given world seed and quarter, while true
@@ -120,6 +168,29 @@ export function advanceAutonomousActors(state: GameState): {
   const initialFirmHeadroom = regionalMarkets[0]?.immediateFirmPowerHeadroomMW ?? 0;
   const actorState = { ...state, equipmentOrders: state.equipmentOrders.map((order) => ({ ...order })) };
   const actors = actorState.actors.map((actor) => updateActor(actor, actorState, actions, initialFirmHeadroom));
+
+  const asterion = actors.find((actor) => actor.organizationId === 'asterion-ai');
+  if (asterion && Number.isFinite(asterion.hiddenMetrics.demandMW)) {
+    const allocation = allocateAsterionFlexibleDemand(actorState, asterion.hiddenMetrics.demandMW);
+    const customerIndex = actors.findIndex((actor) => actor.organizationId === 'asterion-ai');
+    if (customerIndex >= 0) {
+      const current = actors[customerIndex]!;
+      actors[customerIndex] = { ...current, hiddenMetrics: {
+        ...current.hiddenMetrics,
+        flexibleDemandMW: Math.max(0, asterion.hiddenMetrics.demandMW - (asterion.hiddenMetrics.nodeworksContractMW ?? 0) - (asterion.hiddenMetrics.kestrelContractMW ?? 0)),
+        nodeworksFlexibleMW: allocation.nodeworksMW,
+        kestrelFlexibleMW: allocation.kestrelMW,
+        otherFlexibleMW: allocation.otherMW,
+      } };
+    }
+    const companies = actorState.operatingCompanies.map((company) => {
+      if (company.organizationId !== 'nodeworks') return company;
+      const contracts = company.contracts.map((contract) => contract.id === 'flexible-workload' ? { ...contract, workloadMW: allocation.nodeworksMW } : contract);
+      return { ...company, contracts, deliveredWorkloadMW: contracts.reduce((sum, contract) => sum + contract.workloadMW, 0) };
+    });
+    actorState.operatingCompanies = companies;
+    actions.push({ actorId: 'asterion-ai', kind: 'customer-allocation', summary: 'Asterion AI reviewed provider pricing, reliability and available capacity, then reallocated flexible compute demand.' });
+  }
 
   // A rival expansion consumes the same scarce firm-power headroom that the
   // player's power initiative uses. Player-sponsored projects resolve first.
@@ -174,5 +245,5 @@ export function advanceAutonomousActors(state: GameState): {
     });
   }
 
-  return { state: { ...state, actors, regionalMarkets, equipmentOrders: actorState.equipmentOrders }, actions };
+  return { state: { ...state, actors, regionalMarkets, operatingCompanies: actorState.operatingCompanies, equipmentOrders: actorState.equipmentOrders }, actions };
 }
