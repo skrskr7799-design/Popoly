@@ -61,6 +61,7 @@ export function createComputeBottleneckState(seed = 2035): GameState {
       { organizationId: 'regional-infrastructure-authority', goals: ['grid-resilience', 'competition', 'regional-jobs', 'investment'], hiddenMetrics: {} },
     ],
     projects: [],
+    equipmentOrders: [],
     playerIntelligence: [
       { subjectId: 'kestrel-compute', metric: 'effectiveCapacityMW', min: 22, max: 26, knowledge: 'estimated', confidence: 0.65, observedQuarter: 1, source: 'market analyst consensus' },
       { subjectId: 'kestrel-compute', metric: 'deliveredWorkloadMW', min: 17, max: 21, knowledge: 'estimated', confidence: 0.7, observedQuarter: 1, source: 'customer and grid reports' },
