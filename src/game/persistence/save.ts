@@ -18,7 +18,7 @@ export async function createCampaignSave(
     }
     if (!metadata.campaignId.trim() || !metadata.simulationVersion.trim() ||
         !Number.isFinite(Date.parse(metadata.createdAt)) || !Number.isFinite(Date.parse(metadata.updatedAt)) ||
-        metadata.updatedAt < metadata.createdAt) {
+        Date.parse(metadata.updatedAt) < Date.parse(metadata.createdAt)) {
       return { ok: false, error: { code: 'save.metadata_invalid', message: 'Campaign identity, timestamps, or simulation version are invalid.' } };
     }
     const payload = {
