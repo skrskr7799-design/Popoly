@@ -111,4 +111,13 @@ The first playable engine slice now includes a transactional quarter resolver, a
 - An end-to-end renewal scenario renews NodeWorks' larger anchor contract, loses the smaller contract to Kestrel's confidential competing bid, serves the final contracted quarter, expires the agreement, and verifies the 5 MW guaranteed-volume transfer and next-quarter contract/revenue ledger.
 - Customer relationship changes consume the resolved quarter's actual service snapshot. Renewal terms accepted after the report cannot rewrite the service history for the quarter that has already elapsed. Relationship scores stop drifting upward when no fixed customer agreement remains, and renewal-risk estimates are removed when their contracts expire.
 
+### Credit market foundation
+
+- Lenders are legal organizations with separate lending-capacity and risk-appetite records.
+- Scenario-originated loan offers identify a single borrower and state principal, quarterly rate, maturity, expiry, and optional collateral description.
+- Accepting an offer transfers cash from lender to borrower, consumes lender capacity, and creates debt against that exact borrower. Holding and subsidiary balances remain legally separate.
+- Lender liquidity and remaining credit capacity are both checked; multiple acceptances are aggregated and the quarter rejects atomically if either limit is exceeded.
+- New loan interest begins in the following quarter; maturity uses the existing balloon principal repayment mechanism. Unaccepted offers expire after their final valid quarter.
+- Dynamic underwriting, borrower credit ratings, negotiated covenants, collateral enforcement, refinancing, and lender distress behavior are not implemented yet.
+
 This is an initial simulation layer, not the final economic model. In particular, deeper contract negotiations and renewals, financing choices, project dependencies, regulatory consequences, and richer information-quality mechanics remain future work.
