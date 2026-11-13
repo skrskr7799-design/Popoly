@@ -71,10 +71,10 @@ export function createComputeBottleneckState(seed = 2035): GameState {
     loanOffers: [
       { id: 'northstar-nodeworks-q1', lenderId: 'northstar-commercial-bank', borrowerId: 'nodeworks',
         principalCents: moneyFromDollars(2_000_000), quarterlyInterestRate: 0.028,
-        maturityQuarter: 9, expiresAfterQuarter: 2, collateralDescription: 'Equipment and receivables', status: 'available' },
+        maturityQuarter: 9, expiresAfterQuarter: 2, collateralDescription: 'Equipment and receivables', creditScore: 686, creditRating: 'BBB', status: 'available' },
       { id: 'frontier-meridian-q1', lenderId: 'frontier-development-bank', borrowerId: 'meridian-group',
         principalCents: moneyFromDollars(3_000_000), quarterlyInterestRate: 0.032,
-        maturityQuarter: 9, expiresAfterQuarter: 2, collateralDescription: 'Holding-company assets; covenant package applies', status: 'available' },
+        maturityQuarter: 9, expiresAfterQuarter: 2, collateralDescription: 'Holding-company assets; covenant package applies', creditScore: 528, creditRating: 'B', status: 'available' },
     ],
     playerIntelligence: [
       { subjectId: 'kestrel-compute', metric: 'effectiveCapacityMW', min: 22, max: 26, knowledge: 'estimated', confidence: 0.65, observedQuarter: 1, source: 'market analyst consensus' },
