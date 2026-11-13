@@ -275,10 +275,11 @@ describe('IndexedDB campaign repository', () => {
 
   it('rejects a stale concurrent write instead of silently overwriting the first commit', async () => {
     const repository = new IndexedDbCampaignSaveRepository({ databaseName: 'popoly-idb-concurrency-test' });
+    const competingRepository = new IndexedDbCampaignSaveRepository({ databaseName: 'popoly-idb-concurrency-test' });
     const first = await makeIndexedDbSave('idb-concurrent', 1, '2035-01-01T00:00:00.000Z');
     const second = await makeIndexedDbSave('idb-concurrent', 2, '2035-04-01T00:00:00.000Z');
 
-    const results = await Promise.all([repository.commit(first), repository.commit(second)]);
+    const results = await Promise.all([repository.commit(first), competingRepository.commit(second)]);
     expect(results.filter((result) => result.ok)).toHaveLength(1);
     expect(results.filter((result) => !result.ok)).toHaveLength(1);
     const rejected = results.find((result) => !result.ok);
