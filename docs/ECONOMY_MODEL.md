@@ -264,3 +264,10 @@ Repayment is funded only from the legal borrower's opening cash. Multiple repaym
 A debt instrument may define a fixed quarterly principal installment and a final maturity quarter. Scheduled installments are paid automatically during the quarter from the borrower's own cash and are reported separately from voluntary prepayments. In the maturity quarter, all remaining principal becomes due as a balloon repayment, replacing the ordinary installment for that instrument. Voluntary repayment can be added to a scheduled installment only when the combined amount does not exceed outstanding principal.
 
 The quarter is rejected atomically if mandatory scheduled or maturity principal cannot be funded from the borrower's opening cash after the quarter's modeled operating and interest flows are accounted for. The first implementation does not yet model arrears, covenant breaches, lender grace periods, or refinancing; those belong to the subsequent credit-facility and distress systems. Interest continues to accrue on opening principal for the quarter, and principal paid during the quarter reduces the following quarter's interest base.
+
+
+## 20. Committed credit facility drawdowns
+
+A debt instrument with a committed facility limit may be drawn in an explicit quarter command. The drawdown increases the facility principal and the legal borrower's cash and debt balances by the same amount. Aggregate outstanding principal may never exceed the committed limit. Term loans without a facility limit cannot be redrawn.
+
+Drawdown proceeds are recorded as a financing cash inflow in the borrower's cash bridge. They are applied after the current quarter's interest report is calculated, so new borrowing affects interest from the following quarter. A drawdown cannot fund another command in the same quarter: affordability checks for projects and principal repayments use opening cash. This avoids implicit ordering and makes financing decisions auditable. The facility's undrawn commitment is the difference between its limit and outstanding principal.
