@@ -55,6 +55,14 @@ export interface IntelligenceEstimate {
   subjectId: EntityId; metric: string; min: number; max: number; knowledge: KnowledgeClass;
   confidence: number; observedQuarter: number; source: string;
 }
+export interface EquipmentOrderState {
+  id: string;
+  buyerId: EntityId;
+  quantityMWEquivalent: number;
+  placedQuarter: number;
+  deliveryQuarter: number;
+  status: 'reserved' | 'delivered' | 'cancelled';
+}
 export interface StrategicProjectState {
   id: string;
   initiativeId: string;
@@ -67,6 +75,6 @@ export interface GameState {
   schemaVersion: 1; scenarioId: string; scenarioVersion: string; seed: number; quarter: number;
   organizations: Organization[]; ownership: OwnershipStake[]; debts: DebtInstrument[];
   holding: HoldingState; operatingCompanies: OperatingCompanyState[];
-  regionalMarkets: RegionalMarketState[]; actors: ActorState[]; playerIntelligence: IntelligenceEstimate[]; projects: StrategicProjectState[];
+  regionalMarkets: RegionalMarketState[]; actors: ActorState[]; playerIntelligence: IntelligenceEstimate[]; projects: StrategicProjectState[]; equipmentOrders: EquipmentOrderState[];
 }
 export interface ValidationIssue { code: string; message: string; entityId?: EntityId; }
