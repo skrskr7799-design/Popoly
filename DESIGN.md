@@ -23,6 +23,7 @@ The chosen direction is a **hybrid model**: corporate strategy is the starting i
 ## Documentation map
 
 | [Prototype Audit](docs/AUDIT.md) | Findings from the current code review and recommended rebuild direction |
+| [Vertical Slice](docs/VERTICAL_SLICE.md) | Proposed first playable scenario, loop, mechanics, and acceptance criteria |
 
 | Document | Purpose |
 |---|---|
