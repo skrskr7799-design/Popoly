@@ -123,12 +123,12 @@ describe('explicit debt principal repayments', () => {
   it('keeps a subsidiary debt repayment on the subsidiary balance sheet', () => {
     const state = initializeGame();
     const result = advanceQuarter(state, {
-      debtRepayments: [{ debtId: 'nodeworks-infrastructure-debt', principalCents: 500_000_000 }],
+      debtRepayments: [{ debtId: 'nodeworks-infrastructure-debt', principalCents: 400_000_000 }],
     });
     expect(result.ok).toBe(true);
     if (!result.ok) return;
     expect(result.state.organizations.find((item) => item.id === 'meridian-group')!.cashCents).toBe(1_394_000_000);
-    expect(result.state.organizations.find((item) => item.id === 'nodeworks')!.cashCents).toBe(139_616_000);
+    expect(result.state.organizations.find((item) => item.id === 'nodeworks')!.cashCents).toBe(239_616_000);
   });
 
   it('rejects overpayment, duplicate repayment and insufficient borrower cash atomically', () => {
