@@ -192,6 +192,10 @@ function validateCommands(state: GameState, commands: QuarterCommands): Validati
       issues.push(issue('command.debt_repayment_invalid', 'Principal repayment must be a positive integer number of cents.', repayment.debtId));
       continue;
     }
+    if ((debt.arrearsPrincipalCents ?? 0) > 0) {
+      issues.push(issue('command.debt_repayment_arrears_conflict', 'Overdue principal must be cured through its scheduled payment or creditor-approved restructuring before a voluntary repayment.', repayment.debtId));
+      continue;
+    }
     if ((commands.refinanceDebts ?? []).some((item) => item.debtId === repayment.debtId)) {
       issues.push(issue('command.debt_refinance_repayment_conflict', 'A debt instrument cannot be voluntarily repaid and refinanced in the same quarter.', repayment.debtId));
       continue;
@@ -204,8 +208,10 @@ function validateCommands(state: GameState, commands: QuarterCommands): Validati
   }
 
   const borrowerHasBorrowingRestriction = (borrowerId: string) => state.debts.some((debt) =>
-    debt.borrowerId === borrowerId && debt.covenantTerms?.restrictAdditionalBorrowing === true &&
-    debt.covenantStatus === 'breached');
+    debt.borrowerId === borrowerId && (
+      (debt.covenantTerms?.restrictAdditionalBorrowing === true && debt.covenantStatus === 'breached') ||
+      debt.paymentStatus === 'defaulted'
+    ));
 
   for (const refinance of commands.refinanceDebts ?? []) {
     if (refinanceDebtIds.has(refinance.debtId) || refinanceOfferIds.has(refinance.offerId)) {
@@ -316,7 +322,7 @@ function validateCommands(state: GameState, commands: QuarterCommands): Validati
       continue;
     }
     if (borrowerHasBorrowingRestriction(facility.borrowerId)) {
-      issues.push(issue('command.covenant_borrowing_restricted', 'A breached debt covenant currently restricts additional borrowing by this legal entity.', facility.borrowerId));
+      issues.push(issue('command.covenant_borrowing_restricted', 'An uncured covenant breach or payment default restricts additional borrowing by this legal entity.', facility.borrowerId));
       continue;
     }
     if (facility.facilityLimitCents === undefined) {
@@ -347,7 +353,7 @@ function validateCommands(state: GameState, commands: QuarterCommands): Validati
       issues.push(issue('command.credit_borrower_invalid', 'Credit request must identify an existing non-lender legal entity.', request.borrowerId));
     }
     if (borrower && borrowerHasBorrowingRestriction(request.borrowerId)) {
-      issues.push(issue('command.covenant_borrowing_restricted', 'A breached debt covenant currently restricts new credit requests for this legal entity.', request.borrowerId));
+      issues.push(issue('command.covenant_borrowing_restricted', 'An uncured covenant breach or payment default restricts new credit requests for this legal entity.', request.borrowerId));
     }
     if (!Number.isSafeInteger(request.requestedPrincipalCents) || request.requestedPrincipalCents <= 0) {
       issues.push(issue('command.credit_amount_invalid', 'Requested principal must be a positive integer number of cents.', request.borrowerId));
@@ -379,7 +385,7 @@ function validateCommands(state: GameState, commands: QuarterCommands): Validati
       continue;
     }
     if (!refinanceOfferIds.has(offer.id) && borrowerHasBorrowingRestriction(offer.borrowerId)) {
-      issues.push(issue('command.covenant_borrowing_restricted', 'A breached debt covenant currently restricts additional borrowing by this legal entity.', offer.borrowerId));
+      issues.push(issue('command.covenant_borrowing_restricted', 'An uncured covenant breach or payment default restricts additional borrowing by this legal entity.', offer.borrowerId));
       continue;
     }
     if (offer.status !== 'available') {
