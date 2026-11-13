@@ -434,13 +434,13 @@ export function advanceQuarter(state: GameState, commands: QuarterCommands = {})
           : organization) };
       }
     }
-    const negotiations = resolveContractOffers(candidate, commands.contractOffers ?? []);
+    const nodeworksServiceSnapshot = candidate.operatingCompanies.find((company) => company.organizationId === 'nodeworks');\n    const serviceSnapshot = nodeworksServiceSnapshot ? {\n      companyId: nodeworksServiceSnapshot.organizationId,\n      contracts: nodeworksServiceSnapshot.contracts.map((contract) => ({ ...contract })),\n      fulfilledContracts: nodeworksOperations?.fulfilledContracts ?? [],\n    } : undefined;\n    const negotiations = resolveContractOffers(candidate, commands.contractOffers ?? []);
     candidate = negotiations.state;
     report.contractNegotiations = negotiations.results;
     const renewals = resolveContractRenewals(candidate, commands.contractRenewals ?? []);
     candidate = renewals.state;
     report.contractRenewals = renewals.results;
-    const autonomousTurn = advanceAutonomousActors(candidate);
+    const autonomousTurn = advanceAutonomousActors(candidate, serviceSnapshot);
     candidate = autonomousTurn.state;
     const closingCash = new Map(report.entityCashBridges.map((bridge) => [
       bridge.organizationId, bridge.closingCashCents,
