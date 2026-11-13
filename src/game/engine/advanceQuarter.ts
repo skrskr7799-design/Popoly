@@ -833,8 +833,6 @@ export function advanceQuarter(state: GameState, commands: QuarterCommands = {})
         missedContractualService: closingArrears > 0,
       });
     }
-    report.debtInterestService = interestLines;
-
     const arrearsLines: NonNullable<QuarterReport['debtArrears']> = [];
     const unpaidPrincipalByDebt = new Map<string, number>();
     // Only after all interest has been allocated do scheduled/maturity principal payments run.
@@ -894,6 +892,10 @@ export function advanceQuarter(state: GameState, commands: QuarterCommands = {})
         };
       }),
     };
+    report.debtInterestService = interestLines.map((line) => ({
+      ...line,
+      missedContractualService: line.closingInterestArrearsCents > 0 || (unpaidPrincipalByDebt.get(line.debtId) ?? 0) > 0,
+    }));
     if (arrearsLines.length > 0) report.debtArrears = arrearsLines;
 
     // Record actual interest cash outflows and matching lender cash receipts.
