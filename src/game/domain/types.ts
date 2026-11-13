@@ -55,7 +55,15 @@ export interface IntelligenceEstimate {
   subjectId: EntityId; metric: string; min: number; max: number; knowledge: KnowledgeClass;
   confidence: number; observedQuarter: number; source: string;
 }
-export interface StrategicProjectState {\n  id: string;\n  initiativeId: string;\n  startedQuarter: number;\n  remainingQuarters: number;\n  leadershipCost: number;\n  initialCostCents: MoneyCents;\n}\nexport interface GameState {
+export interface StrategicProjectState {
+  id: string;
+  initiativeId: string;
+  startedQuarter: number;
+  remainingQuarters: number;
+  leadershipCost: number;
+  initialCostCents: MoneyCents;
+}
+export interface GameState {
   schemaVersion: 1; scenarioId: string; scenarioVersion: string; seed: number; quarter: number;
   organizations: Organization[]; ownership: OwnershipStake[]; debts: DebtInstrument[];
   holding: HoldingState; operatingCompanies: OperatingCompanyState[];
