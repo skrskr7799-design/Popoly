@@ -138,4 +138,33 @@ describe('campaign save core', () => {
       expect(state.quarter).toBe(before.quarter);
     }
   });
+  it('rotates revisions and recovers the previous valid campaign without overwriting corruption', async () => {
+    const repository = new MemoryCampaignRepository();
+    const first = await createCampaignSave(initializeGame(2035), metadata, testDigest);
+    expect(first.ok).toBe(true);
+    if (!first.ok) return;
+    expect(await repository.commit(first.value)).toEqual({ ok: true, value: undefined });
+
+    const laterState = initializeGame(2035);
+    laterState.quarter = 2;
+    const second = await createCampaignSave(laterState, {
+      ...metadata, updatedAt: '2035-04-01T00:00:00.000Z',
+    }, testDigest);
+    expect(second.ok).toBe(true);
+    if (!second.ok) return;
+    expect(await repository.commit(second.value)).toEqual({ ok: true, value: undefined });
+
+    const previous = await repository.read(metadata.campaignId, 'previous');
+    expect(previous).toEqual({ ok: true, value: serializeCampaignSave(first.value) });
+
+    repository.corruptCurrent(metadata.campaignId, '{corrupt');
+    const restored = await restoreCampaign(repository, metadata.campaignId, compatibility, testDigest);
+    expect(restored.ok).toBe(true);
+    if (!restored.ok) return;
+    expect(restored.value.recoveredFromPrevious).toBe(true);
+    expect(restored.value.state.quarter).toBe(1);
+    expect(restored.value.currentRevisionError?.code).toBe('save.json_invalid');
+    expect(await repository.read(metadata.campaignId, 'current')).toEqual({ ok: true, value: '{corrupt' });
+  });
+
 });
