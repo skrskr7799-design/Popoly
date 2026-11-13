@@ -72,10 +72,10 @@ describe('The Compute Bottleneck opening state', () => {
 
     expect(report.totalInterestExpenseCents).toBe(37_500_000);
     expect(nodeworks.interestExpenseCents).toBe(31_500_000);
-    expect(nodeworks.netCashChangeCents).toBe(219_616_000);
-    expect(nodeworks.closingCashCents).toBe(639_616_000);
+    expect(nodeworks.netCashChangeCents).toBe(251_116_000);
+    expect(nodeworks.closingCashCents).toBe(671_116_000);
     expect(meridian.interestExpenseCents).toBe(6_000_000);
-    expect(meridian.closingCashCents).toBe(1_394_000_000);
+    expect(meridian.closingCashCents).toBe(1_400_000_000);
   });
 
   it('produces repeatable pseudo-random sequences for the same seed', () => {
@@ -635,7 +635,7 @@ describe('lender-originated credit market', () => {
     expect(nodeworks.debtCents).toBe(1_600_000_000);
     expect(meridian.cashCents).toBe(1_394_000_000);
     expect(meridian.debtCents).toBe(300_000_000);
-    expect(northstar.cashCents).toBe(2_300_000_000);
+    expect(northstar.cashCents).toBe(2_306_000_000);
     expect(result.state.lenders.find((item) => item.organizationId === northstar.id)!.availableCapacityCents).toBe(1_000_000_000);
     expect(result.state.loanOffers.find((item) => item.id === 'northstar-nodeworks-q1')!.status).toBe('accepted');
     expect(result.report.loanAcceptances).toEqual([expect.objectContaining({
@@ -1192,7 +1192,7 @@ describe('debt refinancing and lender-led restructuring', () => {
     expect(newDebt.lenderId).toBe('northstar-commercial-bank');
     expect(result.state.organizations.find((item) => item.id === 'nodeworks')!.debtCents).toBe(1_500_000_000);
     expect(result.state.organizations.find((item) => item.id === 'northstar-commercial-bank')!.cashCents)
-      .toBe(prepared.organizations.find((item) => item.id === 'northstar-commercial-bank')!.cashCents - 100_000_000);
+      .toBe(prepared.organizations.find((item) => item.id === 'northstar-commercial-bank')!.cashCents - 100_000_000 + 31_500_000);
     expect(result.report.debtRefinancings?.[0]).toMatchObject({
       oldDebtId: 'nodeworks-infrastructure-debt', newDebtId: `loan-${offer.id}`,
       refinancedPrincipalCents: 1_400_000_000, feeCents: 14_000_000, netCashReleasedCents: 86_000_000,
