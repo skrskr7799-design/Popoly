@@ -270,6 +270,9 @@ function validateCommands(state: GameState, commands: QuarterCommands): Validati
       proposal.requestedQuarterlyInterestRate !== undefined ||
       proposal.requestedScheduledPrincipalCentsPerQuarter !== undefined;
     if (!hasTerms && proposal.requestCovenantWaiver !== true) issues.push(issue('command.debt_restructure_terms_missing', 'A restructuring proposal must change a financial term or request a covenant waiver.', proposal.debtId));
+    if (proposal.requestCovenantWaiver === true && !debt.covenantTerms) {
+      issues.push(issue('command.debt_restructure_no_covenant', 'A covenant waiver can only be requested for a debt instrument that has active covenant terms.', proposal.debtId));
+    }
     if (proposal.requestCovenantWaiver !== undefined && typeof proposal.requestCovenantWaiver !== 'boolean') {
       issues.push(issue('command.debt_restructure_waiver_invalid', 'Covenant waiver request must be boolean.', proposal.debtId));
     }
@@ -935,6 +938,7 @@ export function advanceQuarter(state: GameState, commands: QuarterCommands = {})
             : debt),
           ...accepted.map((offer) => ({
             id: `loan-${offer.id}`, borrowerId: offer.borrowerId, lenderId: offer.lenderId,
+            ...(offer.collateralDescription ? { collateralDescription: offer.collateralDescription } : {}),
             principalCents: offer.principalCents, quarterlyInterestRate: offer.quarterlyInterestRate,
             maturityQuarter: offer.maturityQuarter,
             covenantTerms: offer.covenantTerms ? { ...offer.covenantTerms } : undefined,
@@ -1072,6 +1076,7 @@ export function advanceQuarter(state: GameState, commands: QuarterCommands = {})
           ...(approved && proposal.requestedScheduledPrincipalCentsPerQuarter !== undefined
             ? { newScheduledPrincipalCentsPerQuarter: moneyFromCents(proposal.requestedScheduledPrincipalCentsPerQuarter) } : {}),
           ...(approved && proposal.requestCovenantWaiver ? { covenantWaived: true } : {}),
+          ...(proposal.reason ? { borrowerRationale: proposal.reason } : {}),
           reason,
         });
         if (!approved) return debt;
