@@ -23,7 +23,11 @@ function actorRandom(state: GameState, actorId: string): number {
  * Customer memory is private world state. It reacts to delivered service and
  * SLA outcomes, then shifts the customer's private renewal and pricing limits.
  */
-function updateAsterionRelationship(\n  state: GameState,\n  actor: ActorState,\n  serviceSnapshot?: { contracts: ServiceContract[]; fulfilledContracts: FulfilledContract[] },\n): ActorState {
+function updateAsterionRelationship(
+  state: GameState,
+  actor: ActorState,
+  serviceSnapshot?: { contracts: ServiceContract[]; fulfilledContracts: FulfilledContract[] },
+): ActorState {
   const company = state.operatingCompanies.find((item) => item.organizationId === 'nodeworks');
   const market = state.regionalMarkets[0];
   if (!company || !market) return actor;
@@ -73,7 +77,9 @@ function updateRenewalRiskIntelligence(state: GameState, actors: ActorState[]): 
   const relationship = customer.hiddenMetrics.relationshipScore ?? 65;
   const capacity = kestrel.hiddenMetrics.effectiveCapacityMW ?? kestrel.hiddenMetrics.effectiveCapacityMinMW ?? 0;
   const workload = kestrel.hiddenMetrics.currentWorkloadMW ?? kestrel.hiddenMetrics.deliveredWorkloadMaxMW ?? 0;
-  const activeContractIds = new Set(nodeworks.contracts.filter((item) => item.flexibility === 'contracted').map((item) => item.id));\n  const updated = state.playerIntelligence.filter((item) =>\n    !item.metric.startsWith('contractRenewalRisk:') || activeContractIds.has(item.metric.slice('contractRenewalRisk:'.length)));
+  const activeContractIds = new Set(nodeworks.contracts.filter((item) => item.flexibility === 'contracted').map((item) => item.id));
+  const updated = state.playerIntelligence.filter((item) =>
+    !item.metric.startsWith('contractRenewalRisk:') || activeContractIds.has(item.metric.slice('contractRenewalRisk:'.length)));
   for (const contract of nodeworks.contracts.filter((item) => item.flexibility === 'contracted')) {
     const competitorCanServe = capacity - workload + 1e-9 >= contract.workloadMW;
     const risk = Math.max(0, Math.min(100,
@@ -296,7 +302,10 @@ function allocateAsterionFlexibleDemand(state: GameState, demandMW: number): Fle
  * Decisions are deterministic for a given world seed and quarter, while true
  * actor metrics remain separate from the player's intelligence estimates.
  */
-export function advanceAutonomousActors(\n  state: GameState,\n  serviceSnapshot?: { companyId: string; contracts: ServiceContract[]; fulfilledContracts: FulfilledContract[] },\n): {
+export function advanceAutonomousActors(
+  state: GameState,
+  serviceSnapshot?: { companyId: string; contracts: ServiceContract[]; fulfilledContracts: FulfilledContract[] },
+): {
   state: GameState;
   actions: ActorAction[];
 } {
@@ -422,5 +431,6 @@ export function advanceAutonomousActors(\n  state: GameState,\n  serviceSnapshot
     });
   }
 
-  const resolvedWorld = { ...state, actors, regionalMarkets, operatingCompanies: actorState.operatingCompanies, equipmentOrders: actorState.equipmentOrders };\n  return { state: { ...resolvedWorld, playerIntelligence: updateRenewalRiskIntelligence(resolvedWorld, actors) }, actions };
+  const resolvedWorld = { ...state, actors, regionalMarkets, operatingCompanies: actorState.operatingCompanies, equipmentOrders: actorState.equipmentOrders };
+  return { state: { ...resolvedWorld, playerIntelligence: updateRenewalRiskIntelligence(resolvedWorld, actors) }, actions };
 }
