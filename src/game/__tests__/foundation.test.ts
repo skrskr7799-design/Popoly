@@ -168,6 +168,30 @@ describe('explicit debt principal repayments', () => {
     });
   });
 
+  it('records missed scheduled principal as arrears and declares default after two missed quarters', () => {
+    const state = initializeGame();
+    state.debts = state.debts.map((debt) => debt.id === 'nodeworks-infrastructure-debt'
+      ? { ...debt, scheduledPrincipalCentsPerQuarter: 2_000_000_000 as typeof debt.principalCents }
+      : debt);
+    const first = advanceQuarter(state);
+    expect(first.ok).toBe(true);
+    if (!first.ok) return;
+    const firstDebt = first.state.debts.find((debt) => debt.id === 'nodeworks-infrastructure-debt')!;
+    expect(firstDebt.principalCents).toBe(1_400_000_000);
+    expect(firstDebt.arrearsPrincipalCents).toBe(1_400_000_000);
+    expect(firstDebt.overdueQuarters).toBe(1);
+    expect(firstDebt.paymentStatus).toBe('overdue');
+    expect(first.report.debtArrears?.[0]?.status).toBe('overdue');
+
+    const second = advanceQuarter(first.state);
+    expect(second.ok).toBe(true);
+    if (!second.ok) return;
+    const secondDebt = second.state.debts.find((debt) => debt.id === 'nodeworks-infrastructure-debt')!;
+    expect(secondDebt.paymentStatus).toBe('defaulted');
+    expect(secondDebt.overdueQuarters).toBe(2);
+    expect(validateGameState(second.state)).toEqual([]);
+  });
+
   it('rejects overpayment, duplicate repayment and insufficient borrower cash atomically', () => {
     const state = initializeGame();
     const before = JSON.stringify(state);
