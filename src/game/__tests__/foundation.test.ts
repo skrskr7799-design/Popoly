@@ -183,23 +183,6 @@ describe('explicit debt principal repayments', () => {
     expect(firstDebt.paymentStatus).toBe('overdue');
     expect(first.report.debtArrears?.[0]?.status).toBe('overdue');
 
-    const cureInput = {
-      ...first.state,
-      organizations: first.state.organizations.map((item) => item.id === 'nodeworks'
-        ? { ...item, cashCents: 100_000_000 as typeof item.cashCents } : item),
-    };
-    const cured = advanceQuarter(cureInput);
-    expect(cured.ok).toBe(true);
-    if (cured.ok) {
-      const curedDebt = cured.state.debts.find((item) => item.id === firstDebt.id)!;
-      const cureLine = cured.report.debtInterestService?.find((item) => item.debtId === firstDebt.id)!;
-      expect(cureLine.openingInterestArrearsCents).toBe(21_500_000);
-      expect(cureLine.interestPaidCents).toBe(53_000_000);
-      expect(curedDebt.arrearsInterestCents).toBe(0);
-      expect(curedDebt.overdueQuarters).toBe(0);
-      expect(curedDebt.paymentStatus).toBe('current');
-    }
-
     const second = advanceQuarter(first.state);
     expect(second.ok).toBe(true);
     if (!second.ok) return;
@@ -233,6 +216,27 @@ describe('explicit debt principal repayments', () => {
     expect(first.report.totalInterestExpenseCents).toBe(31_500_000);
     expect(first.state.organizations.find((item) => item.id === 'frontier-development-bank')!.cashCents)
       .toBe(openingLenderCash + 10_000_000);
+    expect(first.report.entityCashBridges.find((item) => item.organizationId === 'nodeworks')!.interestPaidCents)
+      .toBe(10_000_000);
+    expect(first.report.entityCashBridges.find((item) => item.organizationId === 'frontier-development-bank')!.interestIncomeCents)
+      .toBe(10_000_000);
+
+    const cureInput = {
+      ...first.state,
+      organizations: first.state.organizations.map((item) => item.id === 'nodeworks'
+        ? { ...item, cashCents: 100_000_000 as typeof item.cashCents } : item),
+    };
+    const cured = advanceQuarter(cureInput);
+    expect(cured.ok).toBe(true);
+    if (cured.ok) {
+      const curedDebt = cured.state.debts.find((item) => item.id === firstDebt.id)!;
+      const cureLine = cured.report.debtInterestService?.find((item) => item.debtId === firstDebt.id)!;
+      expect(cureLine.openingInterestArrearsCents).toBe(21_500_000);
+      expect(cureLine.interestPaidCents).toBe(53_000_000);
+      expect(curedDebt.arrearsInterestCents).toBe(0);
+      expect(curedDebt.overdueQuarters).toBe(0);
+      expect(curedDebt.paymentStatus).toBe('current');
+    }
 
     const second = advanceQuarter(first.state);
     expect(second.ok).toBe(true);
@@ -243,6 +247,8 @@ describe('explicit debt principal repayments', () => {
     expect(secondInterest.interestPaidCents).toBe(0);
     expect(secondInterest.closingInterestArrearsCents).toBe(53_000_000);
     expect(second.report.totalInterestExpenseCents).toBe(31_500_000);
+    expect(second.state.organizations.find((item) => item.id === 'frontier-development-bank')!.cashCents)
+      .toBe(openingLenderCash + 10_000_000);
     expect(second.state.debts.find((item) => item.id === firstDebt.id)?.paymentStatus).toBe('defaulted');
     expect(validateGameState(second.state)).toEqual([]);
   });
