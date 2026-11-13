@@ -8,7 +8,7 @@ import { CampaignSession, GUIDED_CAMPAIGN_QUARTERS } from '../campaign/session';
 import { COMPUTE_BOTTLENECK_INITIATIVES, type StrategicInitiativeDefinition } from '../scenario/initiatives';
 import type { GameState, ValidationIssue } from '../domain/types';
 import type { QuarterReport } from '../systems/quarterReport';
-import { formatMillions, formatPercent, formatQuarter } from './format';
+import { formatMillions, formatMoney, formatPercent, formatQuarter } from './format';
 import { IndexedDbCampaignSaveRepository } from '../persistence/indexedDbRepository';
 import type { CampaignSaveSummary } from '../persistence/repository';
 import { exportCampaignSave, importCampaignSave } from '../persistence/transfer';
@@ -360,7 +360,7 @@ export default function CampaignApp() {
               <div><ArrowUpRight size={16} /><span>Immediate firm headroom</span><strong>{market?.immediateFirmPowerHeadroomMW.toFixed(0)} MW</strong></div>
               <div><Cpu size={16} /><span>Equipment delivery pool</span><strong>{market?.equipmentDeliveryPoolMWEquivalentPerQuarter.toFixed(0)} MW-eq / qtr</strong></div>
             </div>
-            <div className="pop-energy-price"><span>Reference energy price</span><strong>{money(market?.referenceEnergyPriceCentsPerMWh ?? 0)} <small>/ MWh</small></strong></div>
+            <div className="pop-energy-price"><span>Reference energy price</span><strong>{formatMoney(market?.referenceEnergyPriceCentsPerMWh ?? 0)} <small>/ MWh</small></strong></div>
           </section>
 
           <section className="pop-panel">
