@@ -62,6 +62,7 @@ export interface EntityCashBridge {
   interestExpenseCents: MoneyCents;
   interestPaidCents: MoneyCents;
   interestIncomeCents: MoneyCents;
+  principalReceivedCents: MoneyCents;
   investmentCashFlowCents: MoneyCents;
   financingCashFlowCents: MoneyCents;
   netCashChangeCents: MoneyCents;
@@ -91,6 +92,7 @@ export function calculateEntityCashBridge(
   financingCashFlowCents: MoneyCents = moneyFromCents(0),
   interestPaidCents: MoneyCents = moneyFromCents(0),
   interestIncomeCents: MoneyCents = moneyFromCents(0),
+  principalReceivedCents: MoneyCents = moneyFromCents(0),
 ): EntityCashBridge {
   const interestExpenseCents = moneyFromCents(
     debtService
@@ -99,7 +101,7 @@ export function calculateEntityCashBridge(
   );
   // Accrued interest is a P&L expense; only cash actually remitted changes liquidity.
   const netCashChangeCents = moneyFromCents(
-    operatingCashContributionCents - interestPaidCents + interestIncomeCents +
+    operatingCashContributionCents - interestPaidCents + interestIncomeCents + principalReceivedCents +
     investmentCashFlowCents + financingCashFlowCents,
   );
 
@@ -110,6 +112,7 @@ export function calculateEntityCashBridge(
     interestExpenseCents,
     interestPaidCents,
     interestIncomeCents,
+    principalReceivedCents,
     investmentCashFlowCents,
     financingCashFlowCents,
     netCashChangeCents,
