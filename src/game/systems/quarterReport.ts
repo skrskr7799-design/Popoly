@@ -39,6 +39,17 @@ export interface CreditDecisionReportLine {
   offerId?: string;
 }
 
+export interface CovenantReportLine {
+  debtId: string;
+  borrowerId: string;
+  status: 'compliant' | 'grace' | 'breached';
+  breachStreak: number;
+  debtServiceCoverage: number;
+  debtToAnnualCashFlow: number;
+  reasons: string[];
+  ratePenaltyApplied?: number;
+}
+
 export interface LoanAcceptanceReportLine {
   offerId: string;
   lenderId: string;
@@ -78,6 +89,7 @@ export interface QuarterReport {
   debtDrawdowns?: DebtDrawdownReportLine[];
   loanAcceptances?: LoanAcceptanceReportLine[];
   creditDecisions?: CreditDecisionReportLine[];
+  covenantUpdates?: CovenantReportLine[];
   contractsInRenewalWindow?: string[];
 }
 
