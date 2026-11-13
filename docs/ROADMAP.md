@@ -50,7 +50,7 @@ Resolve the core design questions: world scale, regions, and map representation;
 - [ ] implement versioned save/load;
 - [x] establish unit, integration, and scenario tests.
 
-**Current status:** The framework-independent simulation foundation and a substantial economic/actor vertical-slice backend are implemented and covered by CI. Versioned campaign persistence and the player-facing playable vertical slice remain open; Phase 3 is therefore not declared complete yet. Scheduled principal arrears and payment-default tracking are now part of the finance foundation; creditor enforcement and insolvency remain later work.
+**Current status:** The framework-independent simulation foundation and a substantial economic/actor vertical-slice backend are implemented and covered by CI. Versioned campaign persistence and the player-facing playable vertical slice remain open; Phase 3 is therefore not declared complete yet. Scheduled principal and interest arrears, actual interest cash servicing, and payment-default tracking are now part of the finance foundation; creditor enforcement and insolvency remain later work.
 
 **Exit criteria:** Core simulation rules can be exercised independently of the interface.
 
