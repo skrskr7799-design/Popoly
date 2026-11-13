@@ -198,8 +198,8 @@ describe('explicit debt principal repayments', () => {
       ? { ...item, cashCents: 10_000_000 as typeof item.cashCents } : item);
     state.operatingCompanies = state.operatingCompanies.map((company) => ({
       ...company, deliveredWorkloadMW: 0,
-      cashCosts: { operationsAndStaffingCents: 0, maintenanceCents: 0,
-        networkAndConnectivityCents: 0, overheadComplianceInsuranceCents: 0 },
+      cashCosts: { operationsAndStaffingCents: moneyFromCents(0), maintenanceCents: moneyFromCents(0),
+        networkAndConnectivityCents: moneyFromCents(0), overheadComplianceInsuranceCents: moneyFromCents(0) },
     }));
     const openingLenderCash = state.organizations.find((item) => item.id === 'frontier-development-bank')!.cashCents;
     const first = advanceQuarter(state);
@@ -235,8 +235,8 @@ describe('explicit debt principal repayments', () => {
       ? { ...item, cashCents: 40_000_000 as typeof item.cashCents } : item);
     state.operatingCompanies = state.operatingCompanies.map((company) => ({
       ...company, deliveredWorkloadMW: 0,
-      cashCosts: { operationsAndStaffingCents: 0, maintenanceCents: 0,
-        networkAndConnectivityCents: 0, overheadComplianceInsuranceCents: 0 },
+      cashCosts: { operationsAndStaffingCents: moneyFromCents(0), maintenanceCents: moneyFromCents(0),
+        networkAndConnectivityCents: moneyFromCents(0), overheadComplianceInsuranceCents: moneyFromCents(0) },
     }));
     state.debts = [...state.debts.map((debt) => debt.id === 'nodeworks-infrastructure-debt'
       ? { ...debt, scheduledPrincipalCentsPerQuarter: 20_000_000 as typeof debt.principalCents } : debt), {
