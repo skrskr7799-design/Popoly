@@ -48,8 +48,8 @@ export function FinancePanel({
   const lenderResources = new Map(state.lenders.map((lender) => [
     lender.organizationId,
     {
-      capacity: lender.availableCapacityCents,
-      cash: organizations.find((item) => item.id === lender.organizationId)?.cashCents ?? 0,
+      capacity: Number(lender.availableCapacityCents),
+      cash: Number(organizations.find((item) => item.id === lender.organizationId)?.cashCents ?? 0),
     },
   ]));
   let drawableCapacity = 0;
