@@ -13,7 +13,7 @@ const metadata = {
 };
 const compatibility: LoadCompatibility = {
   isSimulationCompatible: (version) => version === '0.1.0',
-  isScenarioCompatible: (id, version) => id === 'compute-bottleneck' && version === '1.0.0',
+  isScenarioCompatible: (id, version) => id === 'the-compute-bottleneck' && version === '0.1.0',
 };
 const testDigest: DigestProvider = async (data) => {
   // A deterministic test double; production uses Web Crypto SHA-256.
