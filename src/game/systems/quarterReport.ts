@@ -23,7 +23,7 @@ export interface ContractRenewalResult {
   contractId: string; providerId: string; customerId: string;
   offeredPriceCents: MoneyCents; offeredWorkloadMW: number;
   status: 'accepted' | 'countered' | 'rejected';
-  counterPriceCents?: MoneyCents; termQuarters?: number; message: string;
+  counterPriceCents?: MoneyCents; termQuarters?: number; competitorBidAvailable?: boolean; competitorProviderId?: string; message: string;
 }
 
 export interface QuarterReport {
