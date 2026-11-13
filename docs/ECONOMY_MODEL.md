@@ -245,3 +245,8 @@ All balance coefficients belong in scenario or tuning data, not scattered consta
 ## 16. Service-level agreements and credits
 
 Fixed-term compute agreements may define a minimum provider reliability and a service-credit rate. Reliability below the contractual threshold triggers a credit against that contract's delivered quarterly revenue; the credit is not applied to unrelated customer contracts. Gross revenue, service credits, and net recognized revenue are reported separately. The first implementation uses a deterministic threshold breach rather than outage-duration simulation; contract-level thresholds and credit rates are scenario data. SLA credits reduce the operating cash contribution in the same quarter and do not retroactively alter prior reports.
+
+
+## 17. Competitive fixed-term renewals
+
+When a fixed-term agreement enters its renewal window, capable competitors may submit confidential alternative bids. A bid is only available when the rival has enough current spare capacity to serve the entire proposed contract volume. The customer compares the player's renewal price with the credible rival offer; the rival's exact price remains hidden from the player. If the rival wins, the incumbent agreement remains unchanged until its contractual expiry, when the existing expiry and reallocation rules apply. Rival bids are deterministic for a given world seed, quarter, and contract, and never create capacity that the rival does not possess.
