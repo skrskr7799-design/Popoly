@@ -257,3 +257,10 @@ When a fixed-term agreement enters its renewal window, capable competitors may s
 Debt repayment is an explicit quarter command against a named debt instrument. The command reduces both that instrument's outstanding principal and the borrower's debt balance, and is recorded as a financing cash outflow in the borrower's cash bridge. Interest for the current quarter is calculated on opening principal; a repayment therefore changes the next quarter's interest base, not the interest already accrued for the quarter being resolved.
 
 Repayment is funded only from the legal borrower's opening cash. Multiple repayments by one borrower are aggregated for affordability checks, and the total cannot exceed either opening cash or outstanding principal. A holding company cannot repay a subsidiary's debt, and subsidiary cash cannot fund holding debt, unless a separate, explicit intercompany transaction is introduced in a later financial-system increment. Invalid repayment commands reject the entire quarter atomically.
+
+
+## 19. Contractual amortization and maturity
+
+A debt instrument may define a fixed quarterly principal installment and a final maturity quarter. Scheduled installments are paid automatically during the quarter from the borrower's own cash and are reported separately from voluntary prepayments. In the maturity quarter, all remaining principal becomes due as a balloon repayment, replacing the ordinary installment for that instrument. Voluntary repayment can be added to a scheduled installment only when the combined amount does not exceed outstanding principal.
+
+The quarter is rejected atomically if mandatory scheduled or maturity principal cannot be funded from the borrower's opening cash after the quarter's modeled operating and interest flows are accounted for. The first implementation does not yet model arrears, covenant breaches, lender grace periods, or refinancing; those belong to the subsequent credit-facility and distress systems. Interest continues to accrue on opening principal for the quarter, and principal paid during the quarter reduces the following quarter's interest base.
