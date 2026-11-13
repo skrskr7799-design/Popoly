@@ -187,8 +187,10 @@ describe('atomic quarter transition', () => {
   });
 
   it('does not let a rival bid for a fixed contract beyond its spare capacity', () => {
-    const state = initializeGame(2035);
-    const result = advanceQuarter(state, { contractRenewals: [{
+    const first = advanceQuarter(initializeGame(2035));
+    expect(first.ok).toBe(true);
+    if (!first.ok) return;
+    const result = advanceQuarter(first.state, { contractRenewals: [{
       contractId: 'asterion-contract-a', offeredPriceCentsPerMWQuarter: 53_000_000,
       offeredWorkloadMW: 8, termQuarters: 4,
     }] });
