@@ -95,7 +95,7 @@ describe('The Compute Bottleneck opening state', () => {
 
 
 describe('explicit debt principal repayments', () => {
-  it('repays principal from the borrower's own cash and leaves current-quarter interest unchanged', () => {
+  it("repays principal from the borrower's own cash and leaves current-quarter interest unchanged", () => {
     const state = initializeGame();
     const result = advanceQuarter(state, {
       debtRepayments: [{ debtId: 'nodeworks-infrastructure-debt', principalCents: 100_000_000 }],
@@ -120,7 +120,7 @@ describe('explicit debt principal repayments', () => {
     expect(state.debts.find((item) => item.id === 'nodeworks-infrastructure-debt')!.principalCents).toBe(1_400_000_000);
   });
 
-  it('does not let the holding repay a subsidiary debt using holding cash', () => {
+  it('keeps a subsidiary debt repayment on the subsidiary balance sheet', () => {
     const state = initializeGame();
     const result = advanceQuarter(state, {
       debtRepayments: [{ debtId: 'nodeworks-infrastructure-debt', principalCents: 500_000_000 }],
