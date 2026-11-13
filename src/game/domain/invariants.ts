@@ -29,7 +29,7 @@ export function validateGameState(state: GameState): ValidationIssue[] {
     }
     debtIds.add(debt.id);
     if (!organizationIds.has(debt.borrowerId) || !Number.isSafeInteger(debt.principalCents) ||
-        debt.principalCents < 0 || !Number.isFinite(debt.quarterlyInterestRate) ||
+        debt.principalCents < 0 || (debt.collateralDescription !== undefined && (typeof debt.collateralDescription !== 'string' || debt.collateralDescription.length > 160)) || !Number.isFinite(debt.quarterlyInterestRate) ||
         debt.quarterlyInterestRate < 0 ||
         (debt.scheduledPrincipalCentsPerQuarter !== undefined &&
           (!Number.isSafeInteger(debt.scheduledPrincipalCentsPerQuarter) || debt.scheduledPrincipalCentsPerQuarter < 0)) ||
@@ -94,6 +94,7 @@ export function validateGameState(state: GameState): ValidationIssue[] {
         !['AAA', 'AA', 'A', 'BBB', 'BB', 'B', 'CCC'].includes(offer.creditRating) ||
         !Number.isInteger(offer.maturityQuarter) || offer.maturityQuarter < 1 ||
         !Number.isInteger(offer.expiresAfterQuarter) || offer.expiresAfterQuarter < 1 ||
+        (offer.collateralDescription !== undefined && (typeof offer.collateralDescription !== 'string' || offer.collateralDescription.length > 160)) ||
         !['available', 'accepted', 'expired', 'withdrawn'].includes(offer.status)) {
       issues.push({ code: 'finance.loan_offer_invalid', message: 'Loan offer contains an invalid lender, borrower, amount, rate, schedule, or status.', entityId: offer.id });
     }
