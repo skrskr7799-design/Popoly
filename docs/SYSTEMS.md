@@ -135,6 +135,6 @@ The first playable engine slice now includes a transactional quarter resolver, a
 - Accepting an offer transfers cash from lender to borrower, consumes lender capacity, and creates debt against that exact borrower. Holding and subsidiary balances remain legally separate.
 - Lender liquidity and remaining credit capacity are both checked; multiple acceptances are aggregated and the quarter rejects atomically if either limit is exceeded.
 - New loan interest begins in the following quarter; maturity uses the existing balloon principal repayment mechanism. Unaccepted offers expire after their final valid quarter.
-- Dynamic underwriting, borrower credit ratings, covenant monitoring, refinancing, and basic creditor-approved restructuring are implemented. Collateral enforcement, lender relationship history, arrears, default, cross-default, and insolvency remain future systems.
+- Dynamic underwriting, borrower credit ratings, covenant monitoring, refinancing, basic creditor-approved restructuring, principal/interest arrears, and payment default are implemented. Collateral enforcement, lender relationship history, acceleration, cross-default, and insolvency remain future systems.
 
 This is an initial simulation layer, not the final economic model. In particular, deeper contract negotiations and renewals, financing choices, project dependencies, regulatory consequences, and richer information-quality mechanics remain future work.
