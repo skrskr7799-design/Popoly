@@ -99,21 +99,36 @@ function OpeningScreen({ onStart, onOpenArchive }: { onStart: () => void; onOpen
 function QuarterReportPanel({ report, state }: { report: QuarterReport; state: GameState }) {
   const holdingBridge = report.entityCashBridges.find((item) => item.organizationId === 'meridian-group');
   const company = report.companies.find((item) => item.companyId === 'nodeworks');
+  const companyBridge = company?.cashBridge;
+  const principalRepaid = (report.debtRepayments ?? [])
+    .filter((item) => item.borrowerId === 'nodeworks')
+    .reduce((sum, item) => sum + item.principalCents, 0);
   const actions = report.actorActions ?? [];
   const launched = report.projectsLaunched ?? [];
   const completed = report.projectsCompleted ?? [];
+  const initiativeName = (id: string) =>
+    COMPUTE_BOTTLENECK_INITIATIVES.find((item) => item.id === id)?.name ?? id.replaceAll('-', ' ');
   return <section className="pop-panel pop-report">
     <SectionTitle eyebrow="RESOLUTION" title={`${formatQuarter(report.quarter)} · Quarter review`} right={<span className="pop-pill pop-pill-green">Resolved</span>} />
     <div className="pop-report-grid">
       <div><small>NodeWorks revenue</small><strong>{money(company?.operations.revenueCents ?? 0)}</strong></div>
       <div><small>Operating contribution</small><strong className={(company?.operations.operatingCashContributionCents ?? 0) >= 0 ? 'tone-good' : 'tone-warn'}>{money(company?.operations.operatingCashContributionCents ?? 0)}</strong></div>
       <div><small>Energy expense</small><strong>{money(company?.operations.energyCostCents ?? 0)}</strong></div>
+      <div><small>NodeWorks closing cash</small><strong>{money(companyBridge?.closingCashCents ?? getCash(state, 'nodeworks'))}</strong></div>
       <div><small>Meridian closing cash</small><strong>{money(holdingBridge?.closingCashCents ?? getCash(state, 'meridian-group'))}</strong></div>
+      <div><small>NodeWorks interest paid</small><strong>{money(companyBridge?.interestPaidCents ?? 0)}</strong></div>
+      <div><small>NodeWorks principal repaid</small><strong>{money(principalRepaid)}</strong></div>
     </div>
-    {launched.length > 0 && <div className="pop-report-line"><Check size={15} /> Initiatives launched: {launched.join(', ').replaceAll('-', ' ')}</div>}
-    {completed.length > 0 && <div className="pop-report-line"><Sparkles size={15} /> Projects completed: {completed.join(', ').replaceAll('-', ' ')}</div>}
+    {launched.length > 0 && <div className="pop-report-line"><Check size={15} /> Initiatives launched: {launched.map(initiativeName).join(', ')}</div>}
+    {completed.length > 0 && <div className="pop-report-line"><Sparkles size={15} /> Projects completed: {completed.map(initiativeName).join(', ')}</div>}
+    {(report.projectCashCommitmentCents ?? 0) > 0 && <div className="pop-report-line"><Banknote size={15} /> Project capital committed: {money(report.projectCashCommitmentCents ?? 0)}</div>}
     {report.contractRenewals?.map((item) => <div className="pop-report-line" key={item.contractId}><Activity size={15} /> Contract {item.contractId}: {item.status} — {item.message}</div>)}
+    {report.contractNegotiations?.map((item) => <div className="pop-report-line" key={item.contractId}><Activity size={15} /> Contract offer {item.contractId}: {item.status} — {item.message}</div>)}
     {report.creditDecisions?.map((item, index) => <div className="pop-report-line" key={`${item.lenderId}-${index}`}><Banknote size={15} /> Credit decision: {item.status} — {item.reason}</div>)}
+    {report.debtArrears?.map((item) => <div className="pop-report-line" key={item.debtId}><CircleAlert size={15} /> Debt arrears {item.debtId}: {money(item.totalArrearsCents)} · {item.status}</div>)}
+    {report.covenantUpdates?.map((item) => <div className="pop-report-line" key={item.debtId}><ShieldCheck size={15} /> Covenant {item.debtId}: {item.status} · DSCR {item.debtServiceCoverage.toFixed(2)}×{item.reasons.length ? ` · ${item.reasons.join('; ')}` : ''}</div>)}
+    {report.debtRestructurings?.map((item, index) => <div className="pop-report-line" key={`${item.debtId}-restructure-${index}`}><Banknote size={15} /> Restructuring {item.debtId}: {item.status} — {item.reason}</div>)}
+    {report.debtRefinancings?.map((item) => <div className="pop-report-line" key={item.oldDebtId}><Banknote size={15} /> Refinanced {item.oldDebtId}: {money(item.refinancedPrincipalCents)} · fee {money(item.feeCents)}</div>)}
     {actions.length > 0 ? <div className="pop-event-list"><span className="pop-eyebrow">WORLD ACTIVITY</span>{actions.map((action, index) =>
       <div className="pop-event" key={`${action.actorId}-${index}`}><span>{action.actorId.replaceAll('-', ' ')}</span><p>{action.summary}</p></div>)}</div>
       : <p className="pop-muted pop-report-empty">No major external events were recorded this quarter.</p>}
@@ -365,10 +380,14 @@ export default function CampaignApp() {
 
           <section className="pop-panel">
             <SectionTitle eyebrow="EXTERNAL INTELLIGENCE" title="Market signals" />
-            {state.playerIntelligence.map((estimate, index) => <div className="pop-intel" key={`${estimate.subjectId}-${estimate.metric}-${index}`}>
-              <div><strong>{estimate.subjectId.replaceAll('-', ' ')}</strong><span>{estimate.metric.replaceAll(/([A-Z])/g, ' $1').toLowerCase()}</span></div>
-              <div className="pop-intel-value"><strong>{estimate.metric.toLowerCase().includes('reliability') ? `${(estimate.min * 100).toFixed(0)}–${(estimate.max * 100).toFixed(0)}%` : `${estimate.min.toFixed(estimate.max % 1 ? 1 : 0)}–${estimate.max.toFixed(estimate.max % 1 ? 1 : 0)}`}</strong><small>{estimate.knowledge} · {Math.round(estimate.confidence * 100)}% confidence</small></div>
-            </div>)}
+            {state.playerIntelligence.map((estimate, index) => {
+              const age = Math.max(0, state.quarter - estimate.observedQuarter);
+              const freshness = age === 0 ? 'current' : age <= 1 ? 'recent' : 'stale';
+              return <div className="pop-intel" key={`${estimate.subjectId}-${estimate.metric}-${index}`}>
+                <div><strong>{estimate.subjectId.replaceAll('-', ' ')}</strong><span>{estimate.metric.replaceAll(/([A-Z])/g, ' $1').toLowerCase()}</span><small>{estimate.source}</small></div>
+                <div className="pop-intel-value"><strong>{estimate.metric.toLowerCase().includes('reliability') ? `${(estimate.min * 100).toFixed(0)}–${(estimate.max * 100).toFixed(0)}%` : `${estimate.min.toFixed(estimate.max % 1 ? 1 : 0)}–${estimate.max.toFixed(estimate.max % 1 ? 1 : 0)}`}</strong><small>{estimate.knowledge} · {Math.round(estimate.confidence * 100)}% confidence · {freshness}</small></div>
+              </div>;
+            })}
           </section>
 
           <section className="pop-panel">
