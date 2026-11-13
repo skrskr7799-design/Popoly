@@ -80,7 +80,7 @@ export interface QuarterCommands {
   contractOffers?: ContractOfferCommand[];
   /** Renewal proposals for fixed contracts currently inside their notice window. */
   contractRenewals?: ContractRenewalCommand[];
-  /** Explicit principal repayments funded only by the legal borrower's opening cash. */
+  /** Voluntary principal repayments are validated against opening cash and serviced after contractual debt obligations. */
   debtRepayments?: DebtRepaymentCommand[];
   /** Draws against an existing committed credit facility; proceeds belong to its borrower. */
   debtDrawdowns?: DebtDrawdownCommand[];
