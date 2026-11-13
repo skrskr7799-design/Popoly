@@ -99,7 +99,7 @@ export class CampaignSession {
   static async restore(
     campaignId: string,
     repository: CampaignSaveRepository,
-    options: Pick<CampaignSessionOptions, 'now' | 'digest' | 'compatibility'> = {},
+    options: Pick<CampaignSessionOptions, 'now' | 'digest'> = {},
   ): Promise<PersistenceResult<CampaignRestoreResult>> {
     const compatibility = defaultCompatibility;
     const restored = await restoreCampaign(repository, campaignId, compatibility, options.digest);
