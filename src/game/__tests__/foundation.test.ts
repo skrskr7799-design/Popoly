@@ -192,6 +192,42 @@ describe('explicit debt principal repayments', () => {
     expect(validateGameState(second.state)).toEqual([]);
   });
 
+  it('services affordable debts in ledger order without falsely defaulting every facility of the borrower', () => {
+    const state = initializeGame();
+    state.debts = state.debts.map((debt) => debt.id === 'nodeworks-infrastructure-debt'
+      ? { ...debt, scheduledPrincipalCentsPerQuarter: 30_000_000 as typeof debt.principalCents }
+      : debt);
+    state.debts.push({
+      id: 'nodeworks-secondary-debt',
+      borrowerId: 'nodeworks',
+      lenderId: 'frontier-development-bank',
+      principalCents: 100_000_000 as typeof state.debts[number]['principalCents'],
+      quarterlyInterestRate: 0.02,
+      scheduledPrincipalCentsPerQuarter: 70_000_000 as typeof state.debts[number]['principalCents'],
+    });
+    state.organizations = state.organizations.map((organization) => organization.id === 'nodeworks'
+      ? { ...organization, cashCents: 50_000_000 as typeof organization.cashCents,
+          debtCents: 1_500_000_000 as typeof organization.debtCents }
+      : organization);
+
+    const result = advanceQuarter(state);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    const firstDebt = result.state.debts.find((debt) => debt.id === 'nodeworks-infrastructure-debt')!;
+    const secondDebt = result.state.debts.find((debt) => debt.id === 'nodeworks-secondary-debt')!;
+    expect(firstDebt.principalCents).toBe(1_370_000_000);
+    expect(firstDebt.paymentStatus).toBeUndefined();
+    expect(secondDebt.principalCents).toBe(100_000_000);
+    expect(secondDebt.arrearsPrincipalCents).toBe(70_000_000);
+    expect(secondDebt.paymentStatus).toBe('overdue');
+    expect(result.report.debtRepayments).toContainEqual({
+      debtId: 'nodeworks-infrastructure-debt', borrowerId: 'nodeworks',
+      principalCents: 30_000_000, repaymentType: 'scheduled',
+    });
+    expect(result.report.debtArrears?.map((line) => line.debtId)).toEqual(['nodeworks-secondary-debt']);
+    expect(validateGameState(result.state)).toEqual([]);
+  });
+
   it('rejects overpayment, duplicate repayment and insufficient borrower cash atomically', () => {
     const state = initializeGame();
     const before = JSON.stringify(state);
