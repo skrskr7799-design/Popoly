@@ -30,6 +30,7 @@ export interface DebtRepaymentReportLine {
   debtId: string;
   borrowerId: string;
   principalCents: MoneyCents;
+  repaymentType: 'scheduled' | 'maturity' | 'voluntary';
 }
 
 export interface QuarterReport {
