@@ -278,6 +278,14 @@ export default function CampaignApp() {
       ? current.filter((id) => id !== initiative.id)
       : [...current, initiative.id]);
   };
+  const scrollToSection = (id: string) => {
+    document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
+  const restartCampaign = () => {
+    if (window.confirm('Start a new campaign? Unsaved progress in the current session will be lost.')) {
+      startCampaign();
+    }
+  };
   const resolveQuarter = () => {
     const result = session.advance({ launchInitiatives: selected });
     if (!result.ok) {
@@ -296,11 +304,11 @@ export default function CampaignApp() {
       <div className="pop-campaign-tag"><span className="pop-live-dot" /> LIVE CAMPAIGN</div>
       <div className="pop-side-nav">
         <span className="pop-nav-label">CORPORATE GROUP</span>
-        <div className="pop-nav-item active"><Building2 size={17} /> Meridian Group</div>
-        <div className="pop-nav-item"><Cpu size={17} /> NodeWorks</div>
+        <button type="button" className="pop-nav-item active" onClick={() => scrollToSection('group-overview')}><Building2 size={17} /> Meridian Group</button>
+        <button type="button" className="pop-nav-item" onClick={() => scrollToSection('nodeworks')}><Cpu size={17} /> NodeWorks</button>
         <span className="pop-nav-label">WORLD</span>
-        <div className="pop-nav-item"><Globe2 size={17} /> Regional market</div>
-        <div className="pop-nav-item"><Radar size={17} /> Intelligence</div>
+        <button type="button" className="pop-nav-item" onClick={() => scrollToSection('regional-market')}><Globe2 size={17} /> Regional market</button>
+        <button type="button" className="pop-nav-item" onClick={() => scrollToSection('intelligence')}><Radar size={17} /> Intelligence</button>
       </div>
       <div className="pop-sidebar-bottom"><span>THE COMPUTE BOTTLENECK</span><small>Scenario v0.1.0</small><small>Campaign {session.campaignId.slice(0, 8)}</small></div>
     </aside>
@@ -320,7 +328,7 @@ export default function CampaignApp() {
       {storageMessage && <div className="pop-storage-message">{storageMessage}<button onClick={() => setStorageMessage(null)}>Dismiss</button></div>}
       {showStorage && storagePanel}
 
-      <section className="pop-stat-grid">
+      <section id="group-overview" className="pop-stat-grid">
         <StatCard label="MERIDIAN · CASH" value={money(holdingCash)} note={`Debt ${money(holdingDebt)}`} icon={Banknote} tone="good" />
         <StatCard label="NODEWORKS · CASH" value={money(nodeworksCash)} note={`Debt ${money(nodeworksDebt)}`} icon={Building2} />
         <StatCard label="EFFECTIVE CAPACITY" value={`${operating?.effectiveCapacityMW.toFixed(1) ?? '—'} MW`} note={`Delivered ${company?.deliveredWorkloadMW.toFixed(1) ?? '—'} MW`} icon={Gauge} />
@@ -353,7 +361,7 @@ export default function CampaignApp() {
           </section>
 
           {report && <QuarterReportPanel report={report} state={state} />}
-          <section className="pop-panel">
+          <section id="nodeworks" className="pop-panel">
             <SectionTitle eyebrow="OPERATING COMPANY" title="NodeWorks" right={<span className="pop-pill pop-pill-green">Controlled subsidiary</span>} />
             <div className="pop-operating-summary">
               <div><span>Installed IT</span><strong>{company?.capacity.installedITMW.toFixed(1)} MW</strong></div>
@@ -367,7 +375,7 @@ export default function CampaignApp() {
         </div>
 
         <div className="pop-column">
-          <section className="pop-panel">
+          <section id="regional-market" className="pop-panel">
             <SectionTitle eyebrow="MARKET CONDITIONS" title="North Region" />
             <div className="pop-market-metrics">
               <div><Zap size={16} /><span>Regional power</span><strong>{market?.availablePowerMW.toFixed(0)} MW</strong></div>
@@ -378,7 +386,7 @@ export default function CampaignApp() {
             <div className="pop-energy-price"><span>Reference energy price</span><strong>{formatMoney(market?.referenceEnergyPriceCentsPerMWh ?? 0)} <small>/ MWh</small></strong></div>
           </section>
 
-          <section className="pop-panel">
+          <section id="intelligence" className="pop-panel">
             <SectionTitle eyebrow="EXTERNAL INTELLIGENCE" title="Market signals" />
             {state.playerIntelligence.map((estimate, index) => {
               const age = Math.max(0, state.quarter - estimate.observedQuarter);
@@ -402,7 +410,7 @@ export default function CampaignApp() {
         </div>
       </div>
 
-      <footer className="pop-footer"><span>POPOLY / THE COMPUTE BOTTLENECK</span><span>SIMULATION BUILD 0.1.0</span><button onClick={startCampaign}>Restart campaign</button></footer>
+      <footer className="pop-footer"><span>POPOLY / THE COMPUTE BOTTLENECK</span><span>SIMULATION BUILD 0.1.0</span><button onClick={restartCampaign}>Restart campaign</button></footer>
     </main>
   </div>;
 }
