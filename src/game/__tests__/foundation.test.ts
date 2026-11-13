@@ -1244,8 +1244,8 @@ describe('debt refinancing and lender-led restructuring', () => {
         ? { ...item, cashCents: 0 as typeof item.cashCents, debtCents: 100_000_000 as typeof item.debtCents } : item),
       operatingCompanies: opening.operatingCompanies.map((company) => ({
         ...company, deliveredWorkloadMW: 0,
-        cashCosts: { operationsAndStaffingCents: 0, maintenanceCents: 0,
-          networkAndConnectivityCents: 0, overheadComplianceInsuranceCents: 0 },
+        cashCosts: { operationsAndStaffingCents: moneyFromCents(0), maintenanceCents: moneyFromCents(0),
+          networkAndConnectivityCents: moneyFromCents(0), overheadComplianceInsuranceCents: moneyFromCents(0) },
       })),
       debts: opening.debts.map((debt) => debt.id === 'nodeworks-infrastructure-debt'
         ? { ...debt, lenderId: 'northstar-commercial-bank', principalCents: 100_000_000 as typeof debt.principalCents,
