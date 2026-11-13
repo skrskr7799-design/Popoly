@@ -808,6 +808,7 @@ export function advanceQuarter(state: GameState, commands: QuarterCommands = {})
     const interestPaidByBorrower = new Map<string, number>();
     const interestReceivedByLender = new Map<string, number>();
     const unpaidInterestByDebt = new Map<string, number>();
+    const unpaidPrincipalByDebt = new Map<string, number>();
 
     // Each instrument is serviced in ledger order: its interest first, then its own scheduled principal.
     const scheduledByDebt = new Map(scheduledDue.map((due) => [due.debtId, due]));
