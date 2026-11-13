@@ -1015,9 +1015,14 @@ describe('debt covenant monitoring and enforcement', () => {
     const second = advanceQuarter(distressed(first.state));
     expect(second.ok).toBe(true);
     if (!second.ok) return;
-    const normalCosts = initializeGame().operatingCompanies[0]!.cashCosts;
+    const recoveredCosts = {
+      operationsAndStaffingCents: moneyFromCents(0),
+      maintenanceCents: moneyFromCents(0),
+      networkAndConnectivityCents: moneyFromCents(0),
+      overheadComplianceInsuranceCents: moneyFromCents(0),
+    };
     const curedState = { ...second.state, operatingCompanies: second.state.operatingCompanies.map((company) => ({
-      ...company, cashCosts: normalCosts,
+      ...company, cashCosts: recoveredCosts,
     })) };
     const cured = advanceQuarter(curedState);
     expect(cured.ok).toBe(true);
