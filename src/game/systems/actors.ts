@@ -19,6 +19,86 @@ function actorRandom(state: GameState, actorId: string): number {
   return nextRandom(createRandomState(seed)).value;
 }
 
+/**
+ * Customer memory is private world state. It reacts to delivered service and
+ * SLA outcomes, then shifts the customer's private renewal and pricing limits.
+ */
+function updateAsterionRelationship(state: GameState, actor: ActorState): ActorState {
+  const company = state.operatingCompanies.find((item) => item.organizationId === 'nodeworks');
+  const market = state.regionalMarkets[0];
+  if (!company || !market) return actor;
+  const operations = calculateOperatingQuarter(company, market);
+  const fixedContracts = company.contracts.filter((contract) => contract.flexibility === 'contracted');
+  const fixedResults = operations.fulfilledContracts.filter((line) =>
+    fixedContracts.some((contract) => contract.id === line.contractId));
+  const breached = fixedResults.some((line) => line.serviceCreditCents > 0);
+  const materiallyUnderdelivered = fixedResults.some((line) => {
+    const contract = fixedContracts.find((item) => item.id === line.contractId)!;
+    return contract.workloadMW - line.deliveredMW > 0.25;
+  });
+  const previousScore = actor.hiddenMetrics.relationshipScore ?? 65;
+  const relationshipScore = Math.max(0, Math.min(100,
+    previousScore + (breached ? -6 : materiallyUnderdelivered ? -4 : 1.25)));
+  const breachStreak = breached ? (actor.hiddenMetrics.slaBreachStreak ?? 0) + 1 : 0;
+  const metrics = { ...actor.hiddenMetrics, relationshipScore, customerSatisfaction: relationshipScore, slaBreachStreak: breachStreak };
+
+  for (const contract of fixedContracts) {
+    const baseMax = metrics[`baseRenewalMaxPrice:${contract.id}`] ??
+      metrics[`renewalMaxPrice:${contract.id}`] ?? contract.priceCentsPerMWQuarter;
+    const baseMin = metrics[`baseRenewalMinVolume:${contract.id}`] ??
+      metrics[`renewalMinVolume:${contract.id}`] ?? contract.minimumWorkloadMW ?? contract.workloadMW;
+    metrics[`baseRenewalMaxPrice:${contract.id}`] = baseMax;
+    metrics[`baseRenewalMinVolume:${contract.id}`] = baseMin;
+    const relationshipFactor = Math.max(0.9, Math.min(1.06, 1 + (relationshipScore - 65) * 0.0015));
+    metrics[`renewalMaxPrice:${contract.id}`] = Math.round(baseMax * relationshipFactor);
+    metrics[`renewalMinVolume:${contract.id}`] = Math.max(
+      Math.max(0, baseMin - 0.5),
+      Math.min(contract.workloadMW, baseMin + (65 - relationshipScore) * 0.025),
+    );
+  }
+  const baseFlexibleMax = metrics.baseMaxFlexiblePriceCentsPerMWQuarter ??
+    metrics.maxFlexiblePriceCentsPerMWQuarter ?? 44_000_000;
+  metrics.baseMaxFlexiblePriceCentsPerMWQuarter = baseFlexibleMax;
+  metrics.maxFlexiblePriceCentsPerMWQuarter = Math.round(
+    baseFlexibleMax * Math.max(0.9, Math.min(1.06, 1 + (relationshipScore - 65) * 0.0015)),
+  );
+  return { ...actor, hiddenMetrics: metrics };
+}
+
+function updateRenewalRiskIntelligence(state: GameState, actors: ActorState[]): GameState['playerIntelligence'] {
+  const customer = actors.find((actor) => actor.organizationId === 'asterion-ai');
+  const kestrel = actors.find((actor) => actor.organizationId === 'kestrel-compute');
+  const nodeworks = state.operatingCompanies.find((company) => company.organizationId === 'nodeworks');
+  if (!customer || !kestrel || !nodeworks) return state.playerIntelligence;
+  const relationship = customer.hiddenMetrics.relationshipScore ?? 65;
+  const capacity = kestrel.hiddenMetrics.effectiveCapacityMW ?? kestrel.hiddenMetrics.effectiveCapacityMinMW ?? 0;
+  const workload = kestrel.hiddenMetrics.currentWorkloadMW ?? kestrel.hiddenMetrics.deliveredWorkloadMaxMW ?? 0;
+  const updated = [...state.playerIntelligence];
+  for (const contract of nodeworks.contracts.filter((item) => item.flexibility === 'contracted')) {
+    const competitorCanServe = capacity - workload + 1e-9 >= contract.workloadMW;
+    const risk = Math.max(0, Math.min(100,
+      50 - (relationship - 60) * 1.1 +
+      (competitorCanServe ? 12 : 0) +
+      (customer.hiddenMetrics.slaBreachStreak ?? 0) * 5,
+    ));
+    const metric = `contractRenewalRisk:${contract.id}`;
+    const estimate = {
+      subjectId: contract.customerId,
+      metric,
+      min: Math.max(0, Math.round(risk - 12)),
+      max: Math.min(100, Math.round(risk + 12)),
+      knowledge: 'estimated' as const,
+      confidence: 0.55,
+      observedQuarter: state.quarter,
+      source: 'procurement signals and service history',
+    };
+    const index = updated.findIndex((item) => item.metric === metric && item.subjectId === contract.customerId);
+    if (index >= 0) updated[index] = estimate;
+    else updated.push(estimate);
+  }
+  return updated;
+}
+
 function updateActor(
   actor: ActorState,
   state: GameState,
