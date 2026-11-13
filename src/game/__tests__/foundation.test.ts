@@ -1,11 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { initializeGame } from '../engine/initialize';
 import { calculateOperatingQuarter } from '../systems/economy';
-import { calculateScenarioDebtService, calculateEntityCashBridge } from '../systems/finance';
 import { buildQuarterReport } from '../systems/quarterReport';
 import { createRandomState, nextRandom } from '../engine/random';
 import { validateGameState } from '../domain/invariants';
-import { moneyFromCents } from '../domain/money';
 
 describe('The Compute Bottleneck opening state', () => {
   it('initializes with valid ownership and entity references', () => {
