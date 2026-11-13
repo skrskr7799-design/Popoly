@@ -171,6 +171,7 @@ A contract defines:
 - price and indexation;
 - term;
 - service-level / reliability requirements;
+- service-credit rate and the conditions that trigger credits;
 - delivery priority;
 - penalties and service credits;
 - termination / renegotiation conditions;
@@ -239,3 +240,8 @@ All balance coefficients belong in scenario or tuning data, not scattered consta
 - whether energy/equipment bottlenecks can alter strategy;
 - whether customer concentration creates meaningful risk;
 - whether financing enables recovery without removing consequences.
+
+
+## 16. Service-level agreements and credits
+
+Fixed-term compute agreements may define a minimum provider reliability and a service-credit rate. Reliability below the contractual threshold triggers a credit against that contract's delivered quarterly revenue; the credit is not applied to unrelated customer contracts. Gross revenue, service credits, and net recognized revenue are reported separately. The first implementation uses a deterministic threshold breach rather than outage-duration simulation; contract-level thresholds and credit rates are scenario data. SLA credits reduce the operating cash contribution in the same quarter and do not retroactively alter prior reports.
