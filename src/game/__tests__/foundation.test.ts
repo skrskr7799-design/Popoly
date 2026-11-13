@@ -1145,3 +1145,14 @@ describe('debt refinancing and lender-led restructuring', () => {
     expect(validateGameState(restructured.state)).toEqual([]);
   });
 });
+
+
+describe('opening lender relationships', () => {
+  it('assigns every opening debt facility to a named lender and gives opening offers covenant terms', () => {
+    const state = initializeGame();
+    expect(state.debts.find((debt) => debt.id === 'meridian-revolver')?.lenderId).toBe('northstar-commercial-bank');
+    expect(state.debts.find((debt) => debt.id === 'nodeworks-infrastructure-debt')?.lenderId).toBe('frontier-development-bank');
+    expect(state.loanOffers.every((offer) => offer.covenantTerms !== undefined)).toBe(true);
+    expect(validateGameState(state)).toEqual([]);
+  });
+});
