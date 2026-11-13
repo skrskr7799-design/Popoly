@@ -45,18 +45,29 @@ export function FinancePanel({
     offer.status === 'available' && state.quarter <= offer.expiresAfterQuarter);
   const totalCash = borrowerIds.reduce((sum, id) =>
     sum + (organizations.find((item) => item.id === id)?.cashCents ?? 0), 0);
-  const undrawnFacilities = state.debts.filter((debt) =>
-    debt.facilityLimitCents !== undefined && debt.principalCents < debt.facilityLimitCents);
-  const drawableCapacity = undrawnFacilities.reduce((sum, debt) => {
-    const lender = state.lenders.find((item) => item.organizationId === debt.lenderId);
-    const lenderOrg = organizations.find((item) => item.id === debt.lenderId);
-    if (!lender || !lenderOrg || !debt.lenderId) return sum;
-    return sum + Math.max(0, Math.min(
-      debt.facilityLimitCents! - debt.principalCents,
-      lender.availableCapacityCents,
-      lenderOrg.cashCents,
+  const lenderResources = new Map(state.lenders.map((lender) => [
+    lender.organizationId,
+    {
+      capacity: lender.availableCapacityCents,
+      cash: organizations.find((item) => item.id === lender.organizationId)?.cashCents ?? 0,
+    },
+  ]));
+  let drawableCapacity = 0;
+  for (const debt of state.debts) {
+    if (debt.facilityLimitCents === undefined || !debt.lenderId) continue;
+    const resources = lenderResources.get(debt.lenderId);
+    if (!resources) continue;
+    const drawCapacity = Math.max(0, Math.min(
+      debt.facilityLimitCents - debt.principalCents,
+      resources.capacity,
+      resources.cash,
     ));
-  }, 0);
+    drawableCapacity += drawCapacity;
+    lenderResources.set(debt.lenderId, {
+      capacity: resources.capacity - drawCapacity,
+      cash: resources.cash - drawCapacity,
+    });
+  }
 
   return <section id="finance" className="pop-panel pop-finance-panel">
     <div className="pop-section-title">
@@ -175,16 +186,16 @@ export function FinancePanel({
           </select>
         </label>
         <label><span>Requested principal · USD</span>
-          <input type="number" min="1" step="100000" value={creditRequest.amountDollars}
+          <input type="number" min="1" step="100000" disabled={!requestAllowed} value={creditRequest.amountDollars}
             onChange={(event) => onCreditRequestChange({ ...creditRequest, amountDollars: event.target.value })} placeholder="e.g. 1500000" />
         </label>
         <label><span>Term</span>
-          <select value={creditRequest.termQuarters} onChange={(event) => onCreditRequestChange({ ...creditRequest, termQuarters: event.target.value })}>
+          <select disabled={!requestAllowed} value={creditRequest.termQuarters} onChange={(event) => onCreditRequestChange({ ...creditRequest, termQuarters: event.target.value })}>
             {Array.from({ length: 11 }, (_, index) => index + 2).map((term) => <option key={term} value={term}>{term} quarters</option>)}
           </select>
         </label>
         <label className="pop-credit-collateral"><span>Collateral description · optional</span>
-          <input type="text" maxLength={160} value={creditRequest.collateral}
+          <input type="text" maxLength={160} disabled={!requestAllowed} value={creditRequest.collateral}
             onChange={(event) => onCreditRequestChange({ ...creditRequest, collateral: event.target.value })} placeholder="Equipment, receivables…" />
         </label>
       </div>
