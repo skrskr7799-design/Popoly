@@ -123,7 +123,9 @@ The first playable engine slice now includes a transactional quarter resolver, a
 - Newly originated loans can carry DSCR and leverage covenants, grace periods, a borrowing restriction, and a one-time contractual rate step-up after an uncured breach.
 - Covenant monitoring starts in the quarter after origination. The engine records compliant/grace/breached state, consecutive breach streaks, measured ratios, and breach reasons in the quarter report.
 - A cure resets the breach streak and restores compliance. An active borrowing restriction blocks new credit requests, acceptance of other offers, and revolving drawdowns for the same legal borrower.
-- The first credit score and collateral description remain simplified. Collateral valuation/enforcement, lender waivers, covenant amendments, refinancing, arrears, default, and insolvency are not implemented yet.
+- Borrowers can refinance an existing instrument using an available offer for the same legal entity. The replacement loan must cover old principal plus an explicit fee; the old creditor is repaid, the new lender funds the replacement, and the net cash release/debt-ledger changes commit atomically.
+- Newly originated debt stores its lender identity. A borrower can ask that creditor to extend maturity, reduce the rate or scheduled principal, or waive covenants. The lender accepts/rejects deterministically from its risk appetite and the borrower's distress/credit condition; approved terms apply after the current quarter report.
+- Refinancing and restructuring outcomes are exposed in quarter-report lines. Collateral valuation/enforcement, lender relationship history, arrears, default, cross-default, and insolvency are not implemented yet.
 
 - Lenders are legal organizations with separate lending-capacity and risk-appetite records.
 - Scenario-originated loan offers identify a single borrower and state principal, quarterly rate, maturity, expiry, and optional collateral description.
