@@ -1237,7 +1237,7 @@ describe('debt refinancing and lender-led restructuring', () => {
     const offer = requested.state.loanOffers.find((item) =>
       item.lenderId === 'northstar-commercial-bank' && item.borrowerId === 'nodeworks' &&
       item.id === 'northstar-commercial-bank-nodeworks-q1')!;
-    expect(offer.principalCents).toBe(1_400_000_000);
+    expect(offer.principalCents).toBe(1_500_000_000);
     const result = advanceQuarter(requested.state, { refinanceDebts: [{
       debtId: 'nodeworks-infrastructure-debt', offerId: offer.id, feeBasisPoints: 100,
     }] });
@@ -1255,7 +1255,7 @@ describe('debt refinancing and lender-led restructuring', () => {
       .toBe(northstarBridge.closingCashCents);
     expect(result.report.debtRefinancings?.[0]).toMatchObject({
       oldDebtId: 'nodeworks-infrastructure-debt', newDebtId: `loan-${offer.id}`,
-      refinancedPrincipalCents: 1_400_000_000, feeCents: 14_000_000, netCashReleasedCents: 86_000_000,
+      refinancedPrincipalCents: 1_500_000_000, feeCents: 14_000_000, netCashReleasedCents: 86_000_000,
     });
     expect(result.report.entityCashBridges.find((item) => item.organizationId === 'nodeworks')!.financingCashFlowCents)
       .toBe(86_000_000);
