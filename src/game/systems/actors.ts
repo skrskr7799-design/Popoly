@@ -422,5 +422,5 @@ export function advanceAutonomousActors(\n  state: GameState,\n  serviceSnapshot
     });
   }
 
-  return { state: { ...state, actors, playerIntelligence: updateRenewalRiskIntelligence(state, actors), regionalMarkets, operatingCompanies: actorState.operatingCompanies, equipmentOrders: actorState.equipmentOrders }, actions };
+  const resolvedWorld = { ...state, actors, regionalMarkets, operatingCompanies: actorState.operatingCompanies, equipmentOrders: actorState.equipmentOrders };\n  return { state: { ...resolvedWorld, playerIntelligence: updateRenewalRiskIntelligence(resolvedWorld, actors) }, actions };
 }
