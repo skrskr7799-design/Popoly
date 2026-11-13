@@ -535,6 +535,40 @@ describe('autonomous world simulation', () => {
 });
 
 
+  it('keeps the autonomous world coherent through twelve consecutive quarters', () => {
+    let state = initializeGame(2035);
+    const startingDemand = state.actors.find((actor) => actor.organizationId === 'asterion-ai')!.hiddenMetrics.demandMW;
+    const observedActions = new Set<string>();
+
+    for (let index = 0; index < 12; index += 1) {
+      const result = advanceQuarter(state);
+      expect(result.ok, `quarter ${state.quarter} should resolve`).toBe(true);
+      if (!result.ok) return;
+      expect(result.report.quarter).toBe(state.quarter);
+      for (const action of result.report.actorActions ?? []) observedActions.add(action.kind);
+      state = result.state;
+      expect(validateGameState(state)).toEqual([]);
+      expect(state.quarter).toBe(index + 2);
+      for (const organization of state.organizations) {
+        expect(Number.isSafeInteger(organization.cashCents)).toBe(true);
+        expect(Number.isSafeInteger(organization.debtCents)).toBe(true);
+      }
+      for (const actor of state.actors) {
+        for (const metric of Object.values(actor.hiddenMetrics)) {
+          expect(Number.isFinite(metric)).toBe(true);
+        }
+      }
+    }
+
+    const finalDemand = state.actors.find((actor) => actor.organizationId === 'asterion-ai')!.hiddenMetrics.demandMW;
+    expect(finalDemand).toBeGreaterThan(startingDemand);
+    expect(observedActions.has('demand-growth')).toBe(true);
+    expect(observedActions.has('customer-allocation')).toBe(true);
+    expect(state.playerIntelligence.some((item) => item.metric.startsWith('contractRenewalRisk:'))).toBe(true);
+    expect(state.operatingCompanies[0]!.contracts.some((contract) => contract.id === 'asterion-contract-a')).toBe(false);
+    expect(state.operatingCompanies[0]!.contracts.some((contract) => contract.id === 'asterion-contract-b')).toBe(false);
+  });
+
 describe('customer relationship and renewal intelligence', () => {
   it('tracks service history and shifts Asterion private renewal terms', () => {
     const state = initializeGame();
