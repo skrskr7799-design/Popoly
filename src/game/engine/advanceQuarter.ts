@@ -30,6 +30,13 @@ export interface LoanAcceptanceCommand {
   offerId: string;
 }
 
+export interface DebtRefinanceCommand {
+  debtId: string; offerId: string; feeBasisPoints?: number;
+}
+export interface DebtRestructuringCommand {
+  debtId: string; requestedMaturityQuarter?: number; requestedQuarterlyInterestRate?: number;
+  requestedScheduledPrincipalCentsPerQuarter?: number; requestCovenantWaiver?: boolean; reason?: string;
+}
 export interface CreditRequestCommand {
   borrowerId: string;
   requestedPrincipalCents: number;
@@ -81,6 +88,8 @@ export interface QuarterCommands {
   acceptLoanOffers?: LoanAcceptanceCommand[];
   /** Ask all eligible lenders to independently underwrite a loan request. */
   requestCredit?: CreditRequestCommand[];
+  refinanceDebts?: DebtRefinanceCommand[];
+  restructureDebts?: DebtRestructuringCommand[];
 }
 
 export interface AdvanceQuarterSuccess {
