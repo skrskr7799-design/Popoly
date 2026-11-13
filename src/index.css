@@ -205,3 +205,32 @@ button { font: inherit; }
   .pop-storage-toolbar { align-items: flex-start; flex-direction: column; }
   .pop-topbar-right { flex-wrap: wrap; }
 }
+
+
+.pop-contract-panel { margin-top: 14px; }
+.pop-contract-summary { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 10px; margin: 14px 0 5px; padding: 13px; border: 1px solid #263545; border-radius: 8px; background: #0c1520; }
+.pop-contract-summary span,.pop-contract-summary strong { display: block; }
+.pop-contract-summary span { color: #8192a6; font-size: 9px; }
+.pop-contract-summary strong { margin-top: 6px; color: #dce6f0; font-size: 14px; font-weight: 600; }
+.pop-contract-list { display: grid; }
+.pop-contract { padding: 14px 0; border-bottom: 1px solid #253343; }
+.pop-contract:last-child { border-bottom: 0; padding-bottom: 0; }
+.pop-contract-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.pop-contract-heading > div:first-child strong,.pop-contract-heading > div:first-child small { display: block; }
+.pop-contract-heading > div:first-child strong { color: #d1dce8; font-size: 11px; font-weight: 600; }
+.pop-contract-heading > div:first-child small { margin-top: 4px; color: #718399; font-size: 8px; }
+.pop-contract-tags { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 5px; }
+.pop-pill-warn { color: #efbd8d; border-color: #694b36; background: #2b211a; }
+.pop-contract-metrics { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 10px; margin: 12px 0 9px; }
+.pop-contract-metrics small,.pop-contract-metrics strong { display: block; }
+.pop-contract-metrics small { color: #75879b; font-size: 8px; }
+.pop-contract-metrics strong { margin-top: 4px; color: #cbd7e3; font-size: 10px; font-weight: 600; }
+.pop-contract-track { height: 4px; overflow: hidden; border-radius: 8px; background: #273746; }
+.pop-contract-track i { display: block; height: 100%; border-radius: inherit; background: #8bd7c0; }
+.pop-contract-credit { display: block; margin-top: 7px; color: #efbd8d; font-size: 9px; }
+@media (max-width: 520px) {
+  .pop-contract-summary { grid-template-columns: 1fr 1fr; }
+  .pop-contract-metrics { grid-template-columns: 1fr 1fr; row-gap: 9px; }
+  .pop-contract-heading { flex-direction: column; }
+  .pop-contract-tags { justify-content: flex-start; }
+}
