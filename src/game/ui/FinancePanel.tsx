@@ -89,7 +89,6 @@ export function FinancePanel({
     <div className="pop-finance-subsection">
       <div className="pop-finance-subtitle"><strong>Debt portfolio</strong><small>{activeDebts.length} outstanding instrument(s)</small></div>
       {activeDebts.map((debt) => {
-        const lender = debt.lenderId ? state.lenders.find((item) => item.organizationId === debt.lenderId) : undefined;
         const arrears = (debt.arrearsPrincipalCents ?? 0) + (debt.arrearsInterestCents ?? 0);
         const service = calculateDebtServiceObligation(debt, state.quarter);
         const covenant = debt.covenantStatus ?? 'compliant';
