@@ -356,6 +356,38 @@ describe('autonomous world simulation', () => {
     expect(result.report.actorActions?.some((action) => action.kind === 'customer-allocation')).toBe(true);
   });
 
+
+  it('lets Kestrel reprice against NodeWorks and makes the new offer affect Asterion allocation', () => {
+    const state = initializeGame(2035);
+    const kestrelBefore = state.actors.find((actor) => actor.organizationId === 'kestrel-compute')!;
+    const originalPrice = kestrelBefore.hiddenMetrics.priceCentsPerMWQuarter!;
+    const result = advanceQuarter(state);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+
+    const kestrelAfter = result.state.actors.find((actor) => actor.organizationId === 'kestrel-compute')!;
+    const asterion = result.state.actors.find((actor) => actor.organizationId === 'asterion-ai')!;
+    expect(kestrelAfter.hiddenMetrics.priceCentsPerMWQuarter).not.toBe(originalPrice);
+    expect(result.report.actorActions?.some((action) =>
+      action.actorId === 'kestrel-compute' && action.kind === 'competitor-commercial-terms')).toBe(true);
+    expect(asterion.hiddenMetrics.kestrelFlexibleMW).toBeGreaterThan(0);
+    expect(asterion.hiddenMetrics.nodeworksFlexibleMW).toBeGreaterThan(0);
+    const publicAction = result.report.actorActions?.find((action) => action.kind === 'competitor-commercial-terms');
+    expect(publicAction?.summary).not.toMatch(/[0-9]/);
+  });
+
+  it('makes a capacity-constrained Kestrel protect price rather than chase volume', () => {
+    const state = initializeGame(2035);
+    state.actors = state.actors.map((actor) => actor.organizationId === 'kestrel-compute'
+      ? { ...actor, hiddenMetrics: { ...actor.hiddenMetrics, effectiveCapacityMW: 20, currentWorkloadMW: 19.5, priceCentsPerMWQuarter: 40_500_000 } }
+      : actor);
+    const result = advanceQuarter(state);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    const kestrel = result.state.actors.find((actor) => actor.organizationId === 'kestrel-compute')!;
+    expect(kestrel.hiddenMetrics.priceCentsPerMWQuarter).toBeGreaterThan(40_500_000);
+  });
+
   it('keeps customer allocation deterministic and does not expose rival allocation metrics in public action text', () => {
     const first = advanceQuarter(initializeGame(77));
     const second = advanceQuarter(initializeGame(77));
