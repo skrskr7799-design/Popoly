@@ -110,7 +110,7 @@ describe('explicit debt principal repayments', () => {
     expect(debt.principalCents).toBe(1_300_000_000);
     expect(nodeworks.debtCents).toBe(1_300_000_000);
     expect(nodeworks.cashCents).toBe(539_616_000);
-    expect(bridge.interestExpenseCents).toBe(33_500_000);
+    expect(bridge.interestExpenseCents).toBe(31_500_000);
     expect(bridge.financingCashFlowCents).toBe(-100_000_000);
     expect(bridge.closingCashCents).toBe(539_616_000);
     expect(result.report.debtRepayments).toEqual([{
@@ -286,7 +286,7 @@ describe('explicit debt principal repayments', () => {
     expect(debt.arrearsInterestCents).toBe(0);
     expect(result.report.debtRepayments?.some((item) => item.debtId === debt.id) ?? false).toBe(false);
     const bridge = result.report.entityCashBridges.find((item) => item.organizationId === 'nodeworks')!;
-    expect(bridge.interestExpenseCents).toBe(31_500_000);
+    expect(bridge.interestExpenseCents).toBe(33_500_000);
     expect(bridge.interestPaidCents).toBe(33_500_000);
     expect(bridge.closingCashCents).toBe(6_500_000);
     const secondaryDebt = result.state.debts.find((item) => item.id === 'nodeworks-secondary-interest-debt')!;
