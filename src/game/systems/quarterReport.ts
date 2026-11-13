@@ -83,7 +83,7 @@ export interface DebtRepaymentReportLine {
   borrowerId: string;
   lenderId?: string;
   principalCents: MoneyCents;
-  repaymentType: 'scheduled' | 'maturity' | 'voluntary';
+  repaymentType: 'scheduled' | 'maturity' | 'acceleration' | 'voluntary';
 }
 
 export interface DebtInterestReportLine {
@@ -95,6 +95,14 @@ export interface DebtInterestReportLine {
   interestPaidCents: MoneyCents;
   closingInterestArrearsCents: MoneyCents;
   missedContractualService: boolean;
+}
+
+export interface DebtAccelerationReportLine {
+  debtId: string;
+  borrowerId: string;
+  lenderId: string;
+  effectiveQuarter: number;
+  action: 'notice-issued' | 'acceleration-effective';
 }
 
 export interface CrossDefaultReportLine {
@@ -131,6 +139,7 @@ export interface QuarterReport {
   debtRepayments?: DebtRepaymentReportLine[];
   debtArrears?: DebtArrearsReportLine[];
   crossDefaults?: CrossDefaultReportLine[];
+  debtAccelerations?: DebtAccelerationReportLine[];
   debtInterestService?: DebtInterestReportLine[];
   debtDrawdowns?: DebtDrawdownReportLine[];
   loanAcceptances?: LoanAcceptanceReportLine[];
