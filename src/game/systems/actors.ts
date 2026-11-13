@@ -31,15 +31,18 @@ function updateAsterionRelationship(
   const company = state.operatingCompanies.find((item) => item.organizationId === 'nodeworks');
   const market = state.regionalMarkets[0];
   if (!company || !market) return actor;
-  const operations = calculateOperatingQuarter(company, market);
-  const fixedContracts = company.contracts.filter((contract) => contract.flexibility === 'contracted');
-  const fixedResults = operations.fulfilledContracts.filter((line) =>
-    fixedContracts.some((contract) => contract.id === line.contractId));
-  const breached = fixedResults.some((line) => line.serviceCreditCents > 0);
-  const materiallyUnderdelivered = fixedResults.some((line) => {
-    const contract = fixedContracts.find((item) => item.id === line.contractId)!;
-    return contract.workloadMW - line.deliveredMW > 0.25;
-  });
+  const fixedContracts = (serviceSnapshot?.contracts ?? company.contracts)
+    .filter((contract) => contract.flexibility === 'contracted');
+  if (fixedContracts.length === 0) return actor;
+  const fulfilledContracts = serviceSnapshot?.fulfilledContracts ??
+    calculateOperatingQuarter(company, market).fulfilledContracts;
+  const fixedResults = fixedContracts.map((contract) => ({
+    contract,
+    result: fulfilledContracts.find((line) => line.contractId === contract.id),
+  }));
+  const breached = fixedResults.some(({ result }) => (result?.serviceCreditCents ?? 0) > 0);
+  const materiallyUnderdelivered = fixedResults.some(({ contract, result }) =>
+    contract.workloadMW - (result?.deliveredMW ?? 0) > 0.25);
   const previousScore = actor.hiddenMetrics.relationshipScore ?? 65;
   const relationshipScore = Math.max(0, Math.min(100,
     previousScore + (breached ? -6 : materiallyUnderdelivered ? -4 : 1.25)));
