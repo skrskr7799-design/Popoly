@@ -279,6 +279,25 @@ describe('IndexedDB campaign repository', () => {
     const first = await makeIndexedDbSave('idb-concurrent', 1, '2035-01-01T00:00:00.000Z');
     const second = await makeIndexedDbSave('idb-concurrent', 2, '2035-04-01T00:00:00.000Z');
 
+    // Force both commits to observe the same opening revision before either
+    // reaches its write transaction. Without this barrier, one commit may
+    // legitimately finish before the other performs its optimistic read.
+    let readCount = 0;
+    let releaseReads!: () => void;
+    const bothReadsComplete = new Promise<void>((resolve) => { releaseReads = resolve; });
+    for (const target of [repository, competingRepository]) {
+      const originalRead = target.read.bind(target);
+      target.read = async (campaignId, revision = 'current') => {
+        const result = await originalRead(campaignId, revision);
+        if (revision === 'current') {
+          readCount += 1;
+          if (readCount === 2) releaseReads();
+          await bothReadsComplete;
+        }
+        return result;
+      };
+    }
+
     const results = await Promise.all([repository.commit(first), competingRepository.commit(second)]);
     expect(results.filter((result) => result.ok)).toHaveLength(1);
     expect(results.filter((result) => !result.ok)).toHaveLength(1);
