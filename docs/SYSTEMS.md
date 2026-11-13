@@ -120,7 +120,10 @@ The first playable engine slice now includes a transactional quarter resolver, a
 - Accepting an offer transfers cash from lender to the named borrower, consumes lender capacity, and creates debt against that borrower. Holding and subsidiary balances remain legally separate.
 - Lender liquidity and remaining credit capacity are both checked; multiple acceptances are aggregated and the quarter rejects atomically if either limit is exceeded.
 - New loan interest begins in the following quarter; maturity uses the existing balloon principal repayment mechanism. Unaccepted offers expire after their final valid quarter.
-- The first credit score and collateral description are intentionally simplified. Collateral valuation/enforcement, covenants, refinancing, arrears, and lender distress behavior are not implemented yet.
+- Newly originated loans can carry DSCR and leverage covenants, grace periods, a borrowing restriction, and a one-time contractual rate step-up after an uncured breach.
+- Covenant monitoring starts in the quarter after origination. The engine records compliant/grace/breached state, consecutive breach streaks, measured ratios, and breach reasons in the quarter report.
+- A cure resets the breach streak and restores compliance. An active borrowing restriction blocks new credit requests, acceptance of other offers, and revolving drawdowns for the same legal borrower.
+- The first credit score and collateral description remain simplified. Collateral valuation/enforcement, lender waivers, covenant amendments, refinancing, arrears, default, and insolvency are not implemented yet.
 
 - Lenders are legal organizations with separate lending-capacity and risk-appetite records.
 - Scenario-originated loan offers identify a single borrower and state principal, quarterly rate, maturity, expiry, and optional collateral description.
