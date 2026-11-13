@@ -19,6 +19,7 @@ export interface QuarterReport {
   projectsLaunched?: string[];
   projectsCompleted?: string[];
   projectCashCommitmentCents?: MoneyCents;
+  actorActions?: Array<{ actorId: string; kind: string; summary: string }>; 
 }
 
 /**
