@@ -138,3 +138,8 @@ The first playable engine slice now includes a transactional quarter resolver, a
 - Dynamic underwriting, borrower credit ratings, covenant monitoring, refinancing, basic creditor-approved restructuring, principal/interest arrears, and payment default are implemented. Collateral enforcement, lender relationship history, acceleration, cross-default, and insolvency remain future systems.
 
 This is an initial simulation layer, not the final economic model. In particular, deeper contract negotiations and renewals, financing choices, project dependencies, regulatory consequences, and richer information-quality mechanics remain future work.
+
+
+### Contractual cross-default
+
+Cross-default is instrument-specific and opt-in through the contract. It is scoped to debts of the same legal borrower; it does not propagate through ownership or corporate groups. The affected instrument retains its own payment status and arrears, while a separate source-debt reference records the contractual cross-default. Cure of the triggering default releases the derived status when no other qualifying trigger remains. Acceleration is a distinct creditor action and is not automatic.
