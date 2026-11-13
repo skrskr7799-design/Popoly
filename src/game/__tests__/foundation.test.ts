@@ -131,6 +131,39 @@ describe('explicit debt principal repayments', () => {
     expect(result.state.organizations.find((item) => item.id === 'nodeworks')!.cashCents).toBe(239_616_000);
   });
 
+  it('automatically services scheduled principal and records it as a financing outflow', () => {
+    const state = initializeGame();
+    state.debts = state.debts.map((debt) => debt.id === 'nodeworks-infrastructure-debt'
+      ? { ...debt, scheduledPrincipalCentsPerQuarter: 50_000_000 }
+      : debt);
+    const result = advanceQuarter(state);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.state.debts.find((debt) => debt.id === 'nodeworks-infrastructure-debt')!.principalCents).toBe(1_350_000_000);
+    expect(result.state.organizations.find((item) => item.id === 'nodeworks')!.debtCents).toBe(1_350_000_000);
+    expect(result.report.debtRepayments).toContainEqual({
+      debtId: 'nodeworks-infrastructure-debt', borrowerId: 'nodeworks',
+      principalCents: 50_000_000, repaymentType: 'scheduled',
+    });
+    expect(result.report.entityCashBridges.find((item) => item.organizationId === 'nodeworks')!.financingCashFlowCents).toBe(-50_000_000);
+  });
+
+  it('repays the remaining principal in full when a debt reaches maturity', () => {
+    const state = initializeGame();
+    state.debts = state.debts.map((debt) => debt.id === 'nodeworks-infrastructure-debt'
+      ? { ...debt, maturityQuarter: 1 }
+      : debt);
+    const result = advanceQuarter(state);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.state.debts.find((debt) => debt.id === 'nodeworks-infrastructure-debt')!.principalCents).toBe(0);
+    expect(result.state.organizations.find((item) => item.id === 'nodeworks')!.debtCents).toBe(0);
+    expect(result.report.debtRepayments).toContainEqual({
+      debtId: 'nodeworks-infrastructure-debt', borrowerId: 'nodeworks',
+      principalCents: 1_400_000_000, repaymentType: 'maturity',
+    });
+  });
+
   it('rejects overpayment, duplicate repayment and insufficient borrower cash atomically', () => {
     const state = initializeGame();
     const before = JSON.stringify(state);
