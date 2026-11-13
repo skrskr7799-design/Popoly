@@ -1,7 +1,7 @@
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import {
-  Activity, ArrowDownRight, ArrowUpRight, Banknote, Building2, Check,
-  ChevronRight, CircleAlert, Cpu, Gauge, Globe2, Landmark, Lightbulb,
+  Activity, ArrowUpRight, Banknote, Building2, Check,
+  ChevronRight, CircleAlert, Cpu, Gauge, Globe2, Landmark,
   LockKeyhole, Plus, Radar, ShieldCheck, Sparkles, Zap,
 } from 'lucide-react';
 import { CampaignSession, GUIDED_CAMPAIGN_QUARTERS } from '../campaign/session';
@@ -48,7 +48,7 @@ function StatCard({ label, value, note, icon: Icon, tone = 'neutral' }: {
   </div>;
 }
 
-function SectionTitle({ eyebrow, title, right }: { eyebrow: string; title: string; right?: React.ReactNode }) {
+function SectionTitle({ eyebrow, title, right }: { eyebrow: string; title: string; right?: ReactNode }) {
   return <div className="pop-section-title">
     <div><span className="pop-eyebrow">{eyebrow}</span><h2>{title}</h2></div>
     {right}
