@@ -154,7 +154,7 @@ describe('explicit debt principal repayments', () => {
     expect(result.state.organizations.find((item) => item.id === 'nodeworks')!.debtCents).toBe(1_350_000_000);
     expect(result.report.debtRepayments).toContainEqual({
       debtId: 'nodeworks-infrastructure-debt', borrowerId: 'nodeworks',
-      principalCents: 50_000_000, repaymentType: 'scheduled',
+      lenderId: 'frontier-development-bank', principalCents: 50_000_000, repaymentType: 'scheduled',
     });
     expect(result.report.entityCashBridges.find((item) => item.organizationId === 'nodeworks')!.financingCashFlowCents).toBe(-50_000_000);
   });
@@ -173,7 +173,7 @@ describe('explicit debt principal repayments', () => {
     expect(result.state.organizations.find((item) => item.id === 'nodeworks')!.debtCents).toBe(0);
     expect(result.report.debtRepayments).toContainEqual({
       debtId: 'nodeworks-infrastructure-debt', borrowerId: 'nodeworks',
-      principalCents: 1_400_000_000, repaymentType: 'maturity',
+      lenderId: 'frontier-development-bank', principalCents: 1_400_000_000, repaymentType: 'maturity',
     });
   });
 
@@ -340,7 +340,7 @@ describe('explicit debt principal repayments', () => {
     expect(secondDebt.paymentStatus).toBe('overdue');
     expect(result.report.debtRepayments).toContainEqual({
       debtId: 'nodeworks-infrastructure-debt', borrowerId: 'nodeworks',
-      principalCents: 30_000_000, repaymentType: 'scheduled',
+      lenderId: 'frontier-development-bank', principalCents: 30_000_000, repaymentType: 'scheduled',
     });
     expect(result.report.debtArrears?.map((line) => line.debtId)).toEqual(['nodeworks-secondary-debt']);
     expect(validateGameState(result.state)).toEqual([]);
