@@ -15,12 +15,21 @@ export interface ContractOfferCommand {
   offeredPriceCentsPerMWQuarter: number;
 }
 
+export interface ContractRenewalCommand {
+  contractId: string;
+  offeredPriceCentsPerMWQuarter: number;
+  offeredWorkloadMW: number;
+  termQuarters: number;
+}
+
 export interface QuarterCommands {
   workloadDecisions?: WorkloadDecision[];
   /** Initiatives to sponsor this quarter. Costs and effects come from scenario data. */
   launchInitiatives?: string[];
   /** Price proposal for an existing flexible customer contract; accepted terms begin next quarter. */
   contractOffers?: ContractOfferCommand[];
+  /** Renewal proposals for fixed contracts currently inside their notice window. */
+  contractRenewals?: ContractRenewalCommand[];
 }
 
 export interface AdvanceQuarterSuccess {
@@ -123,6 +132,34 @@ function validateCommands(state: GameState, commands: QuarterCommands): Validati
     }
     if (!state.actors.some((actor) => actor.organizationId === contract.customerId)) {
       issues.push(issue('command.contract_customer_missing', 'Contract customer is not present in the autonomous world.', contract.customerId));
+    }
+  }
+
+  const seenRenewals = new Set<string>();
+  for (const renewal of commands.contractRenewals ?? []) {
+    if (seenRenewals.has(renewal.contractId)) {
+      issues.push(issue('command.contract_renewal_duplicate', 'Only one renewal proposal per contract is allowed in a quarter.', renewal.contractId));
+      continue;
+    }
+    seenRenewals.add(renewal.contractId);
+    const company = state.operatingCompanies.find((item) => item.contracts.some((contract) => contract.id === renewal.contractId));
+    const contract = company?.contracts.find((item) => item.id === renewal.contractId);
+    if (!contract) {
+      issues.push(issue('command.contract_unknown', 'Renewal proposal references an unknown contract.', renewal.contractId));
+      continue;
+    }
+    if (contract.flexibility !== 'contracted' || contract.termEndQuarter === undefined) {
+      issues.push(issue('command.contract_not_term_contract', 'Only fixed-term contracted services can be renewed.', renewal.contractId));
+      continue;
+    }
+    if (contract.termEndQuarter - state.quarter > (contract.renewalNoticeQuarters ?? 0)) {
+      issues.push(issue('command.contract_renewal_too_early', 'The contract is not yet inside its renewal notice window.', renewal.contractId));
+    }
+    if (!Number.isSafeInteger(renewal.offeredPriceCentsPerMWQuarter) || renewal.offeredPriceCentsPerMWQuarter <= 0 ||
+        !Number.isFinite(renewal.offeredWorkloadMW) || renewal.offeredWorkloadMW <= 0 ||
+        renewal.offeredWorkloadMW > contract.workloadMW ||
+        !Number.isInteger(renewal.termQuarters) || renewal.termQuarters < 2 || renewal.termQuarters > 8) {
+      issues.push(issue('command.contract_renewal_terms_invalid', 'Renewal price, volume, or term is outside the permitted range.', renewal.contractId));
     }
   }
 
@@ -234,6 +271,59 @@ function resolveContractOffers(
 }
 
 /**
+ * Renewal proposals are evaluated against private customer reservation terms.
+ * Accepted price, volume and duration begin after the current quarter closes.
+ */
+function resolveContractRenewals(
+  state: GameState,
+  renewals: ContractRenewalCommand[],
+): { state: GameState; results: ContractRenewalResult[] } {
+  let operatingCompanies = state.operatingCompanies;
+  const results: ContractRenewalResult[] = [];
+  for (const renewal of renewals) {
+    let found = false;
+    operatingCompanies = operatingCompanies.map((company) => {
+      const contract = company.contracts.find((item) => item.id === renewal.contractId);
+      if (!contract) return company;
+      found = true;
+      const customer = state.actors.find((actor) => actor.organizationId === contract.customerId);
+      const maxPrice = customer?.hiddenMetrics[`renewalMaxPrice:${contract.id}`] ?? contract.priceCentsPerMWQuarter;
+      const minVolume = customer?.hiddenMetrics[`renewalMinVolume:${contract.id}`] ?? contract.minimumWorkloadMW ?? 0;
+      if (renewal.offeredWorkloadMW < minVolume) {
+        results.push({ contractId: contract.id, providerId: contract.providerId, customerId: contract.customerId,
+          status: 'rejected', offeredPriceCents: moneyFromCents(renewal.offeredPriceCentsPerMWQuarter),
+          offeredWorkloadMW: renewal.offeredWorkloadMW, message: 'Asterion declined the proposed guaranteed volume because it does not secure enough strategic capacity.' });
+        return company;
+      }
+      if (renewal.offeredPriceCentsPerMWQuarter <= maxPrice) {
+        results.push({ contractId: contract.id, providerId: contract.providerId, customerId: contract.customerId,
+          status: 'accepted', offeredPriceCents: moneyFromCents(renewal.offeredPriceCentsPerMWQuarter),
+          offeredWorkloadMW: renewal.offeredWorkloadMW, termQuarters: renewal.termQuarters,
+          message: 'Asterion renewed the service agreement. Revised price, guaranteed volume and term begin next quarter.' });
+        return { ...company, contracts: company.contracts.map((item) => item.id === contract.id ? {
+          ...item, priceCentsPerMWQuarter: moneyFromCents(renewal.offeredPriceCentsPerMWQuarter),
+          workloadMW: renewal.offeredWorkloadMW, minimumWorkloadMW: renewal.offeredWorkloadMW,
+          termEndQuarter: state.quarter + renewal.termQuarters,
+        } : item) };
+      }
+      if (renewal.offeredPriceCentsPerMWQuarter <= Math.round(maxPrice * 1.1)) {
+        results.push({ contractId: contract.id, providerId: contract.providerId, customerId: contract.customerId,
+          status: 'countered', offeredPriceCents: moneyFromCents(renewal.offeredPriceCentsPerMWQuarter),
+          offeredWorkloadMW: renewal.offeredWorkloadMW, counterPriceCents: moneyFromCents(maxPrice),
+          message: 'Asterion returned a lower counterprice for the proposed renewal.' });
+      } else {
+        results.push({ contractId: contract.id, providerId: contract.providerId, customerId: contract.customerId,
+          status: 'rejected', offeredPriceCents: moneyFromCents(renewal.offeredPriceCentsPerMWQuarter),
+          offeredWorkloadMW: renewal.offeredWorkloadMW, message: 'Asterion rejected the renewal as commercially uncompetitive.' });
+      }
+      return company;
+    });
+    if (!found) throw new Error(`Validated renewal could not be resolved: ${renewal.contractId}`);
+  }
+  return { state: { ...state, operatingCompanies }, results };
+}
+
+/**
  * Pure, atomic quarter transaction. All decisions are validated before a
  * candidate state is built; the original state is never mutated.
  */
@@ -322,6 +412,9 @@ export function advanceQuarter(state: GameState, commands: QuarterCommands = {})
     const negotiations = resolveContractOffers(candidate, commands.contractOffers ?? []);
     candidate = negotiations.state;
     report.contractNegotiations = negotiations.results;
+    const renewals = resolveContractRenewals(candidate, commands.contractRenewals ?? []);
+    candidate = renewals.state;
+    report.contractRenewals = renewals.results;
     const autonomousTurn = advanceAutonomousActors(candidate);
     candidate = autonomousTurn.state;
     const closingCash = new Map(report.entityCashBridges.map((bridge) => [
