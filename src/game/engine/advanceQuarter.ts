@@ -3,7 +3,8 @@ import { moneyFromCents } from '../domain/money';
 import type { GameState, StrategicProjectState, ValidationIssue } from '../domain/types';
 import { getInitiativeDefinition } from '../scenario/initiatives';
 import { advanceAutonomousActors, getRivalRenewalBid } from '../systems/actors';
-import { buildQuarterReport, type ContractNegotiationResult, type ContractRenewalResult, type QuarterReport } from '../systems/quarterReport';
+import { buildQuarterReport, type ContractNegotiationResult, type ContractRenewalResult, type CreditDecisionReportLine, type QuarterReport } from '../systems/quarterReport';
+import { calculateCreditAssessment } from '../systems/finance';
 
 export interface WorkloadDecision {
   companyId: string;
@@ -27,6 +28,13 @@ export interface DebtDrawdownCommand {
 
 export interface LoanAcceptanceCommand {
   offerId: string;
+}
+
+export interface CreditRequestCommand {
+  borrowerId: string;
+  requestedPrincipalCents: number;
+  termQuarters: number;
+  collateralDescription?: string;
 }
 
 interface ResolvedDebtRepayment extends DebtRepaymentCommand {
@@ -71,6 +79,8 @@ export interface QuarterCommands {
   debtDrawdowns?: DebtDrawdownCommand[];
   /** Accept lender-originated terms; proceeds and debt belong to the named borrower. */
   acceptLoanOffers?: LoanAcceptanceCommand[];
+  /** Ask all eligible lenders to independently underwrite a loan request. */
+  requestCredit?: CreditRequestCommand[];
 }
 
 export interface AdvanceQuarterSuccess {
@@ -208,6 +218,29 @@ function validateCommands(state: GameState, commands: QuarterCommands): Validati
       continue;
     }
     drawdownByFacility.set(drawdown.debtId, totalDrawdown);
+  }
+
+  const seenCreditRequests = new Set<string>();
+  for (const request of commands.requestCredit ?? []) {
+    if (seenCreditRequests.has(request.borrowerId)) {
+      issues.push(issue('command.credit_request_duplicate', 'Only one credit request per borrower is allowed in a quarter.', request.borrowerId));
+      continue;
+    }
+    seenCreditRequests.add(request.borrowerId);
+    const borrower = state.organizations.find((item) => item.id === request.borrowerId);
+    if (!borrower || borrower.kind === 'lender') {
+      issues.push(issue('command.credit_borrower_invalid', 'Credit request must identify an existing non-lender legal entity.', request.borrowerId));
+    }
+    if (!Number.isSafeInteger(request.requestedPrincipalCents) || request.requestedPrincipalCents <= 0) {
+      issues.push(issue('command.credit_amount_invalid', 'Requested principal must be a positive integer number of cents.', request.borrowerId));
+    }
+    if (!Number.isInteger(request.termQuarters) || request.termQuarters < 2 || request.termQuarters > 12) {
+      issues.push(issue('command.credit_term_invalid', 'Requested loan term must be between 2 and 12 quarters.', request.borrowerId));
+    }
+    if (request.collateralDescription !== undefined &&
+        (typeof request.collateralDescription !== 'string' || request.collateralDescription.length > 160)) {
+      issues.push(issue('command.credit_collateral_invalid', 'Collateral description must be 160 characters or fewer.', request.borrowerId));
+    }
   }
 
   const seenLoanOffers = new Set<string>();
@@ -565,6 +598,57 @@ export function advanceQuarter(state: GameState, commands: QuarterCommands = {})
     for (const project of completed) candidate = applyProjectEffect(candidate, project);
 
     const report = buildQuarterReport(candidate);
+    const creditDecisions: CreditDecisionReportLine[] = [];
+    for (const request of commands.requestCredit ?? []) {
+      const borrower = candidate.organizations.find((item) => item.id === request.borrowerId)!;
+      const operatingCashFlow = report.companies.find((item) => item.companyId === request.borrowerId)?.operations.operatingCashContributionCents
+        ?? moneyFromCents(0);
+      const assessment = calculateCreditAssessment(candidate, request.borrowerId, operatingCashFlow)!;
+      for (const lender of candidate.lenders) {
+        const lenderOrg = candidate.organizations.find((item) => item.id === lender.organizationId)!;
+        const eligibleScore = assessment.score >= lender.minimumCreditScore;
+        const annualCashFlow = Math.max(operatingCashFlow * 4, borrower.cashCents);
+        const borrowerLimit = operatingCashFlow > 0
+          ? Math.round(annualCashFlow * lender.maxLoanToAnnualCashFlow)
+          : Math.round(borrower.cashCents * 0.75);
+        const amount = Math.min(request.requestedPrincipalCents, lender.availableCapacityCents, lenderOrg.cashCents, borrowerLimit);
+        if (!eligibleScore || amount <= 0) {
+          creditDecisions.push({
+            lenderId: lender.organizationId, borrowerId: borrower.id,
+            requestedPrincipalCents: moneyFromCents(request.requestedPrincipalCents),
+            creditScore: assessment.score, creditRating: assessment.rating, status: 'rejected',
+            reason: !eligibleScore ? 'Borrower does not meet this lender’s minimum credit score.' : 'Requested facility exceeds the lender’s current liquidity or borrower limit.',
+          });
+          continue;
+        }
+        const riskSpread = 0.005 + ((850 - assessment.score) / 550) * 0.018;
+        const appetiteAdjustment = lender.riskAppetite === 'conservative' ? 0.003
+          : lender.riskAppetite === 'growth' ? -0.001 : 0;
+        const rate = Math.max(0.005, lender.baseQuarterlyInterestRate + riskSpread + appetiteAdjustment);
+        const offerId = `${lender.organizationId}-${borrower.id}-q${candidate.quarter}`;
+        const offer = {
+          id: offerId, lenderId: lender.organizationId, borrowerId: borrower.id,
+          principalCents: moneyFromCents(amount), quarterlyInterestRate: Number(rate.toFixed(6)),
+          maturityQuarter: candidate.quarter + request.termQuarters,
+          expiresAfterQuarter: candidate.quarter + 1,
+          ...(request.collateralDescription ? { collateralDescription: request.collateralDescription } : {}),
+          creditScore: assessment.score, creditRating: assessment.rating, status: 'available' as const,
+        };
+        candidate = { ...candidate, loanOffers: [...candidate.loanOffers, offer] };
+        creditDecisions.push({
+          lenderId: lender.organizationId, borrowerId: borrower.id,
+          requestedPrincipalCents: moneyFromCents(request.requestedPrincipalCents),
+          offeredPrincipalCents: offer.principalCents, quarterlyInterestRate: offer.quarterlyInterestRate,
+          creditScore: assessment.score, creditRating: assessment.rating, status: 'offered',
+          reason: amount < request.requestedPrincipalCents
+            ? 'Lender approved a smaller amount within its risk and liquidity limits.'
+            : 'Lender approved the requested amount under its current underwriting policy.',
+          offerId,
+        });
+      }
+    }
+    if (creditDecisions.length > 0) report.creditDecisions = creditDecisions;
+
     const debtRepayments: ResolvedDebtRepayment[] = [
       ...getScheduledDebtRepayments(candidate),
       ...(commands.debtRepayments ?? []).map((item) => ({ ...item, repaymentType: 'voluntary' as const })),
