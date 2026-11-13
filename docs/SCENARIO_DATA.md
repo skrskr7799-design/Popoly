@@ -280,6 +280,8 @@ The opening credit market includes two illustrative counterparties:
 
 Northstar is modeled with a conservative risk appetite and a collateral description covering equipment and receivables. Frontier has a growth-oriented appetite and a holding-company asset/covenant package. These are opening scenario offers for testing borrower-specific finance, not yet dynamically generated bank decisions.
 
+The opening debt ledger also names its incumbent creditors: Northstar holds Meridian Group's $3.0m revolving facility, while Frontier holds NodeWorks' $14.0m infrastructure loan. This makes lender relationships actionable from the first quarter: the player can request revised terms from the actual creditor or seek a competing lender's offer to refinance. Opening offers carry covenant packages consistent with each lender's risk appetite (DSCR/leverage thresholds, grace period, borrowing restriction, and a one-time breach premium).
+
 ## 12. Initial scenario acceptance checks
 
 The scenario data is ready for engine implementation when:
