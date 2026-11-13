@@ -19,6 +19,13 @@ export interface ContractNegotiationResult {
   message: string;
 }
 
+export interface ContractRenewalResult {
+  contractId: string; providerId: string; customerId: string;
+  offeredPriceCents: MoneyCents; offeredWorkloadMW: number;
+  status: 'accepted' | 'countered' | 'rejected';
+  counterPriceCents?: MoneyCents; termQuarters?: number; message: string;
+}
+
 export interface QuarterReport {
   quarter: number;
   companies: CompanyQuarterReport[];
@@ -31,6 +38,8 @@ export interface QuarterReport {
   projectCashCommitmentCents?: MoneyCents;
   actorActions?: Array<{ actorId: string; kind: string; summary: string }>;
   contractNegotiations?: ContractNegotiationResult[];
+  contractRenewals?: ContractRenewalResult[];
+  contractsInRenewalWindow?: string[];
 }
 
 /**
@@ -68,5 +77,9 @@ export function buildQuarterReport(state: GameState): QuarterReport {
     debtService.reduce((sum, line) => sum + line.interestExpenseCents, 0),
   );
 
-  return { quarter: state.quarter, companies, entityCashBridges, totalInterestExpenseCents };
+  const contractsInRenewalWindow = state.operatingCompanies.flatMap((company) => company.contracts
+    .filter((contract) => contract.flexibility === 'contracted' && contract.termEndQuarter !== undefined &&
+      contract.termEndQuarter - state.quarter <= (contract.renewalNoticeQuarters ?? 0))
+    .map((contract) => contract.id));
+  return { quarter: state.quarter, companies, entityCashBridges, totalInterestExpenseCents, contractsInRenewalWindow };
 }
