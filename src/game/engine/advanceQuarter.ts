@@ -645,7 +645,7 @@ export function advanceQuarter(state: GameState, commands: QuarterCommands = {})
           minimumDebtServiceCoverage: lender.riskAppetite === 'conservative' ? 1.3 : lender.riskAppetite === 'growth' ? 1.05 : 1.15,
           maximumDebtToAnnualCashFlow: lender.riskAppetite === 'conservative' ? 3.0 : lender.riskAppetite === 'growth' ? 4.5 : 3.75,
           restrictAdditionalBorrowing: true,
-          graceQuarters: lender.riskAppetite === 'conservative' ? 0 : 1,
+          graceQuarters: lender.riskAppetite === 'growth' ? 2 : 1,
           breachRatePremium: 0.004,
         };
         const offer = {
