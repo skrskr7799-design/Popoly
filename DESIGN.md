@@ -1,72 +1,57 @@
-# Popoly: Tech Dominion — Design Document
+# Popoly: Tech Dominion
 
-**Version:** 0.4  
+**Design foundation:** 1.0 (documentation baseline)  
 **Last updated:** 2026-11-13  
-**Status:** Local single-player ideal pass complete — multiplayer deferred
+**Project status:** Transitioning from the original local prototype to a new grand-strategy design foundation.
 
----
+## What is Popoly?
 
-## Vision
+Popoly is a hardcore grand-strategy and economic simulation set in an alternative near-future around 2035. The player begins as a corporate power and can gradually grow into a force capable of shaping regions, institutions, technology, and the wider world.
 
-Hardcore economic strategy in near-future Big Tech (~2035).  
-Rivals fight through companies, capital, reputation, and espionage.
+The chosen direction is a **hybrid model**: corporate strategy is the starting identity; a broader world-shaping sandbox is the long-term destination.
 
----
+## Core pillars
 
-## Implemented (local ideal)
+- Strategic agency and meaningful trade-offs.
+- Independent corporations, states, and other actors.
+- Interconnected economic, technological, political, and intelligence systems.
+- Emergent stories and consequences.
+- Information, uncertainty, and intelligence as strategic resources.
+- Hardcore simulation depth with a clear, usable interface.
+- Single-player first, with future multiplayer considered but deferred.
 
-### Market & control
-- 8 companies / 8 sectors
-- Buy/sell, dynamic prices (phase-scaled)
-- Control ≥50%
-- Dividends (phase × sector multipliers)
+## Documentation map
 
-### Financing
-- Bank loans; rates from credit + reputation + phase
-- Debt caps; interest each round
+| Document | Purpose |
+|---|---|
+| [Vision](docs/VISION.md) | Project identity, player fantasy, pillars, and principles |
+| [Game Design](docs/GAME_DESIGN.md) | World, player role, actors, progression, and gameplay cycle |
+| [Systems](docs/SYSTEMS.md) | Major simulation systems and their interactions |
+| [Roadmap](docs/ROADMAP.md) | Development phases and exit criteria |
+| [Architecture](docs/ARCHITECTURE.md) | Technical principles and target boundaries |
+| [Workflow](docs/WORKFLOW.md) | Collaborative development and verification process |
+| [Decisions](docs/DECISIONS.md) | Accepted decisions and their rationale |
 
-### Economy phases
-Innovation Boom → Hypergrowth → Bubble → Correction → Recovery  
-Affects interest, price impact, dividends, spy odds. Soft transitions.
+## Development approach
 
-### Events
-Weighted global/sector events; phase-biased weights.
+1. Preserve the current prototype as a recoverable baseline.
+2. Audit the existing code and gameplay systems.
+3. Complete the game-design specification.
+4. Define the simulation and technical foundation.
+5. Build and test a compact vertical slice.
+6. Expand systems only when the core loop proves engaging.
+7. Iterate through playtesting, balance, UX, and technical validation.
 
-### Espionage
-Intel network, ops vs security, leaks damage price/rep/cashFlow/controller.  
-Raise Security defense. Sector spy modifiers + controller bonuses.
+See [ROADMAP.md](docs/ROADMAP.md) for the detailed phases.
 
-### Sector abilities & hybrid map
-Each sector has a named passive (dividends, control score, spy edge).  
-Adjacency graph: controlling linked sectors adds synergy score.  
-UI sector map shows abilities, links, controller.
+## Current prototype versus future design
 
-### Bots
-Personalities: Raider, Spymaster, Conservative (and Speculator data).  
-Different weights for market, leverage, spy, defense, leaks, trading.
+The existing application is a prototype and contains earlier local economic-strategy mechanics. Those mechanics are not automatically the specification for the future game.
 
-### Victory
-Score = net worth + control + reputation + sector bonuses + adjacency synergy.  
-From round 12; decisive lead or hard stop ~20.
+The audit will classify existing work as preserve, refactor, replace, remove, or investigate further.
 
----
+## Project status
 
-## Explicitly deferred
+This documentation is the initial agreed foundation, not a complete game design specification. Detailed decisions about world scale, map structure, time progression, actor simulation, influence, victory conditions, and the first playable scenario remain to be made collaboratively.
 
-- Multiplayer / authoritative server
-- Player-to-player loans & deal UI
-- Blockchain layer
-
----
-
-## Still polishable (optional)
-
-- Deeper positional map (spatial board beyond sector graph)
-- More sector-unique active abilities
-- Difficulty tiers / more bot archetypes
-- UX density / accessibility
-- Long-run balance pass after playtests
-
----
-
-**Source of truth for design.** Update when systems change.
+The implementation status of each system must be verified against the repository and actual runtime checks before being reported as complete.
