@@ -531,9 +531,6 @@ describe('atomic quarter transition', () => {
 
   it('connects a rival renewal win to contract expiry, lost guaranteed revenue and customer reallocation', () => {
     let state = initializeGame(2035);
-    state.actors = state.actors.map((actor) => actor.organizationId === 'kestrel-compute'
-      ? { ...actor, hiddenMetrics: { ...actor.hiddenMetrics, effectiveCapacityMW: 30, effectiveCapacityMinMW: 28, effectiveCapacityMaxMW: 32 } }
-      : actor);
     const first = advanceQuarter(state);
     expect(first.ok).toBe(true);
     if (!first.ok) return;
@@ -546,7 +543,12 @@ describe('atomic quarter transition', () => {
     expect(renewA.ok).toBe(true);
     if (!renewA.ok) return;
     expect(renewA.report.contractRenewals?.[0]?.status).toBe('accepted');
-    state = renewA.state;
+    state = {
+      ...renewA.state,
+      actors: renewA.state.actors.map((actor) => actor.organizationId === 'kestrel-compute'
+        ? { ...actor, hiddenMetrics: { ...actor.hiddenMetrics, effectiveCapacityMW: 30, effectiveCapacityMinMW: 28, effectiveCapacityMaxMW: 32 } }
+        : actor),
+    };
 
     const loseB = advanceQuarter(state, { contractRenewals: [{
       contractId: 'asterion-contract-b', offeredPriceCentsPerMWQuarter: 48_500_000,
@@ -1419,11 +1421,19 @@ describe('debt refinancing and lender-led restructuring', () => {
     const arrearsState = {
       ...second.state,
       organizations: second.state.organizations.map((organization) => organization.id === 'nodeworks'
-        ? { ...organization, cashCents: moneyFromCents(100_000_000) } : organization),
+        ? { ...organization, cashCents: moneyFromCents(0) } : organization),
       debts: second.state.debts.map((debt) => debt.id === distressedDebt.id
         ? { ...debt, arrearsInterestCents: moneyFromCents(50_000_000) } : debt),
     };
-    const restructured = advanceQuarter(mildlyDistressed(arrearsState), { restructureDebts: [{
+    const stressedBridge = buildQuarterReport(mildlyDistressed(arrearsState)).entityCashBridges
+      .find((bridge) => bridge.organizationId === 'nodeworks')!;
+    const minimumCashToAvoidNegativeBalance = Math.max(0, -stressedBridge.operatingCashContributionCents) + 1;
+    const fundedArrearsState = {
+      ...arrearsState,
+      organizations: arrearsState.organizations.map((organization) => organization.id === 'nodeworks'
+        ? { ...organization, cashCents: moneyFromCents(minimumCashToAvoidNegativeBalance) } : organization),
+    };
+    const restructured = advanceQuarter(mildlyDistressed(fundedArrearsState), { restructureDebts: [{
       debtId: distressedDebt.id,
       requestedMaturityQuarter: offer.maturityQuarter + 2,
       requestedQuarterlyInterestRate: offer.quarterlyInterestRate,
