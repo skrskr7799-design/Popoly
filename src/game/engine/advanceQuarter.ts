@@ -376,7 +376,7 @@ function validateCommands(state: GameState, commands: QuarterCommands): Validati
       issues.push(issue('command.loan_offer_unknown', 'Loan acceptance references an unknown offer.', acceptance.offerId));
       continue;
     }
-    if (borrowerHasBorrowingRestriction(offer.borrowerId)) {
+    if (!refinanceOfferIds.has(offer.id) && borrowerHasBorrowingRestriction(offer.borrowerId)) {
       issues.push(issue('command.covenant_borrowing_restricted', 'A breached debt covenant currently restricts additional borrowing by this legal entity.', offer.borrowerId));
       continue;
     }
