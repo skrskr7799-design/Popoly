@@ -24,7 +24,7 @@ export interface DebtCovenantTerms {
   breachRatePremium?: number;
 }
 export interface DebtInstrument {
-  id: EntityId; borrowerId: EntityId; lenderId?: EntityId; principalCents: MoneyCents; quarterlyInterestRate: number; facilityLimitCents?: MoneyCents;
+  id: EntityId; borrowerId: EntityId; lenderId?: EntityId; collateralDescription?: string; principalCents: MoneyCents; quarterlyInterestRate: number; facilityLimitCents?: MoneyCents;
   covenantTerms?: DebtCovenantTerms;
   covenantStartQuarter?: number;
   covenantBreachStreak?: number;
