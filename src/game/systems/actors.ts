@@ -40,7 +40,7 @@ function updateAsterionRelationship(state: GameState, actor: ActorState): ActorS
   const relationshipScore = Math.max(0, Math.min(100,
     previousScore + (breached ? -6 : materiallyUnderdelivered ? -4 : 1.25)));
   const breachStreak = breached ? (actor.hiddenMetrics.slaBreachStreak ?? 0) + 1 : 0;
-  const metrics = { ...actor.hiddenMetrics, relationshipScore, customerSatisfaction: relationshipScore, slaBreachStreak: breachStreak };
+  const metrics: Record<string, number> = { ...actor.hiddenMetrics, relationshipScore, customerSatisfaction: relationshipScore, slaBreachStreak: breachStreak };
 
   for (const contract of fixedContracts) {
     const baseMax = metrics[`baseRenewalMaxPrice:${contract.id}`] ??
