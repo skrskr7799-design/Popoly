@@ -868,7 +868,6 @@ export function advanceQuarter(state: GameState, commands: QuarterCommands = {})
       debts: candidate.debts.map((debt) => {
         const unpaidInterest = unpaidInterestByDebt.get(debt.id) ?? 0;
         const unpaidPrincipal = unpaidPrincipalByDebt.get(debt.id) ?? 0;
-        const openingPrincipalArrears = debt.arrearsPrincipalCents ?? 0;
         const closingPrincipalArrears = unpaidPrincipal > 0 ? unpaidPrincipal : 0;
         const closingInterestArrears = unpaidInterest;
         const missedService = closingInterestArrears > 0 || closingPrincipalArrears > 0;
@@ -916,7 +915,6 @@ export function advanceQuarter(state: GameState, commands: QuarterCommands = {})
       ...company, cashBridge: adjustInterestBridge(company.cashBridge),
     }));
 
-    const missedByDebt = new Map(arrearsLines.map((line) => [line.debtId, line]));
     const paidScheduled = scheduledDue.filter((due) => !unpaidDebtIds.has(due.debtId));
     const debtRepayments: ResolvedDebtRepayment[] = [...paidScheduled, ...voluntaryRepayments];
     if (debtRepayments.length > 0) {
@@ -929,7 +927,16 @@ export function advanceQuarter(state: GameState, commands: QuarterCommands = {})
         ...candidate,
         debts: candidate.debts.map((debt) => {
           const repayment = debtRepayments.filter((item) => item.debtId === debt.id).reduce((sum, item) => sum + item.principalCents, 0);
-          return repayment > 0 ? { ...debt, principalCents: moneyFromCents(debt.principalCents - repayment), arrearsPrincipalCents: moneyFromCents(0), overdueQuarters: 0, paymentStatus: debt.principalCents - repayment === 0 ? 'settled' as const : 'current' as const } : debt;
+          if (repayment <= 0) return debt;
+          const remainingPrincipal = debt.principalCents - repayment;
+          const stillOverdue = (debt.arrearsInterestCents ?? 0) > 0;
+          return {
+            ...debt,
+            principalCents: moneyFromCents(remainingPrincipal),
+            arrearsPrincipalCents: moneyFromCents(0),
+            overdueQuarters: stillOverdue ? debt.overdueQuarters : 0,
+            paymentStatus: stillOverdue ? debt.paymentStatus : remainingPrincipal === 0 ? 'settled' as const : 'current' as const,
+          };
         }),
         organizations: candidate.organizations.map((organization) => {
           const repayment = repaymentByBorrower.get(organization.id) ?? 0;
