@@ -4,7 +4,7 @@ import type { GameState, StrategicProjectState, ValidationIssue } from '../domai
 import { getInitiativeDefinition } from '../scenario/initiatives';
 import { advanceAutonomousActors, getRivalRenewalBid } from '../systems/actors';
 import { buildQuarterReport, type ContractNegotiationResult, type ContractRenewalResult, type CreditDecisionReportLine, type CovenantReportLine, type DebtRestructuringReportLine, type QuarterReport } from '../systems/quarterReport';
-import { calculateCreditAssessment } from '../systems/finance';
+import { calculateCreditAssessment, calculateScenarioDebtService } from '../systems/finance';
 
 export interface WorkloadDecision {
   companyId: string;
@@ -794,55 +794,131 @@ export function advanceQuarter(state: GameState, commands: QuarterCommands = {})
       .filter((item) => !refinancingDebtIds.has(item.debtId));
     const voluntaryRepayments: ResolvedDebtRepayment[] = (commands.debtRepayments ?? [])
       .map((item) => ({ ...item, repaymentType: 'voluntary' as const }));
-    const voluntaryByBorrower = new Map<string, number>();
-    for (const payment of voluntaryRepayments) {
-      const debt = candidate.debts.find((item) => item.id === payment.debtId)!;
-      voluntaryByBorrower.set(debt.borrowerId, (voluntaryByBorrower.get(debt.borrowerId) ?? 0) + payment.principalCents);
-    }
-    // Allocate opening liquidity in debt-ledger order. A shortfall on one
-    // instrument must not incorrectly put every other instrument into arrears.
+    // Cash available to service debt is legal-entity cash plus this quarter's
+    // operating contribution. Project commitments remain ring-fenced; no group cash pooling.
+    const operatingCashByBorrower = new Map(report.entityCashBridges.map((bridge) =>
+      [bridge.organizationId, bridge.operatingCashContributionCents] as const));
     const availableByBorrower = new Map(candidate.organizations.map((borrower) => {
       const projectReserve = borrower.id === candidate.holding.organizationId ? cashCommitted : 0;
-      return [borrower.id, borrower.cashCents -
-        (voluntaryByBorrower.get(borrower.id) ?? 0) - projectReserve] as const;
+      return [borrower.id, borrower.cashCents + (operatingCashByBorrower.get(borrower.id) ?? 0) - projectReserve] as const;
     }));
+    const interestAccrualByDebt = new Map(calculateScenarioDebtService(candidate).map((line) =>
+      [line.debtId, line.interestExpenseCents] as const));
+    const interestLines: NonNullable<QuarterReport['debtInterestService']> = [];
+    const interestPaidByBorrower = new Map<string, number>();
+    const interestReceivedByLender = new Map<string, number>();
+    const unpaidInterestByDebt = new Map<string, number>();
+
+    // Interest is serviced first, in the stable order of the debt ledger.
+    for (const debt of candidate.debts) {
+      const accrued = interestAccrualByDebt.get(debt.id) ?? 0;
+      const openingArrears = debt.arrearsInterestCents ?? 0;
+      const totalDue = openingArrears + accrued;
+      const available = availableByBorrower.get(debt.borrowerId) ?? 0;
+      const paid = Math.min(Math.max(0, available), totalDue);
+      const closingArrears = totalDue - paid;
+      availableByBorrower.set(debt.borrowerId, available - paid);
+      if (paid > 0) {
+        interestPaidByBorrower.set(debt.borrowerId, (interestPaidByBorrower.get(debt.borrowerId) ?? 0) + paid);
+        if (debt.lenderId) interestReceivedByLender.set(debt.lenderId,
+          (interestReceivedByLender.get(debt.lenderId) ?? 0) + paid);
+      }
+      if (closingArrears > 0) unpaidInterestByDebt.set(debt.id, closingArrears);
+      interestLines.push({
+        debtId: debt.id, borrowerId: debt.borrowerId,
+        accruedInterestCents: moneyFromCents(accrued),
+        openingInterestArrearsCents: moneyFromCents(openingArrears),
+        interestPaidCents: moneyFromCents(paid),
+        closingInterestArrearsCents: moneyFromCents(closingArrears),
+        missedContractualService: closingArrears > 0,
+      });
+    }
+    report.debtInterestService = interestLines;
+
     const arrearsLines: NonNullable<QuarterReport['debtArrears']> = [];
-    const unpaidDebtIds = new Set<string>();
+    const unpaidPrincipalByDebt = new Map<string, number>();
+    // Only after all interest has been allocated do scheduled/maturity principal payments run.
     for (const due of scheduledDue) {
       const debt = candidate.debts.find((item) => item.id === due.debtId)!;
       const available = availableByBorrower.get(debt.borrowerId) ?? 0;
       if (available >= due.principalCents) {
         availableByBorrower.set(debt.borrowerId, available - due.principalCents);
       } else {
-        unpaidDebtIds.add(due.debtId);
-        const overdueQuarters = (debt.overdueQuarters ?? 0) + 1;
-        const status = overdueQuarters >= 2 ? 'defaulted' as const : 'overdue' as const;
-        arrearsLines.push({
-          debtId: debt.id, borrowerId: debt.borrowerId,
-          unpaidDueCents: moneyFromCents(due.principalCents),
-          totalArrearsCents: moneyFromCents(Math.min(debt.principalCents, due.principalCents)),
-          overdueQuarters, status,
-        });
+        unpaidPrincipalByDebt.set(debt.id, Math.min(debt.principalCents, due.principalCents));
       }
     }
+
+    // Voluntary principal repayments are explicit commitments, but rank behind all contractual service.
+    for (const payment of voluntaryRepayments) {
+      const debt = candidate.debts.find((item) => item.id === payment.debtId)!;
+      const available = availableByBorrower.get(debt.borrowerId) ?? 0;
+      if (available < payment.principalCents) {
+        return { ok: false, issues: [issue(
+          'command.debt_repayment_insufficient_after_service',
+          'Contractual interest and scheduled principal take priority; insufficient borrower liquidity remains for this voluntary repayment.',
+          payment.debtId,
+        )] };
+      }
+      availableByBorrower.set(debt.borrowerId, available - payment.principalCents);
+    }
+
+    const unpaidDebtIds = new Set<string>();
+    candidate = {
+      ...candidate,
+      debts: candidate.debts.map((debt) => {
+        const unpaidInterest = unpaidInterestByDebt.get(debt.id) ?? 0;
+        const unpaidPrincipal = unpaidPrincipalByDebt.get(debt.id) ?? 0;
+        const openingPrincipalArrears = debt.arrearsPrincipalCents ?? 0;
+        const closingPrincipalArrears = unpaidPrincipal > 0 ? unpaidPrincipal : 0;
+        const closingInterestArrears = unpaidInterest;
+        const missedService = closingInterestArrears > 0 || closingPrincipalArrears > 0;
+        const overdueQuarters = missedService ? (debt.overdueQuarters ?? 0) + 1 : 0;
+        const status = missedService
+          ? overdueQuarters >= 2 ? 'defaulted' as const : 'overdue' as const
+          : debt.principalCents === 0 ? 'settled' as const : 'current' as const;
+        if (missedService) {
+          unpaidDebtIds.add(debt.id);
+          arrearsLines.push({
+            debtId: debt.id, borrowerId: debt.borrowerId,
+            unpaidInterestCents: moneyFromCents(closingInterestArrears),
+            unpaidDueCents: moneyFromCents(unpaidPrincipal),
+            totalArrearsCents: moneyFromCents(closingPrincipalArrears),
+            overdueQuarters, status,
+          });
+        }
+        return {
+          ...debt,
+          arrearsInterestCents: moneyFromCents(closingInterestArrears),
+          arrearsPrincipalCents: moneyFromCents(closingPrincipalArrears),
+          overdueQuarters,
+          paymentStatus: status,
+        };
+      }),
+    };
+    if (arrearsLines.length > 0) report.debtArrears = arrearsLines;
+
+    // Record actual interest cash outflows and matching lender cash receipts.
+    const adjustInterestBridge = (bridge: typeof report.entityCashBridges[number]) => {
+      const paid = interestPaidByBorrower.get(bridge.organizationId) ?? 0;
+      const received = interestReceivedByLender.get(bridge.organizationId) ?? 0;
+      const net = received - paid;
+      if (net === 0 && paid === 0 && received === 0) return bridge;
+      return {
+        ...bridge,
+        interestPaidCents: moneyFromCents(paid),
+        interestIncomeCents: moneyFromCents(received),
+        netCashChangeCents: moneyFromCents(bridge.netCashChangeCents + net),
+        closingCashCents: moneyFromCents(bridge.closingCashCents + net),
+      };
+    };
+    report.entityCashBridges = report.entityCashBridges.map(adjustInterestBridge);
+    report.companies = report.companies.map((company) => ({
+      ...company, cashBridge: adjustInterestBridge(company.cashBridge),
+    }));
+
     const missedByDebt = new Map(arrearsLines.map((line) => [line.debtId, line]));
     const paidScheduled = scheduledDue.filter((due) => !unpaidDebtIds.has(due.debtId));
     const debtRepayments: ResolvedDebtRepayment[] = [...paidScheduled, ...voluntaryRepayments];
-    if (arrearsLines.length > 0) {
-      candidate = {
-        ...candidate,
-        debts: candidate.debts.map((debt) => {
-          const missed = missedByDebt.get(debt.id);
-          if (missed) return { ...debt, arrearsPrincipalCents: missed.totalArrearsCents,
-            overdueQuarters: missed.overdueQuarters, paymentStatus: missed.status };
-          if ((debt.overdueQuarters ?? 0) > 0 && paidScheduled.some((item) => item.debtId === debt.id)) {
-            return { ...debt, arrearsPrincipalCents: moneyFromCents(0), overdueQuarters: 0, paymentStatus: 'current' as const };
-          }
-          return debt;
-        }),
-      };
-      report.debtArrears = arrearsLines;
-    }
     if (debtRepayments.length > 0) {
       const repaymentByBorrower = new Map<string, number>();
       for (const repayment of debtRepayments) {
@@ -941,6 +1017,10 @@ export function advanceQuarter(state: GameState, commands: QuarterCommands = {})
       }
       for (const command of refinanceCommands) {
         const oldDebt = candidate.debts.find((item) => item.id === command.debtId)!;
+        if ((oldDebt.arrearsInterestCents ?? 0) > 0) {
+          return { ok: false, issues: [issue('command.debt_refinance_interest_arrears_unsettled',
+            'Refinancing cannot erase unpaid accrued interest; settle it before replacing the debt instrument.', oldDebt.id)] };
+        }
         const offer = accepted.find((item) => item.id === command.offerId)!;
         const feeBps = command.feeBasisPoints ?? 100;
         const fee = Math.ceil(oldDebt.principalCents * feeBps / 10_000);
