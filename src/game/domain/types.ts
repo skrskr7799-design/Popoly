@@ -38,6 +38,10 @@ export interface DebtInstrument {
   arrearsPrincipalCents?: MoneyCents;
   /** Contractual interest already accrued but not paid; never capitalized into principal. */
   arrearsInterestCents?: MoneyCents;
+  /** Contract clause: this instrument may cross-default when another debt of the same legal borrower defaults. */
+  crossDefaultClause?: boolean;
+  /** Source instrument for a contractual cross-default; does not create arrears on this debt. */
+  crossDefaultedByDebtId?: EntityId;
   /** Consecutive quarters with any unpaid contractual interest or principal service. */
   overdueQuarters?: number;
   paymentStatus?: 'current' | 'overdue' | 'defaulted' | 'settled';
@@ -113,6 +117,8 @@ export interface LoanOfferState {
   expiresAfterQuarter: number;
   collateralDescription?: string;
   covenantTerms?: DebtCovenantTerms;
+  /** Whether the resulting instrument includes a cross-default clause. */
+  crossDefaultClause?: boolean;
   creditScore: number;
   creditRating: 'AAA' | 'AA' | 'A' | 'BBB' | 'BB' | 'B' | 'CCC';
   status: 'available' | 'accepted' | 'expired' | 'withdrawn';
