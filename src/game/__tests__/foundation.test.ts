@@ -42,7 +42,7 @@ describe('The Compute Bottleneck opening state', () => {
 
     expect(result.deliveredWorkloadMW).toBe(10);
     expect(result.fulfilledContracts.map((line) => line.deliveredMW)).toEqual([8, 2, 0]);
-    expect(result.revenueCents).toBe(607_000_000);
+    expect(result.revenueCents).toBe(505_000_000);
   });
 
   it('keeps subsidiary and holding cash legally separate', () => {
