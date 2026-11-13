@@ -210,7 +210,7 @@ function validateCommands(state: GameState, commands: QuarterCommands): Validati
   const borrowerHasBorrowingRestriction = (borrowerId: string) => state.debts.some((debt) =>
     debt.borrowerId === borrowerId && (
       (debt.covenantTerms?.restrictAdditionalBorrowing === true && debt.covenantStatus === 'breached') ||
-      debt.paymentStatus === 'defaulted'
+      debt.paymentStatus === 'defaulted' || debt.crossDefaultedByDebtId !== undefined
     ));
 
   for (const refinance of commands.refinanceDebts ?? []) {
@@ -772,7 +772,7 @@ export function advanceQuarter(state: GameState, commands: QuarterCommands = {})
           expiresAfterQuarter: candidate.quarter + 1,
           covenantTerms,
           ...(request.collateralDescription ? { collateralDescription: request.collateralDescription } : {}),
-          creditScore: assessment.score, creditRating: assessment.rating, status: 'available' as const,
+          creditScore: assessment.score, creditRating: assessment.rating, crossDefaultClause: false, status: 'available' as const,
         };
         candidate = { ...candidate, loanOffers: [...candidate.loanOffers, offer] };
         creditDecisions.push({
@@ -908,6 +908,35 @@ export function advanceQuarter(state: GameState, commands: QuarterCommands = {})
       missedContractualService: line.closingInterestArrearsCents > 0 || (unpaidPrincipalByDebt.get(line.debtId) ?? 0) > 0,
     }));
     if (arrearsLines.length > 0) report.debtArrears = arrearsLines;
+
+    // Contractual cross-default applies only to instruments whose own agreement
+    // contains the clause, and only between debts of the exact same legal borrower.
+    const crossDefaultLines: NonNullable<QuarterReport['crossDefaults']> = [];
+    const defaultedIds = new Set(candidate.debts
+      .filter((debt) => debt.paymentStatus === 'defaulted')
+      .map((debt) => debt.id));
+    candidate = {
+      ...candidate,
+      debts: candidate.debts.map((debt) => {
+        const previousSource = debt.crossDefaultedByDebtId;
+        const stillTriggered = previousSource !== undefined && defaultedIds.has(previousSource);
+        const activeTrigger = candidate.debts.find((trigger) =>
+          trigger.id !== debt.id && trigger.borrowerId === debt.borrowerId &&
+          trigger.paymentStatus === 'defaulted' && debt.crossDefaultClause === true);
+        const nextSource = stillTriggered ? previousSource : activeTrigger?.id;
+        if (previousSource && !stillTriggered && !activeTrigger) {
+          crossDefaultLines.push({ affectedDebtId: debt.id, triggerDebtId: previousSource,
+            borrowerId: debt.borrowerId, ...(debt.lenderId ? { lenderId: debt.lenderId } : {}), action: 'released' });
+        }
+        if (!previousSource && nextSource) {
+          crossDefaultLines.push({ affectedDebtId: debt.id, triggerDebtId: nextSource,
+            borrowerId: debt.borrowerId, ...(debt.lenderId ? { lenderId: debt.lenderId } : {}), action: 'activated' });
+        }
+        return nextSource ? { ...debt, crossDefaultedByDebtId: nextSource }
+          : (() => { const { crossDefaultedByDebtId: _ignored, ...rest } = debt; return rest; })();
+      }),
+    };
+    if (crossDefaultLines.length > 0) report.crossDefaults = crossDefaultLines;
 
     // Record actual interest cash outflows and matching lender cash receipts.
     const adjustInterestBridge = (bridge: typeof report.entityCashBridges[number]) => {
@@ -1111,6 +1140,7 @@ export function advanceQuarter(state: GameState, commands: QuarterCommands = {})
             covenantBreachStreak: 0,
             covenantStatus: 'compliant' as const,
             covenantPenaltyApplied: false,
+            crossDefaultClause: offer.crossDefaultClause ?? false,
           })),
         ],
       };
