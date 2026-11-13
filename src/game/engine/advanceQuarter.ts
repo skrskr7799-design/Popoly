@@ -922,7 +922,7 @@ export function advanceQuarter(state: GameState, commands: QuarterCommands = {})
         const stillTriggered = previousSource !== undefined && defaultedIds.has(previousSource);
         const activeTrigger = candidate.debts.find((trigger) =>
           trigger.id !== debt.id && trigger.borrowerId === debt.borrowerId &&
-          trigger.paymentStatus === 'defaulted' && debt.crossDefaultClause === true);
+          trigger.paymentStatus === 'defaulted' && debt.paymentStatus !== 'defaulted' && debt.crossDefaultClause === true);
         const nextSource = stillTriggered ? previousSource : activeTrigger?.id;
         if (previousSource && !stillTriggered && !activeTrigger) {
           crossDefaultLines.push({ affectedDebtId: debt.id, triggerDebtId: previousSource,
