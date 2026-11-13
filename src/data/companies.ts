@@ -1,7 +1,8 @@
 import type { Company, Sector } from '../entities/types';
+import { createRandomSecrets } from './secrets';
 
 /** Starting companies for a new game. Balanced across sectors. */
-export const INITIAL_COMPANIES: Omit<Company, 'controlledBy' | 'secrets'>[] = [
+export const INITIAL_COMPANIES: Omit<Company, 'controlledBy'>[] = [
   {
     id: 'nexus-social',
     name: 'Nexus Social',
@@ -14,6 +15,7 @@ export const INITIAL_COMPANIES: Omit<Company, 'controlledBy' | 'secrets'>[] = [
     reputation: 65,
     cashFlow: 180,
     technologies: ['Feed Algorithm v3', 'Creator Tools'],
+    secrets: createRandomSecrets(2),
   },
   {
     id: 'aether-mind',
@@ -27,6 +29,7 @@ export const INITIAL_COMPANIES: Omit<Company, 'controlledBy' | 'secrets'>[] = [
     reputation: 72,
     cashFlow: 320,
     technologies: ['Foundation Model 7B', 'Inference Cluster'],
+    secrets: createRandomSecrets(2),
   },
   {
     id: 'cloudforge',
@@ -40,6 +43,7 @@ export const INITIAL_COMPANIES: Omit<Company, 'controlledBy' | 'secrets'>[] = [
     reputation: 58,
     cashFlow: 210,
     technologies: ['Edge Nodes', 'Global CDN'],
+    secrets: createRandomSecrets(1),
   },
   {
     id: 'genhelix',
@@ -53,6 +57,7 @@ export const INITIAL_COMPANIES: Omit<Company, 'controlledBy' | 'secrets'>[] = [
     reputation: 61,
     cashFlow: 95,
     technologies: ['Gene Editing Suite', 'Clinical Pipeline'],
+    secrets: createRandomSecrets(2),
   },
   {
     id: 'solara-grid',
@@ -66,6 +71,7 @@ export const INITIAL_COMPANIES: Omit<Company, 'controlledBy' | 'secrets'>[] = [
     reputation: 70,
     cashFlow: 160,
     technologies: ['Solid-State Batteries', 'Smart Grid OS'],
+    secrets: createRandomSecrets(1),
   },
   {
     id: 'orbitalis',
@@ -79,6 +85,7 @@ export const INITIAL_COMPANIES: Omit<Company, 'controlledBy' | 'secrets'>[] = [
     reputation: 55,
     cashFlow: 40,
     technologies: ['Reusable Heavy Lift', 'LEO Constellation'],
+    secrets: createRandomSecrets(1),
   },
   {
     id: 'silicon-vein',
@@ -92,6 +99,7 @@ export const INITIAL_COMPANIES: Omit<Company, 'controlledBy' | 'secrets'>[] = [
     reputation: 68,
     cashFlow: 280,
     technologies: ['3nm Process', 'Custom AI Accelerators'],
+    secrets: createRandomSecrets(2),
   },
   {
     id: 'panopticon',
@@ -105,6 +113,7 @@ export const INITIAL_COMPANIES: Omit<Company, 'controlledBy' | 'secrets'>[] = [
     reputation: 48,
     cashFlow: 195,
     technologies: ['Behavioral Graph', 'Real-time Analytics'],
+    secrets: createRandomSecrets(2),
   },
 ];
 
