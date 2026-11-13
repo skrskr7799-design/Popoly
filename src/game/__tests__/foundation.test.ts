@@ -149,10 +149,28 @@ describe('strategic initiatives and project lifecycle', () => {
       'secure-equipment-allocation',
     ]);
     expect(result.state.projects).toHaveLength(2);
+    expect(result.state.equipmentOrders).toEqual([{
+      id: 'nodeworks-equipment-q1', buyerId: 'nodeworks', quantityMWEquivalent: 6,
+      placedQuarter: 1, deliveryQuarter: 3, status: 'reserved',
+    }]);
     expect(result.state.projects[0]!.remainingQuarters).toBe(3);
     expect(result.state.organizations.find((item) => item.id === 'meridian-group')!.cashCents)
       .toBe(1_074_000_000);
     expect(state.projects).toHaveLength(0);
+  });
+
+  it('rejects an equipment reservation when the supplier delivery window is already committed', () => {
+    const state = initializeGame();
+    state.equipmentOrders = [{
+      id: 'kestrel-equipment-q1', buyerId: 'kestrel-compute', quantityMWEquivalent: 8,
+      placedQuarter: 1, deliveryQuarter: 3, status: 'reserved',
+    }];
+    const before = JSON.stringify(state);
+    const result = advanceQuarter(state, { launchInitiatives: ['secure-equipment-allocation'] });
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.issues.some((item) => item.code === 'command.equipment_allocation_unavailable')).toBe(true);
+    expect(JSON.stringify(state)).toBe(before);
   });
 
   it('rejects a portfolio that exceeds executive leadership capacity', () => {
@@ -231,9 +249,10 @@ describe('autonomous world simulation', () => {
   it('makes Kestrel compete for the same scarce firm-power headroom as NodeWorks', () => {
     const state = initializeGame();
     state.actors = state.actors.map((actor) => actor.organizationId === 'kestrel-compute'
-      ? { ...actor, hiddenMetrics: { ...actor.hiddenMetrics, expansionPipelineQuarters: 1 } }
+      ? { ...actor, hiddenMetrics: { ...actor.hiddenMetrics, expansionPipelineQuarters: 1, expansionOrderPlacedQuarter: 1 } }
       : actor);
 
+    state.equipmentOrders.push({ id: 'kestrel-equipment-q1', buyerId: 'kestrel-compute', quantityMWEquivalent: 2, placedQuarter: 1, deliveryQuarter: 1, status: 'delivered' });
     const result = advanceQuarter(state);
     expect(result.ok).toBe(true);
     if (!result.ok) return;
@@ -252,6 +271,7 @@ describe('autonomous world simulation', () => {
     state.actors = state.actors.map((actor) => actor.organizationId === 'kestrel-compute'
       ? { ...actor, hiddenMetrics: { ...actor.hiddenMetrics, expansionPipelineQuarters: 1 } }
       : actor);
+    state.equipmentOrders.push({ id: 'kestrel-equipment-q1', buyerId: 'kestrel-compute', quantityMWEquivalent: 2, placedQuarter: 1, deliveryQuarter: 1, status: 'delivered' });
     state.regionalMarkets = state.regionalMarkets.map((market) => ({
       ...market,
       immediateFirmPowerHeadroomMW: 0,
