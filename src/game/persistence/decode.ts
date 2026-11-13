@@ -9,8 +9,9 @@ const isNumber = (value: unknown): value is number => typeof value === 'number' 
 const isStringArray = (value: unknown): value is string[] => Array.isArray(value) && value.every(isString);
 const records = (value: unknown): value is UnknownRecord[] => Array.isArray(value) && value.every(isRecord);
 
-function hasOptionalRecord(record: UnknownRecord, key: string): boolean {
-  return record[key] === undefined || isRecord(record[key]);
+function hasOptionalRecord(record: object, key: string): boolean {
+  const value = (record as Record<string, unknown>)[key];
+  return value === undefined || isRecord(value);
 }
 
 /**
