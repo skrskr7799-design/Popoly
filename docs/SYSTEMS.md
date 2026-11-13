@@ -143,3 +143,8 @@ This is an initial simulation layer, not the final economic model. In particular
 ### Contractual cross-default
 
 Cross-default is instrument-specific and opt-in through the contract. It is scoped to debts of the same legal borrower; it does not propagate through ownership or corporate groups. The affected instrument retains its own payment status and arrears, while a separate source-debt reference records the contractual cross-default. Cure of the triggering default releases the derived status when no other qualifying trigger remains. Acceleration is a distinct creditor action and is not automatic.
+
+
+### Creditor acceleration
+
+A lender may elect to accelerate only its own outstanding debt after payment default or a contractual cross-default. The creditor issues a notice in the current quarter; the full outstanding principal becomes due in the next quarter. The obligation uses the existing interest-first, deterministic debt-service waterfall and principal-arrears accounting. Acceleration is reported separately and does not itself create a second debt balance. Ordinary refinancing is blocked for defaulted or accelerated instruments, and restructuring is blocked once notice has been issued.
