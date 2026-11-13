@@ -26,6 +26,15 @@ export interface ContractRenewalResult {
   counterPriceCents?: MoneyCents; termQuarters?: number; competitorBidAvailable?: boolean; competitorProviderId?: string; message: string;
 }
 
+export interface LoanAcceptanceReportLine {
+  offerId: string;
+  lenderId: string;
+  borrowerId: string;
+  principalCents: MoneyCents;
+  quarterlyInterestRate: number;
+  maturityQuarter: number;
+}
+
 export interface DebtDrawdownReportLine {
   debtId: string;
   borrowerId: string;
@@ -54,6 +63,7 @@ export interface QuarterReport {
   contractRenewals?: ContractRenewalResult[];
   debtRepayments?: DebtRepaymentReportLine[];
   debtDrawdowns?: DebtDrawdownReportLine[];
+  loanAcceptances?: LoanAcceptanceReportLine[];
   contractsInRenewalWindow?: string[];
 }
 
