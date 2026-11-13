@@ -45,12 +45,16 @@ export interface CreditRequestCommand {
 }
 
 interface ResolvedDebtRepayment extends DebtRepaymentCommand {
-  repaymentType: 'scheduled' | 'maturity' | 'voluntary';
+  repaymentType: 'scheduled' | 'maturity' | 'acceleration' | 'voluntary';
 }
 
 function getScheduledDebtRepayments(state: GameState): ResolvedDebtRepayment[] {
   return state.debts.reduce<ResolvedDebtRepayment[]>((repayments, debt) => {
     if (debt.principalCents <= 0) return repayments;
+    if (debt.acceleratedAtQuarter !== undefined && debt.acceleratedAtQuarter <= state.quarter) {
+      repayments.push({ debtId: debt.id, principalCents: debt.principalCents, repaymentType: 'acceleration' });
+      return repayments;
+    }
     if (debt.maturityQuarter !== undefined && debt.maturityQuarter <= state.quarter) {
       repayments.push({ debtId: debt.id, principalCents: debt.principalCents, repaymentType: 'maturity' });
       return repayments;
@@ -90,6 +94,8 @@ export interface QuarterCommands {
   requestCredit?: CreditRequestCommand[];
   refinanceDebts?: DebtRefinanceCommand[];
   restructureDebts?: DebtRestructuringCommand[];
+  /** Creditor-initiated acceleration notices for defaulted or contractually cross-defaulted instruments. */
+  accelerateDebts?: Array<{ debtId: string }>;
 }
 
 export interface AdvanceQuarterSuccess {
@@ -226,6 +232,9 @@ function validateCommands(state: GameState, commands: QuarterCommands): Validati
       issues.push(issue('command.debt_refinance_debt_invalid', 'Refinancing requires an existing debt instrument with outstanding principal.', refinance.debtId));
       continue;
     }
+    if (debt.acceleratedAtQuarter !== undefined || debt.paymentStatus === 'defaulted' || debt.crossDefaultedByDebtId !== undefined) {
+      issues.push(issue('command.debt_refinance_acceleration_or_default', 'Defaulted or accelerated debt cannot be refinanced through the ordinary refinancing path.', refinance.debtId));
+    }
     if (debt.maturityQuarter !== undefined && debt.maturityQuarter <= state.quarter) {
       issues.push(issue('command.debt_refinance_maturity_due', 'A debt already due for repayment this quarter cannot be refinanced through this command.', refinance.debtId));
     }
@@ -250,6 +259,26 @@ function validateCommands(state: GameState, commands: QuarterCommands): Validati
     }
   }
 
+  const acceleratedDebtIds = new Set<string>();
+  for (const command of commands.accelerateDebts ?? []) {
+    if (acceleratedDebtIds.has(command.debtId)) {
+      issues.push(issue('command.debt_acceleration_duplicate', 'Only one acceleration notice per debt instrument is allowed in a quarter.', command.debtId));
+      continue;
+    }
+    acceleratedDebtIds.add(command.debtId);
+    const debt = state.debts.find((item) => item.id === command.debtId);
+    if (!debt || debt.principalCents <= 0 || !debt.lenderId || !state.lenders.some((item) => item.organizationId === debt.lenderId)) {
+      issues.push(issue('command.debt_acceleration_creditor_missing', 'Acceleration requires outstanding debt with a represented contractual lender.', command.debtId));
+      continue;
+    }
+    if (debt.paymentStatus !== 'defaulted' && debt.crossDefaultedByDebtId === undefined) {
+      issues.push(issue('command.debt_acceleration_no_default', 'A creditor may accelerate only a payment-defaulted or contractually cross-defaulted instrument.', command.debtId));
+    }
+    if (debt.acceleratedAtQuarter !== undefined) {
+      issues.push(issue('command.debt_acceleration_already_noticed', 'This instrument already has an acceleration notice or an effective acceleration.', command.debtId));
+    }
+  }
+
   const restructuredDebtIds = new Set<string>();
   for (const proposal of commands.restructureDebts ?? []) {
     if (restructuredDebtIds.has(proposal.debtId)) {
@@ -264,6 +293,9 @@ function validateCommands(state: GameState, commands: QuarterCommands): Validati
     }
     if (refinanceDebtIds.has(proposal.debtId)) {
       issues.push(issue('command.debt_restructure_refinance_conflict', 'A debt cannot be restructured and refinanced in the same quarter.', proposal.debtId));
+    }
+    if (debt.acceleratedAtQuarter !== undefined) {
+      issues.push(issue('command.debt_restructure_accelerated', 'An accelerated debt cannot be amended through ordinary restructuring; the creditor must first withdraw or replace its demand.', proposal.debtId));
     }
     if (debt.maturityQuarter !== undefined && debt.maturityQuarter <= state.quarter) {
       issues.push(issue('command.debt_restructure_maturity_due', 'A debt due for mandatory repayment this quarter cannot be restructured after its maturity has arrived.', proposal.debtId));
@@ -682,6 +714,19 @@ export function advanceQuarter(state: GameState, commands: QuarterCommands = {})
       loanOffers: state.loanOffers.map((offer) => ({ ...offer })),
     };
 
+    const accelerationLines: NonNullable<QuarterReport['debtAccelerations']> = [];
+    candidate = {
+      ...candidate,
+      debts: candidate.debts.map((debt) => {
+        const command = (commands.accelerateDebts ?? []).find((item) => item.debtId === debt.id);
+        if (!command) return debt;
+        const effectiveQuarter = candidate.quarter + 1;
+        accelerationLines.push({ debtId: debt.id, borrowerId: debt.borrowerId, lenderId: debt.lenderId!,
+          effectiveQuarter, action: 'notice-issued' });
+        return { ...debt, accelerationNoticeQuarter: candidate.quarter, acceleratedAtQuarter: effectiveQuarter };
+      }),
+    };
+
     // Supplier reservations mature at the start of their delivery quarter.
     candidate = {
       ...candidate,
@@ -730,6 +775,13 @@ export function advanceQuarter(state: GameState, commands: QuarterCommands = {})
     for (const project of completed) candidate = applyProjectEffect(candidate, project);
 
     const report = buildQuarterReport(candidate);
+    for (const debt of candidate.debts) {
+      if (debt.acceleratedAtQuarter === candidate.quarter) accelerationLines.push({
+        debtId: debt.id, borrowerId: debt.borrowerId, lenderId: debt.lenderId!,
+        effectiveQuarter: candidate.quarter, action: 'acceleration-effective',
+      });
+    }
+    if (accelerationLines.length > 0) report.debtAccelerations = accelerationLines;
     const creditDecisions: CreditDecisionReportLine[] = [];
     for (const request of commands.requestCredit ?? []) {
       const borrower = candidate.organizations.find((item) => item.id === request.borrowerId)!;
