@@ -2,6 +2,7 @@ import { validateGameState } from '../domain/invariants';
 import { moneyFromCents } from '../domain/money';
 import type { GameState, StrategicProjectState, ValidationIssue } from '../domain/types';
 import { getInitiativeDefinition } from '../scenario/initiatives';
+import { advanceAutonomousActors } from '../systems/actors';
 import { buildQuarterReport, type QuarterReport } from '../systems/quarterReport';
 
 export interface WorkloadDecision {
@@ -188,6 +189,8 @@ export function advanceQuarter(state: GameState, commands: QuarterCommands = {})
     for (const project of completed) candidate = applyProjectEffect(candidate, project);
 
     const report = buildQuarterReport(candidate);
+    const autonomousTurn = advanceAutonomousActors(candidate);
+    candidate = autonomousTurn.state;
     const closingCash = new Map(report.entityCashBridges.map((bridge) => [
       bridge.organizationId, bridge.closingCashCents,
     ]));
@@ -204,6 +207,7 @@ export function advanceQuarter(state: GameState, commands: QuarterCommands = {})
 
     const finalIssues = validateGameState(nextState);
     if (finalIssues.length > 0) return { ok: false, issues: finalIssues };
+    report.actorActions = autonomousTurn.actions;
     report.leadershipCapacity = state.holding.leadershipCapacityPerQuarter;
     report.leadershipCommitted = leadershipCommitted;
     report.projectsLaunched = newlyLaunched.map((project) => project.initiativeId);
