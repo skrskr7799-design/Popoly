@@ -116,6 +116,7 @@ describe('explicit debt principal repayments', () => {
       debtId: 'nodeworks-infrastructure-debt',
       borrowerId: 'nodeworks',
       principalCents: 100_000_000,
+      repaymentType: 'voluntary',
     }]);
     expect(state.debts.find((item) => item.id === 'nodeworks-infrastructure-debt')!.principalCents).toBe(1_400_000_000);
   });
