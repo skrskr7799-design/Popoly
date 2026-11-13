@@ -86,6 +86,7 @@ export interface DebtRepaymentReportLine {
 export interface DebtInterestReportLine {
   debtId: string;
   borrowerId: string;
+  lenderId?: string;
   accruedInterestCents: MoneyCents;
   openingInterestArrearsCents: MoneyCents;
   interestPaidCents: MoneyCents;
