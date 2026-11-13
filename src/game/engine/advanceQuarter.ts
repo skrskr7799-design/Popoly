@@ -95,6 +95,21 @@ function validateCommands(state: GameState, commands: QuarterCommands): Validati
   }
 
   const launches = commands.launchInitiatives ?? [];
+  if (launches.includes('secure-equipment-allocation')) {
+    const market = state.regionalMarkets[0];
+    if (!market) {
+      issues.push(issue('command.equipment_market_missing', 'No regional equipment market is available.'));
+    } else {
+      const deliveryQuarter = state.quarter + 2;
+      const alreadyReserved = state.equipmentOrders
+        .filter((order) => order.status === 'reserved' && order.deliveryQuarter === deliveryQuarter)
+        .reduce((sum, order) => sum + order.quantityMWEquivalent, 0);
+      const available = market.equipmentDeliveryPoolMWEquivalentPerQuarter - 2 - alreadyReserved;
+      if (available < 6) {
+        issues.push(issue('command.equipment_allocation_unavailable', `Only ${Math.max(0, available)} MW-equivalent of the delivery pool remains for quarter ${deliveryQuarter}; 6 is required.`));
+      }
+    }
+  }
   const seenInitiatives = new Set<string>();
   let leadershipCommitted = 0;
   let cashCommitted = 0;
@@ -161,6 +176,16 @@ export function advanceQuarter(state: GameState, commands: QuarterCommands = {})
       actors: state.actors.map((actor) => ({ ...actor, goals: [...actor.goals], hiddenMetrics: { ...actor.hiddenMetrics } })),
       playerIntelligence: state.playerIntelligence.map((estimate) => ({ ...estimate })),
       projects: state.projects.map((project) => ({ ...project })),
+      equipmentOrders: state.equipmentOrders.map((order) => ({ ...order })),
+    };
+
+    // Supplier reservations mature at the start of their delivery quarter.
+    candidate = {
+      ...candidate,
+      equipmentOrders: candidate.equipmentOrders.map((order) =>
+        order.status === 'reserved' && order.deliveryQuarter <= state.quarter
+          ? { ...order, status: 'delivered' }
+          : order),
     };
 
     const newlyLaunched = definitions.map((definition): StrategicProjectState => ({
@@ -172,6 +197,19 @@ export function advanceQuarter(state: GameState, commands: QuarterCommands = {})
       initialCostCents: moneyFromCents(definition.upfrontCostCents),
     }));
     const newIds = new Set(newlyLaunched.map((project) => project.id));
+    if (launches.includes('secure-equipment-allocation')) {
+      candidate = {
+        ...candidate,
+        equipmentOrders: [...candidate.equipmentOrders, {
+          id: `nodeworks-equipment-q${state.quarter}`,
+          buyerId: 'nodeworks',
+          quantityMWEquivalent: 6,
+          placedQuarter: state.quarter,
+          deliveryQuarter: state.quarter + 2,
+          status: 'reserved',
+        }],
+      };
+    }
     const completed: StrategicProjectState[] = [];
     candidate = {
       ...candidate,
