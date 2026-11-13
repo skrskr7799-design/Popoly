@@ -42,13 +42,15 @@ Resolve the core design questions: world scale, regions, and map representation;
 **Specification baseline:** [TECHNICAL_SPEC.md](TECHNICAL_SPEC.md) defines the target engine boundary, commands, deterministic quarter resolution, information model, persistence, and testing strategy. [ECONOMY_MODEL.md](ECONOMY_MODEL.md) defines the first-pass accounting and operating model. [SCENARIO_DATA.md](SCENARIO_DATA.md) defines the initial world and balance hypotheses. [MIGRATION_MAP.md](MIGRATION_MAP.md) maps the legacy prototype to the new architecture.
 
 - [x] inspect the current source tree and establish a migration map;
-- [ ] define domain types, canonical units, and authoritative state;
-- [ ] implement validated player commands and leadership capacity;
-- [ ] implement deterministic quarter orchestration and seeded randomness;
-- [ ] implement core economic calculations and accounting invariants;
-- [ ] implement actor policies and estimates-based intelligence;
+- [x] define domain types, canonical units, and authoritative state;
+- [x] implement validated player commands and leadership capacity;
+- [x] implement deterministic quarter orchestration and seeded randomness;
+- [x] implement core economic calculations and accounting invariants;
+- [x] implement actor policies and estimates-based intelligence;
 - [ ] implement versioned save/load;
-- [ ] establish unit, integration, and scenario tests.
+- [x] establish unit, integration, and scenario tests.
+
+**Current status:** The framework-independent simulation foundation and a substantial economic/actor vertical-slice backend are implemented and covered by CI. Versioned campaign persistence and the player-facing playable vertical slice remain open; Phase 3 is therefore not declared complete yet. Scheduled principal arrears and payment-default tracking are now part of the finance foundation; creditor enforcement and insolvency remain later work.
 
 **Exit criteria:** Core simulation rules can be exercised independently of the interface.
 
