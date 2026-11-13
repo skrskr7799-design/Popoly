@@ -211,3 +211,30 @@ describe('strategic initiatives and project lifecycle', () => {
     expect(second.issues.some((item) => item.code === 'command.initiative_unknown')).toBe(true);
   });
 });
+
+
+describe('autonomous world simulation', () => {
+  it('lets Asterion grow demand and Solara reprice a constrained energy market', () => {
+    const result = advanceQuarter(initializeGame(2035));
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+
+    const asterion = result.state.actors.find((actor) => actor.organizationId === 'asterion-ai')!;
+    expect(asterion.hiddenMetrics.demandMW).toBeGreaterThan(28);
+    expect(asterion.hiddenMetrics.flexibleDemandMW).toBeGreaterThan(5);
+    expect(result.state.regionalMarkets[0]!.referenceEnergyPriceCentsPerMWh).toBeGreaterThan(7_200);
+    expect(result.report.actorActions?.some((action) => action.actorId === 'asterion-ai')).toBe(true);
+    expect(result.report.actorActions?.some((action) => action.actorId === 'solara-grid')).toBe(true);
+  });
+
+  it('produces the same autonomous world outcome from the same seed and quarter', () => {
+    const first = advanceQuarter(initializeGame(12345));
+    const second = advanceQuarter(initializeGame(12345));
+    expect(first.ok).toBe(true);
+    expect(second.ok).toBe(true);
+    if (!first.ok || !second.ok) return;
+    expect(first.state.actors).toEqual(second.state.actors);
+    expect(first.state.regionalMarkets).toEqual(second.state.regionalMarkets);
+    expect(first.report.actorActions).toEqual(second.report.actorActions);
+  });
+});
