@@ -36,7 +36,9 @@ export interface DebtInstrument {
   maturityQuarter?: number;
   /** Principal already due but not paid; remains included in principalCents. */
   arrearsPrincipalCents?: MoneyCents;
-  /** Consecutive quarters with an unpaid contractual principal amount. */
+  /** Contractual interest already accrued but not paid; never capitalized into principal. */
+  arrearsInterestCents?: MoneyCents;
+  /** Consecutive quarters with any unpaid contractual interest or principal service. */
   overdueQuarters?: number;
   paymentStatus?: 'current' | 'overdue' | 'defaulted' | 'settled';
 }
