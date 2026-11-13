@@ -46,6 +46,26 @@ export function validateGameState(state: GameState): ValidationIssue[] {
     }
   }
 
+  const validateCovenants = (terms: import('./types').DebtCovenantTerms | undefined, entityId: string) => {
+    if (!terms) return;
+    if ((terms.minimumDebtServiceCoverage !== undefined && (!Number.isFinite(terms.minimumDebtServiceCoverage) || terms.minimumDebtServiceCoverage < 0)) ||
+        (terms.maximumDebtToAnnualCashFlow !== undefined && (!Number.isFinite(terms.maximumDebtToAnnualCashFlow) || terms.maximumDebtToAnnualCashFlow <= 0)) ||
+        (terms.restrictAdditionalBorrowing !== undefined && typeof terms.restrictAdditionalBorrowing !== 'boolean') ||
+        (terms.graceQuarters !== undefined && (!Number.isInteger(terms.graceQuarters) || terms.graceQuarters < 0 || terms.graceQuarters > 8)) ||
+        (terms.breachRatePremium !== undefined && (!Number.isFinite(terms.breachRatePremium) || terms.breachRatePremium < 0 || terms.breachRatePremium > 0.1))) {
+      issues.push({ code: 'finance.covenant_terms_invalid', message: 'Debt covenant terms contain an invalid threshold or policy.', entityId });
+    }
+  };
+  for (const debt of state.debts) {
+    validateCovenants(debt.covenantTerms, debt.id);
+    if ((debt.covenantStartQuarter !== undefined && (!Number.isInteger(debt.covenantStartQuarter) || debt.covenantStartQuarter < 1)) ||
+        (debt.covenantBreachStreak !== undefined && (!Number.isInteger(debt.covenantBreachStreak) || debt.covenantBreachStreak < 0)) ||
+        (debt.covenantStatus !== undefined && !['compliant', 'grace', 'breached'].includes(debt.covenantStatus)) ||
+        (debt.covenantPenaltyApplied !== undefined && typeof debt.covenantPenaltyApplied !== 'boolean')) {
+      issues.push({ code: 'finance.covenant_state_invalid', message: 'Debt covenant monitoring state is invalid.', entityId: debt.id });
+    }
+  }
+
   const lenderIds = new Set<string>();
   for (const lender of state.lenders) {
     if (lenderIds.has(lender.organizationId)) issues.push({ code: 'finance.lender_duplicate', message: 'Lender organization IDs must be unique.', entityId: lender.organizationId });
@@ -63,6 +83,7 @@ export function validateGameState(state: GameState): ValidationIssue[] {
   for (const offer of state.loanOffers) {
     if (loanOfferIds.has(offer.id)) issues.push({ code: 'finance.loan_offer_duplicate', message: 'Loan offer IDs must be unique.', entityId: offer.id });
     loanOfferIds.add(offer.id);
+    validateCovenants(offer.covenantTerms, offer.id);
     if (!lenderIds.has(offer.lenderId) || !organizationIds.has(offer.borrowerId) ||
         !Number.isSafeInteger(offer.principalCents) || offer.principalCents <= 0 ||
         !Number.isFinite(offer.quarterlyInterestRate) || offer.quarterlyInterestRate < 0 ||
