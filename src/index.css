@@ -247,3 +247,50 @@ button { font: inherit; }
 @media (max-width: 520px) {
   .pop-renewal-fields { grid-template-columns: 1fr; }
 }
+
+
+.pop-finance-panel { margin-top: 14px; }
+.pop-finance-summary { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 9px; margin: 15px 0 18px; padding: 13px; border: 1px solid #263545; border-radius: 8px; background: #0c1520; }
+.pop-finance-summary span,.pop-finance-summary strong { display: block; }
+.pop-finance-summary span { color: #8192a6; font-size: 9px; line-height: 1.45; }
+.pop-finance-summary strong { margin-top: 7px; color: #dce6f0; font-size: 14px; font-weight: 600; }
+.pop-finance-subsection { margin-top: 17px; padding-top: 15px; border-top: 1px solid #293747; }
+.pop-finance-subtitle { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; margin-bottom: 10px; }
+.pop-finance-subtitle strong { color: #cbd7e3; font-size: 11px; font-weight: 600; }
+.pop-finance-subtitle small { color: #708399; font-size: 8px; text-align: right; }
+.pop-finance-entity,.pop-lender-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 0; border-bottom: 1px solid #253343; }
+.pop-finance-entity:last-child,.pop-lender-row:last-child { border-bottom: 0; }
+.pop-finance-entity > div strong,.pop-finance-entity > div span,.pop-lender-row > div strong,.pop-lender-row > div small { display: block; }
+.pop-finance-entity > div strong,.pop-lender-row > div strong { color: #cbd7e3; font-size: 10px; font-weight: 600; }
+.pop-finance-entity > div span,.pop-lender-row > div small { margin-top: 4px; color: #76899e; font-size: 8px; }
+.pop-finance-entity > strong,.pop-lender-row > div:last-child strong { color: #dce6f0; font-size: 11px; font-weight: 600; text-align: right; }
+.pop-debt-card,.pop-loan-offer { margin-top: 9px; padding: 12px; border: 1px solid #293a4a; border-radius: 7px; background: #111e2b; }
+.pop-debt-heading,.pop-loan-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
+.pop-debt-heading > div strong,.pop-debt-heading > div small,.pop-loan-heading > div strong,.pop-loan-heading > div small { display: block; }
+.pop-debt-heading > div strong,.pop-loan-heading > div strong { color: #d2deea; font-size: 10px; font-weight: 600; }
+.pop-debt-heading > div small,.pop-loan-heading > div small { margin-top: 4px; color: #718499; font-size: 8px; }
+.pop-debt-metrics { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 11px 9px; margin-top: 12px; }
+.pop-debt-metrics small,.pop-debt-metrics strong { display: block; }
+.pop-debt-metrics small { color: #74879b; font-size: 8px; }
+.pop-debt-metrics strong { margin-top: 4px; color: #cbd7e3; font-size: 9px; font-weight: 600; overflow-wrap: anywhere; }
+.pop-facility-line { display: flex; justify-content: space-between; gap: 10px; margin-top: 11px; padding-top: 9px; border-top: 1px solid #293747; color: #7f91a5; font-size: 8px; }
+.pop-facility-line strong { color: #9fd9c4; font-weight: 600; }
+.pop-covenant-line,.pop-offer-terms { display: flex; flex-wrap: wrap; gap: 6px 12px; margin-top: 10px; color: #8193a7; font-size: 8px; line-height: 1.5; }
+.pop-debt-warning,.pop-finance-alert { margin-top: 10px; padding: 8px 9px; border: 1px solid #694b36; border-radius: 5px; color: #efbd8d; background: #2b211a; font-size: 9px; line-height: 1.5; }
+.pop-offer-accept { display: flex; align-items: center; gap: 8px; margin-top: 12px; padding-top: 10px; border-top: 1px solid #293747; color: #a8ddc8; font-size: 9px; cursor: pointer; }
+.pop-offer-accept input { accent-color: #9de0c4; }
+.pop-offer-accept.is-blocked { color: #8b7b72; cursor: not-allowed; }
+.pop-offer-accept input:disabled { opacity: .4; }
+.pop-credit-request { display: grid; grid-template-columns: 1fr 1fr .7fr; gap: 10px; }
+.pop-credit-request label span { display: block; margin-bottom: 5px; color: #7f93a5; font-size: 8px; }
+.pop-credit-request input,.pop-credit-request select { width: 100%; min-width: 0; padding: 8px; border: 1px solid #35485a; border-radius: 5px; color: #dce6ef; background: #101925; font: inherit; font-size: 10px; }
+.pop-credit-collateral { grid-column: 1 / -1; }
+.pop-finance-request-state { display: flex; justify-content: space-between; gap: 10px; margin-top: 10px; color: #7f91a5; font-size: 8px; }
+.pop-finance-request-state strong { color: #cbd7e3; font-size: 9px; }
+@media (max-width: 520px) {
+  .pop-finance-summary { grid-template-columns: 1fr 1fr; }
+  .pop-debt-metrics { grid-template-columns: 1fr 1fr; }
+  .pop-credit-request { grid-template-columns: 1fr 1fr; }
+  .pop-credit-collateral { grid-column: 1 / -1; }
+  .pop-finance-subtitle { align-items: flex-start; flex-direction: column; }
+}
