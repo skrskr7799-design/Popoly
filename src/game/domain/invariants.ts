@@ -35,6 +35,7 @@ export function validateGameState(state: GameState): ValidationIssue[] {
           (!Number.isSafeInteger(debt.scheduledPrincipalCentsPerQuarter) || debt.scheduledPrincipalCentsPerQuarter < 0)) ||
         (debt.maturityQuarter !== undefined && (!Number.isInteger(debt.maturityQuarter) || debt.maturityQuarter < 1)) ||
         (debt.arrearsPrincipalCents !== undefined && (!Number.isSafeInteger(debt.arrearsPrincipalCents) || debt.arrearsPrincipalCents < 0 || debt.arrearsPrincipalCents > debt.principalCents)) ||
+        (debt.arrearsInterestCents !== undefined && (!Number.isSafeInteger(debt.arrearsInterestCents) || debt.arrearsInterestCents < 0)) ||
         (debt.overdueQuarters !== undefined && (!Number.isInteger(debt.overdueQuarters) || debt.overdueQuarters < 0)) ||
         (debt.paymentStatus !== undefined && !['current', 'overdue', 'defaulted', 'settled'].includes(debt.paymentStatus)) ||
         (debt.facilityLimitCents !== undefined &&
