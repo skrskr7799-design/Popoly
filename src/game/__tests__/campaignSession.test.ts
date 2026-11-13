@@ -3,13 +3,6 @@ import { describe, expect, it } from 'vitest';
 import { CampaignSession, GUIDED_CAMPAIGN_QUARTERS } from '../campaign/session';
 import { IndexedDbCampaignSaveRepository } from '../persistence/indexedDbRepository';
 import type { MoneyCents } from '../domain/types';
-import type { DigestProvider } from '../persistence/types';
-
-const digest: DigestProvider = async (data) => {
-  let hash = 2166136261;
-  for (const byte of data) hash = Math.imul(hash ^ byte, 16777619);
-  return (hash >>> 0).toString(16).padStart(8, '0');
-};
 
 function fixedClock() {
   let tick = Date.parse('2035-01-01T00:00:00.000Z');
@@ -83,14 +76,12 @@ describe('CampaignSession', () => {
       campaignId: 'campaign-session-roundtrip',
       repository,
       now: fixedClock(),
-      digest,
     });
     expect(session.advance({ launchInitiatives: ['commission-market-study'] }).ok).toBe(true);
     expect((await session.save()).ok).toBe(true);
 
     const restored = await CampaignSession.restore(session.campaignId, repository, {
       now: fixedClock(),
-      digest,
     });
     expect(restored.ok).toBe(true);
     if (!restored.ok) return;
