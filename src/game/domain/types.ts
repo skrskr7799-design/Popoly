@@ -4,7 +4,7 @@
  */
 export type EntityId = string;
 export type MoneyCents = number & { readonly __moneyCents: unique symbol };
-export type OrganizationKind = 'holding' | 'operating_company' | 'supplier' | 'customer' | 'competitor' | 'institution';
+export type OrganizationKind = 'holding' | 'operating_company' | 'supplier' | 'customer' | 'competitor' | 'institution' | 'lender';
 export type KnowledgeClass = 'known' | 'reported' | 'estimated' | 'unknown';
 
 export interface Organization {
@@ -75,6 +75,23 @@ export interface EquipmentOrderState {
   deliveryQuarter: number;
   status: 'reserved' | 'delivered' | 'cancelled';
 }
+export interface LenderState {
+  organizationId: EntityId;
+  /** Remaining lending capacity, separate from the lender's cash balance. */
+  availableCapacityCents: MoneyCents;
+  riskAppetite: 'conservative' | 'balanced' | 'growth';
+}
+export interface LoanOfferState {
+  id: EntityId;
+  lenderId: EntityId;
+  borrowerId: EntityId;
+  principalCents: MoneyCents;
+  quarterlyInterestRate: number;
+  maturityQuarter: number;
+  expiresAfterQuarter: number;
+  collateralDescription?: string;
+  status: 'available' | 'accepted' | 'expired' | 'withdrawn';
+}
 export interface StrategicProjectState {
   id: string;
   initiativeId: string;
@@ -87,6 +104,6 @@ export interface GameState {
   schemaVersion: 1; scenarioId: string; scenarioVersion: string; seed: number; quarter: number;
   organizations: Organization[]; ownership: OwnershipStake[]; debts: DebtInstrument[];
   holding: HoldingState; operatingCompanies: OperatingCompanyState[];
-  regionalMarkets: RegionalMarketState[]; actors: ActorState[]; playerIntelligence: IntelligenceEstimate[]; projects: StrategicProjectState[]; equipmentOrders: EquipmentOrderState[];
+  regionalMarkets: RegionalMarketState[]; actors: ActorState[]; playerIntelligence: IntelligenceEstimate[]; projects: StrategicProjectState[]; equipmentOrders: EquipmentOrderState[]; lenders: LenderState[]; loanOffers: LoanOfferState[];
 }
 export interface ValidationIssue { code: string; message: string; entityId?: EntityId; }
