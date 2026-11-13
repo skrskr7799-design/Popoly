@@ -822,8 +822,14 @@ export function advanceQuarter(state: GameState, commands: QuarterCommands = {})
       available -= paid;
       if (paid > 0) {
         interestPaidByBorrower.set(debt.borrowerId, (interestPaidByBorrower.get(debt.borrowerId) ?? 0) + paid);
-        if (debt.lenderId) interestReceivedByLender.set(debt.lenderId,
-          (interestReceivedByLender.get(debt.lenderId) ?? 0) + paid);
+        if (debt.lenderId) {
+          interestReceivedByLender.set(debt.lenderId,
+            (interestReceivedByLender.get(debt.lenderId) ?? 0) + paid);
+          // A lender that is also a borrower may use receipts from earlier ledger entries
+          // to service its own later entries in this same deterministic pass.
+          const lenderLiquidity = availableByBorrower.get(debt.lenderId);
+          if (lenderLiquidity !== undefined) availableByBorrower.set(debt.lenderId, lenderLiquidity + paid);
+        }
       }
       if (closingArrears > 0) unpaidInterestByDebt.set(debt.id, closingArrears);
       interestLines.push({
