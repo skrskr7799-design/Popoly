@@ -531,6 +531,9 @@ describe('atomic quarter transition', () => {
 
   it('connects a rival renewal win to contract expiry, lost guaranteed revenue and customer reallocation', () => {
     let state = initializeGame(2035);
+    state.actors = state.actors.map((actor) => actor.organizationId === 'kestrel-compute'
+      ? { ...actor, hiddenMetrics: { ...actor.hiddenMetrics, effectiveCapacityMW: 30, effectiveCapacityMinMW: 28, effectiveCapacityMaxMW: 32 } }
+      : actor);
     const first = advanceQuarter(state);
     expect(first.ok).toBe(true);
     if (!first.ok) return;
@@ -581,6 +584,9 @@ describe('atomic quarter transition', () => {
 
   it('lets Kestrel submit a confidential renewal bid when it has enough spare capacity', () => {
     let state = initializeGame(2035);
+    state.actors = state.actors.map((actor) => actor.organizationId === 'kestrel-compute'
+      ? { ...actor, hiddenMetrics: { ...actor.hiddenMetrics, effectiveCapacityMW: 30, effectiveCapacityMinMW: 28, effectiveCapacityMaxMW: 32 } }
+      : actor);
     const first = advanceQuarter(state);
     expect(first.ok).toBe(true);
     if (!first.ok) return;
@@ -1186,6 +1192,8 @@ describe('debt covenant monitoring and enforcement', () => {
   };
   const distressed = (state: ReturnType<typeof initializeGame>) => ({
     ...state,
+    organizations: state.organizations.map((organization) => organization.id === 'nodeworks'
+      ? { ...organization, cashCents: moneyFromCents(2_000_000_000) } : organization),
     operatingCompanies: state.operatingCompanies.map((company) => ({
       ...company, cashCosts: { ...company.cashCosts, operationsAndStaffingCents: moneyFromCents(2_000_000_000) },
     })),
@@ -1411,7 +1419,7 @@ describe('debt refinancing and lender-led restructuring', () => {
     const arrearsState = {
       ...second.state,
       organizations: second.state.organizations.map((organization) => organization.id === 'nodeworks'
-        ? { ...organization, cashCents: moneyFromCents(0) } : organization),
+        ? { ...organization, cashCents: moneyFromCents(100_000_000) } : organization),
       debts: second.state.debts.map((debt) => debt.id === distressedDebt.id
         ? { ...debt, arrearsInterestCents: moneyFromCents(50_000_000) } : debt),
     };
