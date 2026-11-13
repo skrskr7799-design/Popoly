@@ -123,7 +123,7 @@ describe('atomic quarter transition', () => {
     expect(contract.minimumWorkloadMW).toBe(8);
   });
 
-  it('counters an excessive renewal price and rejects a volume below the customer's private minimum', () => {
+  it("counters an excessive renewal price and rejects a volume below the customer's private minimum", () => {
     const first = advanceQuarter(initializeGame());
     if (!first.ok) return;
     const counter = advanceQuarter(first.state, { contractRenewals: [{
