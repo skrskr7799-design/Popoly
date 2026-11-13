@@ -216,7 +216,7 @@ describe('explicit debt principal repayments', () => {
     const firstDebt = result.state.debts.find((debt) => debt.id === 'nodeworks-infrastructure-debt')!;
     const secondDebt = result.state.debts.find((debt) => debt.id === 'nodeworks-secondary-debt')!;
     expect(firstDebt.principalCents).toBe(1_370_000_000);
-    expect(firstDebt.paymentStatus).toBeUndefined();
+    expect(firstDebt.paymentStatus).toBe('current');
     expect(secondDebt.principalCents).toBe(100_000_000);
     expect(secondDebt.arrearsPrincipalCents).toBe(70_000_000);
     expect(secondDebt.paymentStatus).toBe('overdue');
