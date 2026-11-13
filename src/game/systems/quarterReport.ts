@@ -75,6 +75,7 @@ export interface LoanAcceptanceReportLine {
 export interface DebtDrawdownReportLine {
   debtId: string;
   borrowerId: string;
+  lenderId: string;
   principalCents: MoneyCents;
 }
 
