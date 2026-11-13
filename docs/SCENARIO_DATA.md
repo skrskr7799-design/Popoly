@@ -269,7 +269,18 @@ Examples:
 
 The exact truth remains in the world state. Estimates are generated from source quality, observation age, and uncertainty. Research improves the player's knowledge; it does not reveal every hidden value.
 
-## 11. Initial scenario acceptance checks
+## 11. Initial lender terms
+
+The opening credit market includes two illustrative counterparties:
+
+| Lender | Borrower | Principal | Quarterly rate | Maturity | Offer expiry |
+|---|---|---:|---:|---:|---:|
+| Northstar Commercial Bank | NodeWorks | $2.0m | 2.8% | Q9 | Q2 |
+| Frontier Development Bank | Meridian Group | $3.0m | 3.2% | Q9 | Q2 |
+
+Northstar is modeled with a conservative risk appetite and a collateral description covering equipment and receivables. Frontier has a growth-oriented appetite and a holding-company asset/covenant package. These are opening scenario offers for testing borrower-specific finance, not yet dynamically generated bank decisions.
+
+## 12. Initial scenario acceptance checks
 
 The scenario data is ready for engine implementation when:
 
