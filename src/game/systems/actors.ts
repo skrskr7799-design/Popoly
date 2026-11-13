@@ -137,6 +137,33 @@ function updateActor(
   return { ...actor, hiddenMetrics: metrics };
 }
 
+
+export interface RivalRenewalBid {
+  providerId: string;
+  offeredPriceCentsPerMWQuarter: number;
+  offeredWorkloadMW: number;
+}
+
+/**
+ * Returns a confidential, deterministic rival bid for a fixed-term renewal.
+ * A rival cannot bid for volume it cannot actually serve with current spare capacity.
+ */
+export function getRivalRenewalBid(state: GameState, contract: GameState['operatingCompanies'][number]['contracts'][number]): RivalRenewalBid | undefined {
+  if (contract.flexibility !== 'contracted' || contract.customerId !== 'asterion-ai') return undefined;
+  const kestrel = state.actors.find((actor) => actor.organizationId === 'kestrel-compute');
+  if (!kestrel) return undefined;
+  const capacity = kestrel.hiddenMetrics.effectiveCapacityMW ?? kestrel.hiddenMetrics.effectiveCapacityMinMW ?? 0;
+  const workload = kestrel.hiddenMetrics.currentWorkloadMW ?? kestrel.hiddenMetrics.deliveredWorkloadMaxMW ?? 0;
+  if (capacity - workload + 1e-9 < contract.workloadMW) return undefined;
+  const roll = actorRandom(state, `kestrel-renewal-${contract.id}`);
+  const discount = 0.04 + roll * 0.025;
+  return {
+    providerId: 'kestrel-compute',
+    offeredPriceCentsPerMWQuarter: Math.round(contract.priceCentsPerMWQuarter * (1 - discount)),
+    offeredWorkloadMW: contract.workloadMW,
+  };
+}
+
 interface FlexibleAllocation { nodeworksMW: number; kestrelMW: number; otherMW: number; }
 
 /** Allocate uncommitted customer demand without changing fixed contracts. */
