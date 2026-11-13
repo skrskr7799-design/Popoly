@@ -1,6 +1,6 @@
 # Vertical Slice — First Playable Scenario
 
-**Status:** Proposed design for review; not yet a locked implementation specification  
+**Status:** Accepted design baseline; detailed balance values remain provisional  
 **Date:** 2026-11-13  
 **Purpose:** Define the smallest playable Popoly experience that can test whether its central strategic loop is engaging.
 
@@ -237,12 +237,26 @@ A successful test should show that:
 
 If these criteria fail, revise the core loop before adding more content.
 
-## 15. Open questions for collaborative approval
+## 15. Accepted design decisions
 
-1. Should the player begin with a controlling stake in an existing operating company, or found the holding and acquire its first company during the opening?
-2. Should the first scenario emphasize infrastructure and compute, as proposed, or should it focus on a different technological bottleneck?
-3. Should the eight-quarter scenario be a guided opening campaign, a sandbox test map, or both?
-4. Should major initiatives be limited by leadership capacity, project slots, or only by resources and time?
-5. How visible should the rival's internal financial position be: public reports only, estimates, or selectable intelligence actions?
+The following decisions were explicitly confirmed for this vertical slice:
 
-These questions should be resolved before implementation. The scenario and mechanics above are a concrete proposal for discussion, not silent permanent commitments.
+1. **Starting position — Existing:** the player begins as the leader of an established holding company with control of an operating company.
+2. **Industry scope — Mixed:** the slice connects compute infrastructure, energy, semiconductors/equipment, and AI/digital-service demand. These are compact abstractions, not four fully simulated industries.
+3. **Campaign format — Both:** an eight-quarter guided opening can continue into an open-ended sandbox without resetting the campaign.
+4. **Decision constraint — Leadership:** major initiatives compete for limited executive attention. Routine company operations continue automatically.
+5. **Competitor information — Estimates:** the player sees public facts plus uncertain estimates of rival conditions, with confidence and freshness metadata.
+
+The detailed gameplay contract is in [CORE_LOOP_SPEC.md](CORE_LOOP_SPEC.md), the economic rules in [ECONOMY_MODEL.md](ECONOMY_MODEL.md), and the implementation contract in [TECHNICAL_SPEC.md](TECHNICAL_SPEC.md).
+
+## 16. Remaining tuning questions
+
+The core direction above is accepted. The following are implementation and balancing parameters, not blockers to beginning the simulation foundation:
+- exact initial cash, debt, ownership, and company operating values;
+- exact leadership capacity and initiative costs;
+- starting regional power and equipment scarcity;
+- initial customer contract volumes and pricing;
+- confidence-decay and estimate-refresh parameters;
+- precise quarterly phase ordering where playtests reveal a better causal model.
+
+These values must live in scenario/tuning data and be calibrated through repeatable scenario tests.
