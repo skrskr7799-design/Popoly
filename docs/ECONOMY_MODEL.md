@@ -314,3 +314,12 @@ The creditor evaluates the proposal after the current quarter's operating and co
 A covenant waiver removes the instrument's covenant terms and clears its breach streak/status. Any contractual rate premium already applied remains part of the loan rate unless the approved restructuring explicitly reduces that rate. The report records the lender's decision, previous and revised terms, waiver outcome, and reason. Restructuring does not erase principal or silently move cash between the holding company and a subsidiary.
 
 These are initial deterministic negotiation rules for gameplay, not a full legal workout model. Lender-specific negotiation history, collateral enforcement, guarantees, cross-default, arrears, insolvency, and asset seizure remain future work.
+
+
+## 26. Scheduled principal arrears and payment default
+
+Scheduled and maturity principal obligations no longer abort an otherwise valid quarter merely because the legal borrower lacks opening cash. The engine records the unpaid amount as principal arrears while keeping it inside the existing principal balance; arrears are not double-counted as new debt. The borrower is tested independently, so holding-company liquidity cannot silently cover a subsidiary obligation.
+
+A missed contractual principal payment increments the instrument's consecutive overdue-quarter counter. One missed quarter produces an overdue status; two consecutive missed quarters produce a defaulted status. Paying the scheduled obligation cures the arrears and resets the counter. The quarter report exposes the unpaid due amount, cumulative arrears, duration, and resulting status. Voluntary principal repayments remain strict: an explicitly requested repayment that the borrower cannot fund still rejects the command atomically.
+
+This is the first distress layer, not enforcement. Interest arrears, acceleration, cross-default, creditor collection actions, collateral valuation/enforcement, insolvency proceedings, and asset transfers are intentionally deferred to subsequent increments. The two-quarter default threshold is a provisional gameplay rule, not a claim about real loan documentation.
