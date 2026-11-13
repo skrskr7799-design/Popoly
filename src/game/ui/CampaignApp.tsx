@@ -16,6 +16,7 @@ import { CAMPAIGN_SIMULATION_VERSION } from '../campaign/session';
 import { COMPUTE_BOTTLENECK_SCENARIO_ID, COMPUTE_BOTTLENECK_SCENARIO_VERSION } from '../scenario/computeBottleneck';
 import { CampaignStoragePanel } from './CampaignStoragePanel';
 import { ContractPortfolioPanel } from './ContractPortfolioPanel';
+import type { ContractRenewalDraft } from './ContractPortfolioPanel';
 
 const money = (cents: number) => formatMillions(cents);
 const campaignRepository = new IndexedDbCampaignSaveRepository();
@@ -139,6 +140,7 @@ function QuarterReportPanel({ report, state }: { report: QuarterReport; state: G
 export default function CampaignApp() {
   const [session, setSession] = useState<CampaignSession | null>(null);
   const [selected, setSelected] = useState<string[]>([]);
+  const [renewalDrafts, setRenewalDrafts] = useState<Record<string, ContractRenewalDraft>>({});
   const [report, setReport] = useState<QuarterReport | null>(null);
   const [issues, setIssues] = useState<ValidationIssue[]>([]);
   const [revision, setRevision] = useState(0);
@@ -151,6 +153,7 @@ export default function CampaignApp() {
     const next = CampaignSession.start({ seed: 2035, repository: campaignRepository });
     setSession(next);
     setSelected([]);
+    setRenewalDrafts({});
     setReport(null);
     setIssues([]);
     setStorageMessage(null);
@@ -191,6 +194,7 @@ export default function CampaignApp() {
     else {
       setSession(result.value.session);
       setSelected([]);
+    setRenewalDrafts({});
       setReport(null);
       setIssues([]);
       setStorageMessage(result.value.recoveredFromPrevious
@@ -238,6 +242,7 @@ export default function CampaignApp() {
       else {
         setSession(restored.value.session);
         setSelected([]);
+    setRenewalDrafts({});
         setReport(null);
         setIssues([]);
         setShowStorage(false);
@@ -287,14 +292,26 @@ export default function CampaignApp() {
       startCampaign();
     }
   };
+  const renewalCommands = (company?.contracts ?? []).flatMap((contract) => {
+    if (!(currentReport.contractsInRenewalWindow ?? []).includes(contract.id)) return [];
+    const draft = renewalDrafts[contract.id];
+    if (!draft?.enabled) return [];
+    return [{
+      contractId: contract.id,
+      offeredPriceCentsPerMWQuarter: Math.round(Number(draft.priceDollars) * 100),
+      offeredWorkloadMW: Number(draft.workloadMW),
+      termQuarters: Number(draft.termQuarters),
+    }];
+  });
   const resolveQuarter = () => {
-    const result = session.advance({ launchInitiatives: selected });
+    const result = session.advance({ launchInitiatives: selected, contractRenewals: renewalCommands });
     if (!result.ok) {
       setIssues(result.issues);
       return;
     }
     setReport(result.report);
     setSelected([]);
+    setRenewalDrafts({});
     setIssues([]);
     setRevision((value) => value + 1);
   };
@@ -373,7 +390,13 @@ export default function CampaignApp() {
             <div className="pop-capacity-track"><i style={{ width: `${Math.min(100, (operating?.deliveredWorkloadMW ?? 0) / Math.max(1, operating?.effectiveCapacityMW ?? 1) * 100)}%` }} /></div>
             <small className="pop-muted">Delivered workload is constrained by the lowest of installed, grid, equipment and operational capacity, adjusted for reliability.</small>
           </section>
-          <ContractPortfolioPanel company={company} organizations={state.organizations} report={currentReport} />
+          <ContractPortfolioPanel
+            company={company}
+            organizations={state.organizations}
+            report={currentReport}
+            drafts={renewalDrafts}
+            onDraftChange={(contractId, draft) => setRenewalDrafts((current) => ({ ...current, [contractId]: draft }))}
+          />
         </div>
 
         <div className="pop-column">
