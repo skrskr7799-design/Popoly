@@ -269,7 +269,7 @@ describe('autonomous world simulation', () => {
   it('delays a completed rival build when the player has committed the remaining firm power', () => {
     const state = initializeGame();
     state.actors = state.actors.map((actor) => actor.organizationId === 'kestrel-compute'
-      ? { ...actor, hiddenMetrics: { ...actor.hiddenMetrics, expansionPipelineQuarters: 1 } }
+      ? { ...actor, hiddenMetrics: { ...actor.hiddenMetrics, expansionPipelineQuarters: 1, expansionOrderPlacedQuarter: 1 } }
       : actor);
     state.equipmentOrders.push({ id: 'kestrel-equipment-q1', buyerId: 'kestrel-compute', quantityMWEquivalent: 2, placedQuarter: 1, deliveryQuarter: 1, status: 'delivered' });
     state.regionalMarkets = state.regionalMarkets.map((market) => ({
