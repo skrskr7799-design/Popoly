@@ -39,6 +39,8 @@ export function validateGameState(state: GameState): ValidationIssue[] {
         (debt.overdueQuarters !== undefined && (!Number.isInteger(debt.overdueQuarters) || debt.overdueQuarters < 0)) ||
         (debt.paymentStatus !== undefined && !['current', 'overdue', 'defaulted', 'settled'].includes(debt.paymentStatus)) ||
         (debt.crossDefaultClause !== undefined && typeof debt.crossDefaultClause !== 'boolean') ||
+        (debt.accelerationNoticeQuarter !== undefined && (!Number.isInteger(debt.accelerationNoticeQuarter) || debt.accelerationNoticeQuarter < 1)) ||
+        (debt.acceleratedAtQuarter !== undefined && (!Number.isInteger(debt.acceleratedAtQuarter) || debt.acceleratedAtQuarter < 1 || debt.accelerationNoticeQuarter === undefined || debt.acceleratedAtQuarter <= debt.accelerationNoticeQuarter)) ||
         (debt.facilityLimitCents !== undefined &&
           (!Number.isSafeInteger(debt.facilityLimitCents) || debt.facilityLimitCents < debt.principalCents))) {
       issues.push({ code: 'finance.debt_invalid', message: 'Debt instrument has an invalid borrower, principal, interest rate, or facility limit.', entityId: debt.id });
