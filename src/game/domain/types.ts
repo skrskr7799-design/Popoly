@@ -42,6 +42,10 @@ export interface DebtInstrument {
   crossDefaultClause?: boolean;
   /** Source instrument for a contractual cross-default; does not create arrears on this debt. */
   crossDefaultedByDebtId?: EntityId;
+  /** Quarter in which the creditor delivered an acceleration notice. */
+  accelerationNoticeQuarter?: number;
+  /** First quarter in which the full outstanding principal is contractually due. */
+  acceleratedAtQuarter?: number;
   /** Consecutive quarters with any unpaid contractual interest or principal service. */
   overdueQuarters?: number;
   paymentStatus?: 'current' | 'overdue' | 'defaulted' | 'settled';
