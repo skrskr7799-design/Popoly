@@ -111,3 +111,10 @@ This file records important decisions and their rationale. Add new entries rathe
 **Decision:** A revolving-facility drawdown is funded by the facility's named lender. The lender's cash and remaining lending capacity decrease by the draw amount; the legal borrower's cash, debt balance, and facility principal increase by the same amount. The draw is permitted only when the facility commitment, lender capacity, and lender liquidity all cover it. Repayment restores the lender's cash and available capacity.
 
 **Rationale:** Revolving credit must preserve double-entry cash movement and remain consistent with the existing term-loan acceptance and principal-repayment flows. The committed facility limit and the lender's general lending capacity remain separate constraints.
+
+## D-015 — Versioned authoritative campaign saves
+
+**Status:** Accepted  
+**Decision:** Save/load serializes the framework-independent Game Engine `GameState` inside a separate versioned envelope. Save-envelope schema, GameState schema, and scenario version are independent compatibility dimensions. The first storage backend is IndexedDB behind a repository adapter, with JSON import/export. Saves are created at stable quarter boundaries, validated before writing, protected by a canonical SHA-256 checksum, and retain one previous valid revision. Loading structurally decodes untrusted input before domain validation, applies only registered pure migrations, verifies scenario compatibility and state invariants, and never mutates the source save on failure.
+
+**Rationale:** Persistence must preserve authoritative simulation state without coupling campaign files to UI implementation details. Separate version dimensions and explicit migration paths make future evolution controlled; atomic revisions and validation prevent a failed save/load from destroying the last known-good campaign. A checksum detects accidental corruption but is not an anti-cheat signature.
