@@ -197,6 +197,52 @@ describe('explicit debt principal repayments', () => {
   });
 });
 
+describe('committed credit facility drawdowns', () => {
+  it("draws against Meridian's revolver and credits only the legal borrower", () => {
+    const state = initializeGame();
+    const result = advanceQuarter(state, {
+      debtDrawdowns: [{ debtId: 'meridian-revolver', principalCents: 200_000_000 }],
+    });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    const debt = result.state.debts.find((item) => item.id === 'meridian-revolver')!;
+    const meridian = result.state.organizations.find((item) => item.id === 'meridian-group')!;
+    const nodeworks = result.state.organizations.find((item) => item.id === 'nodeworks')!;
+    const bridge = result.report.entityCashBridges.find((item) => item.organizationId === 'meridian-group')!;
+    expect(debt.principalCents).toBe(500_000_000);
+    expect(meridian.debtCents).toBe(500_000_000);
+    expect(meridian.cashCents).toBe(1_594_000_000);
+    expect(nodeworks.cashCents).toBe(639_616_000);
+    expect(bridge.interestExpenseCents).toBe(6_000_000);
+    expect(bridge.financingCashFlowCents).toBe(200_000_000);
+    expect(result.report.debtDrawdowns).toEqual([{
+      debtId: 'meridian-revolver', borrowerId: 'meridian-group', principalCents: 200_000_000,
+    }]);
+  });
+
+  it('rejects a drawdown above the committed limit and leaves the quarter untouched', () => {
+    const state = initializeGame();
+    const before = JSON.stringify(state);
+    const result = advanceQuarter(state, {
+      debtDrawdowns: [{ debtId: 'meridian-revolver', principalCents: 600_000_000 }],
+    });
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.issues.some((item) => item.code === 'command.debt_facility_limit_exceeded')).toBe(true);
+    expect(JSON.stringify(state)).toBe(before);
+  });
+
+  it('does not allow a term loan without a committed facility limit to be drawn again', () => {
+    const state = initializeGame();
+    const result = advanceQuarter(state, {
+      debtDrawdowns: [{ debtId: 'nodeworks-infrastructure-debt', principalCents: 10_000_000 }],
+    });
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.issues.some((item) => item.code === 'command.debt_not_revolving_facility')).toBe(true);
+  });
+});
+
 describe('atomic quarter transition', () => {
   it('commits one quarter and applies entity cash bridges without merging legal entities', () => {
     const state = initializeGame();
