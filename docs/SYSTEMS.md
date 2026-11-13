@@ -94,10 +94,11 @@ The first playable engine slice now includes a transactional quarter resolver, a
 
 ### Autonomous actor pass
 - Asterion's true compute demand grows within the scenario's forecast band; flexible demand is recalculated from its contract commitments.
-- Kestrel can independently initiate a capacity expansion pipeline. Completion requires 2 MW of the same immediate firm-power headroom used by NodeWorks; if the player or another actor consumes it first, Kestrel's completed build waits for power.
+- Kestrel can independently initiate a capacity expansion pipeline only after reserving 2 MW-equivalent from Silicon Vein's delivery pool. NodeWorks' equipment initiative reserves 6 MW-equivalent two quarters ahead; the regional pool is capped at 10 MW-equivalent per delivery quarter after NodeWorks' standing 2 MW allocation. Kestrel's project also requires 2 MW of immediate firm power at commissioning.
 - Solara adjusts regional energy pricing in response to grid utilization.
 - The Infrastructure Authority can open a concentration review when the regional grid crosses its review threshold.
 - Actor truth remains in hidden world state. The quarter report exposes concise action summaries, not hidden metric values.
+- Silicon Vein orders are tracked by buyer, quantity, placement quarter, delivery quarter, and status. Reservations cannot exceed the quarterly pool; player and rival orders compete for the same delivery windows.
 - Actor outcomes are deterministic for the same world seed and quarter.
 
 This is an initial simulation layer, not the final economic model. In particular, rival procurement competition, contract reallocation, financing choices, project dependencies, regulatory consequences, and information-quality mechanics remain future work.
