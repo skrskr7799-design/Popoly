@@ -1642,7 +1642,7 @@ describe('quarter funding and debt-service invariants', () => {
   it('keeps Kestrel effective capacity and workload synchronized after expansion and flexible allocation', () => {
     const state = initializeGame();
     state.actors = state.actors.map((actor) => actor.organizationId === 'kestrel-compute'
-      ? { ...actor, hiddenMetrics: { ...actor.hiddenMetrics, expansionPipelineQuarters: 1 } }
+      ? { ...actor, hiddenMetrics: { ...actor.hiddenMetrics, expansionPipelineQuarters: 1, expansionOrderPlacedQuarter: 1 } }
       : actor);
     state.equipmentOrders = [{
       id: 'kestrel-expansion-delivery', buyerId: 'kestrel-compute', quantityMWEquivalent: 2,
