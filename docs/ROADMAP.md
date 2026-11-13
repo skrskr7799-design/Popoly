@@ -33,18 +33,22 @@ Deliverables:
 
 Resolve the core design questions: world scale, regions, and map representation; player role and progression of influence; major actor types and their independent goals; time model and action economy; first playable gameplay loop; initial victory and campaign objectives; information, uncertainty, and feedback.
 
-**Working proposal:** [VERTICAL_SLICE.md](VERTICAL_SLICE.md) defines the first scenario and its proposed mechanics. It is awaiting collaborative review and is not yet a locked specification.
+**Accepted design baseline:** [VERTICAL_SLICE.md](VERTICAL_SLICE.md) records the confirmed scenario decisions. Detailed contracts are in [CORE_LOOP_SPEC.md](CORE_LOOP_SPEC.md), [ECONOMY_MODEL.md](ECONOMY_MODEL.md), and [TECHNICAL_SPEC.md](TECHNICAL_SPEC.md). Numerical balance remains provisional.
 
 **Exit criteria:** A bounded first playable experience can be described precisely enough to implement and test.
 
 ## Phase 3 — Simulation and technical foundation
 
-- define domain model and authoritative simulation state;
-- separate rules and simulation from UI rendering;
-- define deterministic or reproducible simulation steps where practical;
-- design save/load and versioning;
-- establish automated tests for core rules;
-- keep future multiplayer in mind without building multiplayer prematurely.
+**Specification baseline:** [TECHNICAL_SPEC.md](TECHNICAL_SPEC.md) defines the target engine boundary, commands, deterministic quarter resolution, information model, persistence, and testing strategy. [ECONOMY_MODEL.md](ECONOMY_MODEL.md) defines the first-pass accounting and operating model.
+
+- [ ] inspect the current source tree and establish a migration map;
+- [ ] define domain types, canonical units, and authoritative state;
+- [ ] implement validated player commands and leadership capacity;
+- [ ] implement deterministic quarter orchestration and seeded randomness;
+- [ ] implement core economic calculations and accounting invariants;
+- [ ] implement actor policies and estimates-based intelligence;
+- [ ] implement versioned save/load;
+- [ ] establish unit, integration, and scenario tests.
 
 **Exit criteria:** Core simulation rules can be exercised independently of the interface.
 
