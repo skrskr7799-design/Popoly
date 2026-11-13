@@ -169,3 +169,36 @@ button { font: inherit; }
   .pop-footer { flex-wrap: wrap; }
   .pop-event { grid-template-columns: 1fr; gap: 3px; }
 }
+
+.pop-secondary-button,.pop-quiet-button { display: inline-flex; align-items: center; justify-content: center; gap: 7px; padding: 8px 11px; border: 1px solid #344356; border-radius: 6px; color: #c3d1df; background: #172331; font-size: 10px; cursor: pointer; white-space: nowrap; }
+.pop-secondary-button:hover:not(:disabled),.pop-quiet-button:hover:not(:disabled) { border-color: #70968d; color: #a9e3ce; }
+.pop-secondary-button:disabled,.pop-quiet-button:disabled { opacity: .45; cursor: wait; }
+.pop-quiet-button { padding: 7px 9px; color: #91a2b6; border-color: transparent; background: transparent; }
+.pop-storage { margin: 0 0 16px; border-color: #334b5b; }
+.pop-storage-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 13px 0; }
+.pop-storage-toolbar > span { display: flex; align-items: center; gap: 6px; color: #72869a; font-size: 9px; }
+.pop-storage-toolbar label { position: relative; overflow: hidden; }
+.pop-storage-toolbar input { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
+.pop-storage-empty { display: grid; justify-items: center; gap: 7px; padding: 24px 12px; border: 1px dashed #344356; border-radius: 8px; color: #91a3b7; font-size: 11px; }
+.pop-storage-empty svg { color: #8ecab7; }
+.pop-storage-empty small { color: #6e8196; font-size: 9px; }
+.pop-storage-list { display: grid; }
+.pop-storage-row { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 12px 0; border-top: 1px solid #293747; }
+.pop-storage-info { min-width: 0; }
+.pop-storage-info strong,.pop-storage-info span,.pop-storage-info small { display: block; }
+.pop-storage-info strong { color: #d2deea; font-size: 11px; }
+.pop-storage-info span { margin-top: 4px; color: #8193a7; font-size: 9px; }
+.pop-storage-info small { margin-top: 4px; color: #9de0c4; font-size: 8px; }
+.pop-storage-actions { display: flex; align-items: center; gap: 5px; }
+.pop-storage-message { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin: 0 0 14px; padding: 10px 13px; border: 1px solid #36594f; border-radius: 7px; color: #a9d8c4; background: #132722; font-size: 10px; }
+.pop-storage-message button { border: 0; color: #91ad9f; background: transparent; font-size: 9px; cursor: pointer; }
+.pop-opening-shell { min-height: 100vh; padding-bottom: 40px; }
+.pop-opening-archive { display: inline-flex; align-items: center; gap: 8px; margin-top: 16px; padding: 9px 0; border: 0; color: #9aafc2; background: transparent; font-size: 11px; cursor: pointer; }
+.pop-opening-archive:hover { color: #b5ead6; }
+.pop-opening-storage { width: min(760px, calc(100% - 32px)); margin: 0 auto; }
+@media (max-width: 520px) {
+  .pop-storage-row { align-items: flex-start; flex-direction: column; }
+  .pop-storage-actions { width: 100%; justify-content: flex-end; }
+  .pop-storage-toolbar { align-items: flex-start; flex-direction: column; }
+  .pop-topbar-right { flex-wrap: wrap; }
+}
