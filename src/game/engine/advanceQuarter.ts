@@ -15,6 +15,11 @@ export interface ContractOfferCommand {
   offeredPriceCentsPerMWQuarter: number;
 }
 
+export interface DebtRepaymentCommand {
+  debtId: string;
+  principalCents: number;
+}
+
 export interface ContractRenewalCommand {
   contractId: string;
   offeredPriceCentsPerMWQuarter: number;
@@ -30,6 +35,8 @@ export interface QuarterCommands {
   contractOffers?: ContractOfferCommand[];
   /** Renewal proposals for fixed contracts currently inside their notice window. */
   contractRenewals?: ContractRenewalCommand[];
+  /** Explicit principal repayments funded only by the legal borrower's opening cash. */
+  debtRepayments?: DebtRepaymentCommand[];
 }
 
 export interface AdvanceQuarterSuccess {
@@ -108,6 +115,30 @@ function validateCommands(state: GameState, commands: QuarterCommands): Validati
         decision.desiredWorkloadMW > maximumDemand) {
       issues.push(issue('command.workload_out_of_range', `Desired workload must be between 0 and contracted demand of ${maximumDemand} MW.`, decision.companyId));
     }
+  }
+
+  const seenDebtRepayments = new Set<string>();
+  const repaymentByBorrower = new Map<string, number>();
+  for (const repayment of commands.debtRepayments ?? []) {
+    if (seenDebtRepayments.has(repayment.debtId)) {
+      issues.push(issue('command.debt_repayment_duplicate', 'Only one principal repayment per debt instrument is allowed in a quarter.', repayment.debtId));
+      continue;
+    }
+    seenDebtRepayments.add(repayment.debtId);
+    const debt = state.debts.find((item) => item.id === repayment.debtId);
+    if (!debt) {
+      issues.push(issue('command.debt_unknown', 'Debt repayment references an unknown debt instrument.', repayment.debtId));
+      continue;
+    }
+    if (!Number.isSafeInteger(repayment.principalCents) || repayment.principalCents <= 0) {
+      issues.push(issue('command.debt_repayment_invalid', 'Principal repayment must be a positive integer number of cents.', repayment.debtId));
+      continue;
+    }
+    if (repayment.principalCents > debt.principalCents) {
+      issues.push(issue('command.debt_repayment_exceeds_principal', 'Principal repayment cannot exceed the outstanding debt balance.', repayment.debtId));
+      continue;
+    }
+    repaymentByBorrower.set(debt.borrowerId, (repaymentByBorrower.get(debt.borrowerId) ?? 0) + repayment.principalCents);
   }
 
   const seenContractOffers = new Set<string>();
@@ -204,8 +235,16 @@ function validateCommands(state: GameState, commands: QuarterCommands): Validati
     issues.push(issue('command.leadership_exceeded', `Initiatives require ${leadershipCommitted} leadership units; only ${state.holding.leadershipCapacityPerQuarter} are available.`));
   }
   const holding = state.organizations.find((organization) => organization.id === state.holding.organizationId);
-  if (!holding || cashCommitted > holding.cashCents) {
-    issues.push(issue('command.insufficient_holding_cash', 'The holding company does not have enough available cash for these commitments.', state.holding.organizationId));
+  if (!holding || cashCommitted + (repaymentByBorrower.get(state.holding.organizationId) ?? 0) > (holding?.cashCents ?? 0)) {
+    issues.push(issue('command.insufficient_holding_cash', 'The holding company does not have enough opening cash for project commitments and debt repayments.', state.holding.organizationId));
+  }
+  for (const [borrowerId, repaymentCents] of repaymentByBorrower) {
+    const borrower = state.organizations.find((organization) => organization.id === borrowerId);
+    if (!borrower) {
+      issues.push(issue('command.debt_borrower_missing', 'Debt instrument references a missing borrower.', borrowerId));
+    } else if (repaymentCents > borrower.cashCents) {
+      issues.push(issue('command.debt_repayment_insufficient_cash', 'The borrower does not have enough opening cash for the requested principal repayments.', borrowerId));
+    }
   }
   return issues;
 }
@@ -419,6 +458,45 @@ export function advanceQuarter(state: GameState, commands: QuarterCommands = {})
     for (const project of completed) candidate = applyProjectEffect(candidate, project);
 
     const report = buildQuarterReport(candidate);
+    const debtRepayments = commands.debtRepayments ?? [];
+    if (debtRepayments.length > 0) {
+      const repaymentByBorrower = new Map<string, number>();
+      for (const repayment of debtRepayments) {
+        const debt = candidate.debts.find((item) => item.id === repayment.debtId)!;
+        repaymentByBorrower.set(debt.borrowerId, (repaymentByBorrower.get(debt.borrowerId) ?? 0) + repayment.principalCents);
+      }
+      candidate = {
+        ...candidate,
+        debts: candidate.debts.map((debt) => {
+          const repayment = debtRepayments.find((item) => item.debtId === debt.id);
+          return repayment ? { ...debt, principalCents: moneyFromCents(debt.principalCents - repayment.principalCents) } : debt;
+        }),
+        organizations: candidate.organizations.map((organization) => {
+          const repayment = repaymentByBorrower.get(organization.id) ?? 0;
+          return repayment > 0 ? { ...organization, debtCents: moneyFromCents(organization.debtCents - repayment) } : organization;
+        }),
+      };
+      const adjustBridge = (bridge: typeof report.entityCashBridges[number]) => {
+        const repayment = repaymentByBorrower.get(bridge.organizationId) ?? 0;
+        if (repayment === 0) return bridge;
+        return {
+          ...bridge,
+          financingCashFlowCents: moneyFromCents(bridge.financingCashFlowCents - repayment),
+          netCashChangeCents: moneyFromCents(bridge.netCashChangeCents - repayment),
+          closingCashCents: moneyFromCents(bridge.closingCashCents - repayment),
+        };
+      };
+      report.entityCashBridges = report.entityCashBridges.map(adjustBridge);
+      report.companies = report.companies.map((company) => ({
+        ...company,
+        cashBridge: adjustBridge(company.cashBridge),
+      }));
+      report.debtRepayments = debtRepayments.map((repayment) => ({
+        debtId: repayment.debtId,
+        borrowerId: candidate.debts.find((debt) => debt.id === repayment.debtId)!.borrowerId,
+        principalCents: moneyFromCents(repayment.principalCents),
+      }));
+    }
     const nodeworksOperations = report.companies.find((item) => item.companyId === 'nodeworks')?.operations;
     if (nodeworksOperations) {
       const fixedContracts = candidate.operatingCompanies.find((item) => item.organizationId === 'nodeworks')?.contracts.filter((item) => item.flexibility === 'contracted') ?? [];
