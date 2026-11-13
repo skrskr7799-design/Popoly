@@ -224,6 +224,7 @@ describe('explicit debt principal repayments', () => {
     if (!first.ok) return;
     const firstDebt = first.state.debts.find((item) => item.id === 'nodeworks-infrastructure-debt')!;
     const firstInterest = first.report.debtInterestService?.find((item) => item.debtId === firstDebt.id)!;
+    expect(firstInterest.lenderId).toBe('frontier-development-bank');
     expect(firstInterest.accruedInterestCents).toBe(31_500_000);
     expect(firstInterest.interestPaidCents).toBe(10_000_000);
     expect(firstInterest.closingInterestArrearsCents).toBe(21_500_000);
