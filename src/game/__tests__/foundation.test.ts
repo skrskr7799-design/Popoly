@@ -539,6 +539,7 @@ describe('autonomous world simulation', () => {
     let state = initializeGame(2035);
     const startingDemand = state.actors.find((actor) => actor.organizationId === 'asterion-ai')!.hiddenMetrics.demandMW;
     const observedActions = new Set<string>();
+    let relationshipAfterLastFixedContract: number | undefined;
 
     for (let index = 0; index < 12; index += 1) {
       const result = advanceQuarter(state);
@@ -547,6 +548,7 @@ describe('autonomous world simulation', () => {
       expect(result.report.quarter).toBe(state.quarter);
       for (const action of result.report.actorActions ?? []) observedActions.add(action.kind);
       state = result.state;
+      if (state.quarter === 6) relationshipAfterLastFixedContract = state.actors.find((actor) => actor.organizationId === 'asterion-ai')!.hiddenMetrics.relationshipScore;
       expect(validateGameState(state)).toEqual([]);
       expect(state.quarter).toBe(index + 2);
       for (const organization of state.organizations) {
@@ -564,9 +566,11 @@ describe('autonomous world simulation', () => {
     expect(finalDemand).toBeGreaterThan(startingDemand);
     expect(observedActions.has('demand-growth')).toBe(true);
     expect(observedActions.has('customer-allocation')).toBe(true);
-    expect(state.playerIntelligence.some((item) => item.metric.startsWith('contractRenewalRisk:'))).toBe(true);
+    expect(state.playerIntelligence.some((item) => item.metric.startsWith('contractRenewalRisk:'))).toBe(false);
     expect(state.operatingCompanies[0]!.contracts.some((contract) => contract.id === 'asterion-contract-a')).toBe(false);
     expect(state.operatingCompanies[0]!.contracts.some((contract) => contract.id === 'asterion-contract-b')).toBe(false);
+    expect(state.actors.find((actor) => actor.organizationId === 'asterion-ai')!.hiddenMetrics.relationshipScore)
+      .toBe(relationshipAfterLastFixedContract);
   });
 
 describe('customer relationship and renewal intelligence', () => {
