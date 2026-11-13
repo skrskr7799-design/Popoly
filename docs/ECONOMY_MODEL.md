@@ -290,7 +290,7 @@ Accepting an available offer creates a new debt instrument for the named borrowe
 
 Offers may be accepted only once, while available, and no later than their expiry quarter. Acceptance is rejected atomically if the lender lacks either remaining credit capacity or cash liquidity. Multiple acceptances from one lender are aggregated for both checks. An offer is marked expired after its final valid quarter. No subsidiary/holding cash pooling occurs: the loan proceeds, debt balance, and future debt service all belong to the exact named borrower.
 
-The opening scenario includes two illustrative lender offers with different pricing, borrower, collateral language, and risk appetite. These are scenario inputs, not yet the output of a dynamic credit-underwriting model. Bank-specific credit scoring, covenant negotiation, collateral enforcement, refinancing, arrears, and lender competition remain subsequent increments.
+The opening scenario includes two illustrative lender offers with different pricing, borrower, collateral language, and risk appetite. Dynamic lender underwriting can also generate additional offers from borrower-specific credit assessments and each bank's own risk policy. Negotiated covenants, refinancing, and creditor-approved restructuring are implemented; collateral enforcement, arrears, default, and lender competition remain subsequent increments.
 
 A debt instrument with a committed facility limit may be drawn in an explicit quarter command. The drawdown increases the facility principal and the legal borrower's cash and debt balances by the same amount. Aggregate outstanding principal may never exceed the committed limit. Term loans without a facility limit cannot be redrawn.
 
