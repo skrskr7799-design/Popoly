@@ -1,6 +1,10 @@
 services:
   popoly:
-    build: .
+    # Image from GitHub Container Registry (built by Actions on every push to main)
+    image: ghcr.io/skrskr7799-design/popoly:latest
+    # Uncomment the next line if you want to build locally instead of pulling:
+    # build: .
     ports:
-      - "3000:3000"
+      # Host:Container — 3847 is uncommon, less chance of clashing with other apps
+      - "3847:3000"
     restart: unless-stopped

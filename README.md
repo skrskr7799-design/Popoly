@@ -2,31 +2,47 @@
 
 Hardcore Big Tech economic strategy (local / LAN).
 
-## Quick start (dev)
+## Play from Docker (recommended)
 
-```bash
-npm install
-npm run dev
-```
-
-## Docker (home LAN, no nginx)
-
-Build and run:
-
-```bash
-docker compose up --build -d
-```
-
-Open on this machine:
+Image is built automatically on every push to `main` and published to GitHub Container Registry:
 
 ```text
-http://localhost:3000
+ghcr.io/skrskr7799-design/popoly:latest
 ```
 
-From phone / tablet on the same Wi‑Fi:
+### First time
 
-1. Find your PC IP (e.g. `ipconfig` / `hostname -I`)
-2. Open `http://<PC-IP>:3000`
+1. If the package is **private**, log in once:
+
+```bash
+echo YOUR_GITHUB_TOKEN | docker login ghcr.io -u YOUR_GITHUB_USERNAME --password-stdin
+```
+
+Create a token at GitHub → Settings → Developer settings → Personal access tokens  
+(classic: `read:packages`, or fine-grained: Packages read).
+
+If you make the package **Public** (GitHub → Packages → popoly → Package settings → Change visibility), login is not required to pull.
+
+2. Start:
+
+```bash
+docker compose pull
+docker compose up -d
+```
+
+3. Open:
+
+- This PC: **http://localhost:3847**
+- Phone / tablet (same Wi‑Fi): **http://&lt;PC-IP&gt;:3847**
+
+### Update after you push code to GitHub
+
+Wait ~1–3 minutes for Actions to finish, then:
+
+```bash
+docker compose pull
+docker compose up -d
+```
 
 Stop:
 
@@ -34,11 +50,27 @@ Stop:
 docker compose down
 ```
 
-Rebuild after code changes:
+### Build only on this machine (no GHCR)
 
 ```bash
 docker compose up --build -d
 ```
+
+(Uncomment `build: .` in `docker-compose.yml` if you prefer local builds always.)
+
+## Dev without Docker
+
+```bash
+npm install
+npm run dev
+```
+
+## Ports
+
+| Where | Port |
+|--------|------|
+| Host (your PC / LAN) | **3847** |
+| Inside container | 3000 |
 
 ## Stack
 

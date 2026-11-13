@@ -12,5 +12,5 @@ WORKDIR /app
 RUN npm install -g serve@14
 COPY --from=build /app/dist ./dist
 EXPOSE 3000
-# Bind all interfaces so phones on the same Wi‑Fi can open http://<your-pc-ip>:3000
+# Bind all interfaces so phones on the same Wi‑Fi can open the published host port
 CMD ["serve", "-s", "dist", "-l", "tcp://0.0.0.0:3000"]
