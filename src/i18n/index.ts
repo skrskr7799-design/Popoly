@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { translations, type Locale, type TranslationKey } from './translations';
+import { translations, type Locale } from './translations';
 
 const STORAGE_KEY = 'popoly-locale';
 
@@ -16,7 +16,23 @@ function readStoredLocale(): Locale {
 interface I18nStore {
   locale: Locale;
   setLocale: (locale: Locale) => void;
-  t: (key: TranslationKey) => string;
+  /** Translate key; supports {name} style placeholders */
+  t: (key: string, vars?: Record<string, string | number>) => string;
+}
+
+function lookup(locale: Locale, key: string): string {
+  const table = translations[locale] as Record<string, string>;
+  const fallback = translations.ru as Record<string, string>;
+  return table[key] ?? fallback[key] ?? key;
+}
+
+function format(template: string, vars?: Record<string, string | number>): string {
+  if (!vars) return template;
+  let out = template;
+  for (const [k, v] of Object.entries(vars)) {
+    out = out.replaceAll(`{${k}}`, String(v));
+  }
+  return out;
 }
 
 export const useI18n = create<I18nStore>((set, get) => ({
@@ -29,10 +45,12 @@ export const useI18n = create<I18nStore>((set, get) => ({
     }
     set({ locale });
   },
-  t: (key) => {
-    const { locale } = get();
-    return translations[locale][key] ?? translations.ru[key] ?? key;
-  },
+  t: (key, vars) => format(lookup(get().locale, key), vars),
 }));
 
-export type { Locale, TranslationKey };
+/** Non-React access (game store logs) */
+export function tr(key: string, vars?: Record<string, string | number>): string {
+  return useI18n.getState().t(key, vars);
+}
+
+export type { Locale };
