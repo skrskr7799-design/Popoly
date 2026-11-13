@@ -20,6 +20,22 @@ export interface DebtRepaymentCommand {
   principalCents: number;
 }
 
+interface ResolvedDebtRepayment extends DebtRepaymentCommand {
+  repaymentType: 'scheduled' | 'maturity' | 'voluntary';
+}
+
+function getScheduledDebtRepayments(state: GameState): ResolvedDebtRepayment[] {
+  return state.debts.flatMap((debt) => {
+    if (debt.principalCents <= 0) return [];
+    if (debt.maturityQuarter !== undefined && debt.maturityQuarter <= state.quarter) {
+      return [{ debtId: debt.id, principalCents: debt.principalCents, repaymentType: 'maturity' as const }];
+    }
+    const scheduled = debt.scheduledPrincipalCentsPerQuarter ?? 0;
+    if (scheduled <= 0) return [];
+    return [{ debtId: debt.id, principalCents: Math.min(debt.principalCents, scheduled), repaymentType: 'scheduled' as const }];
+  });
+}
+
 export interface ContractRenewalCommand {
   contractId: string;
   offeredPriceCentsPerMWQuarter: number;
@@ -117,8 +133,14 @@ function validateCommands(state: GameState, commands: QuarterCommands): Validati
     }
   }
 
+  const scheduledRepayments = getScheduledDebtRepayments(state);
+  const scheduledByDebt = new Map(scheduledRepayments.map((item) => [item.debtId, item.principalCents]));
   const seenDebtRepayments = new Set<string>();
   const repaymentByBorrower = new Map<string, number>();
+  for (const repayment of scheduledRepayments) {
+    const debt = state.debts.find((item) => item.id === repayment.debtId)!;
+    repaymentByBorrower.set(debt.borrowerId, (repaymentByBorrower.get(debt.borrowerId) ?? 0) + repayment.principalCents);
+  }
   for (const repayment of commands.debtRepayments ?? []) {
     if (seenDebtRepayments.has(repayment.debtId)) {
       issues.push(issue('command.debt_repayment_duplicate', 'Only one principal repayment per debt instrument is allowed in a quarter.', repayment.debtId));
@@ -134,8 +156,8 @@ function validateCommands(state: GameState, commands: QuarterCommands): Validati
       issues.push(issue('command.debt_repayment_invalid', 'Principal repayment must be a positive integer number of cents.', repayment.debtId));
       continue;
     }
-    if (repayment.principalCents > debt.principalCents) {
-      issues.push(issue('command.debt_repayment_exceeds_principal', 'Principal repayment cannot exceed the outstanding debt balance.', repayment.debtId));
+    if (repayment.principalCents + (scheduledByDebt.get(repayment.debtId) ?? 0) > debt.principalCents) {
+      issues.push(issue('command.debt_repayment_exceeds_principal', 'Voluntary and scheduled repayments cannot exceed the outstanding debt balance.', repayment.debtId));
       continue;
     }
     repaymentByBorrower.set(debt.borrowerId, (repaymentByBorrower.get(debt.borrowerId) ?? 0) + repayment.principalCents);
@@ -458,7 +480,10 @@ export function advanceQuarter(state: GameState, commands: QuarterCommands = {})
     for (const project of completed) candidate = applyProjectEffect(candidate, project);
 
     const report = buildQuarterReport(candidate);
-    const debtRepayments = commands.debtRepayments ?? [];
+    const debtRepayments: ResolvedDebtRepayment[] = [
+      ...getScheduledDebtRepayments(candidate),
+      ...(commands.debtRepayments ?? []).map((item) => ({ ...item, repaymentType: 'voluntary' as const })),
+    ];
     if (debtRepayments.length > 0) {
       const repaymentByBorrower = new Map<string, number>();
       for (const repayment of debtRepayments) {
@@ -468,8 +493,8 @@ export function advanceQuarter(state: GameState, commands: QuarterCommands = {})
       candidate = {
         ...candidate,
         debts: candidate.debts.map((debt) => {
-          const repayment = debtRepayments.find((item) => item.debtId === debt.id);
-          return repayment ? { ...debt, principalCents: moneyFromCents(debt.principalCents - repayment.principalCents) } : debt;
+          const repayment = debtRepayments.filter((item) => item.debtId === debt.id).reduce((sum, item) => sum + item.principalCents, 0);
+          return repayment > 0 ? { ...debt, principalCents: moneyFromCents(debt.principalCents - repayment) } : debt;
         }),
         organizations: candidate.organizations.map((organization) => {
           const repayment = repaymentByBorrower.get(organization.id) ?? 0;
@@ -495,6 +520,7 @@ export function advanceQuarter(state: GameState, commands: QuarterCommands = {})
         debtId: repayment.debtId,
         borrowerId: candidate.debts.find((debt) => debt.id === repayment.debtId)!.borrowerId,
         principalCents: moneyFromCents(repayment.principalCents),
+        repaymentType: repayment.repaymentType,
       }));
     }
     const nodeworksOperations = report.companies.find((item) => item.companyId === 'nodeworks')?.operations;
