@@ -141,7 +141,6 @@ export function advanceQuarter(state: GameState, commands: QuarterCommands = {})
     const definitions = launches.map((id) => getInitiativeDefinition(id)!);
     const leadershipCommitted = definitions.reduce((sum, item) => sum + item.leadershipCost, 0);
     const cashCommitted = definitions.reduce((sum, item) => sum + item.upfrontCostCents, 0);
-    const holdingOpeningCash = state.organizations.find((item) => item.id === state.holding.organizationId)!.cashCents;
 
     const decisionByCompany = new Map(decisions.map((decision) => [decision.companyId, decision.desiredWorkloadMW]));
     let candidate: GameState = {
