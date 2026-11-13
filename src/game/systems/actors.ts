@@ -5,7 +5,7 @@ import { createRandomState, nextRandom } from '../engine/random';
 
 export interface ActorAction {
   actorId: string;
-  kind: 'demand-growth' | 'capacity-expansion-started' | 'capacity-expansion-completed' | 'capacity-expansion-delayed' | 'equipment-procurement-delayed' | 'equipment-delivery-delayed' | 'energy-price-adjustment' | 'regulatory-review' | 'customer-allocation' | 'competitor-commercial-terms';
+  kind: 'demand-growth' | 'capacity-expansion-started' | 'capacity-expansion-completed' | 'capacity-expansion-delayed' | 'equipment-procurement-delayed' | 'equipment-delivery-delayed' | 'energy-price-adjustment' | 'regulatory-review' | 'customer-allocation' | 'competitor-commercial-terms' | 'contract-expired';
   summary: string;
 }
 
@@ -200,6 +200,44 @@ export function advanceAutonomousActors(state: GameState): {
   const actors = actorState.actors.map((actor) => updateActor(actor, actorState, actions, initialFirmHeadroom));
 
   actorState.actors = actors;
+  // Agreements are served through their stated end quarter. If no renewal
+  // was accepted after that quarter's report, the contract expires now.
+  const expired = actorState.operatingCompanies.flatMap((company) => company.contracts
+    .filter((contract) => contract.flexibility === 'contracted' && contract.termEndQuarter !== undefined && contract.termEndQuarter <= state.quarter)
+    .map((contract) => ({ companyId: company.organizationId, contract })));
+  if (expired.length > 0) {
+    const expiredNodeWorksMW = expired.filter((item) => item.companyId === 'nodeworks')
+      .reduce((sum, item) => sum + item.contract.workloadMW, 0);
+    actorState.operatingCompanies = actorState.operatingCompanies.map((company) => {
+      const remainingContracts = company.contracts.filter((contract) => !expired.some((item) => item.contract.id === contract.id));
+      return { ...company, contracts: remainingContracts,
+        deliveredWorkloadMW: company.organizationId === 'nodeworks'
+          ? Math.min(company.deliveredWorkloadMW, remainingContracts.reduce((sum, contract) => sum + contract.workloadMW, 0))
+          : company.deliveredWorkloadMW };
+    });
+    const customerIndex = actors.findIndex((actor) => actor.organizationId === 'asterion-ai');
+    const kestrelIndex = actors.findIndex((actor) => actor.organizationId === 'kestrel-compute');
+    if (customerIndex >= 0 && expiredNodeWorksMW > 0) {
+      const customer = actors[customerIndex]!;
+      const nodeworksFixed = Math.max(0, (customer.hiddenMetrics.nodeworksContractMW ?? 0) - expiredNodeWorksMW);
+      const kestrel = kestrelIndex >= 0 ? actors[kestrelIndex]! : undefined;
+      const kestrelCapacity = kestrel?.hiddenMetrics.effectiveCapacityMW ?? kestrel?.hiddenMetrics.effectiveCapacityMinMW ?? 0;
+      const kestrelWorkload = kestrel?.hiddenMetrics.currentWorkloadMW ?? 0;
+      const transferred = Math.min(expiredNodeWorksMW, Math.max(0, kestrelCapacity - kestrelWorkload));
+      actors[customerIndex] = { ...customer, hiddenMetrics: {
+        ...customer.hiddenMetrics, nodeworksContractMW: nodeworksFixed,
+        kestrelContractMW: (customer.hiddenMetrics.kestrelContractMW ?? 0) + transferred,
+      } };
+      if (kestrel && kestrelIndex >= 0) actors[kestrelIndex] = { ...kestrel, hiddenMetrics: {
+        ...kestrel.hiddenMetrics, currentWorkloadMW: kestrelWorkload + transferred,
+      } };
+    }
+    for (const item of expired) actions.push({
+      actorId: item.contract.customerId, kind: 'contract-expired',
+      summary: 'A fixed-term compute agreement expired without a completed renewal; the customer began reallocating the uncovered workload.',
+    });
+  }
+
   const asterion = actors.find((actor) => actor.organizationId === 'asterion-ai');
   if (asterion && Number.isFinite(asterion.hiddenMetrics.demandMW)) {
     const allocation = allocateAsterionFlexibleDemand(actorState, asterion.hiddenMetrics.demandMW);
