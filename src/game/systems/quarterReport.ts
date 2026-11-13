@@ -83,9 +83,20 @@ export interface DebtRepaymentReportLine {
   repaymentType: 'scheduled' | 'maturity' | 'voluntary';
 }
 
+export interface DebtInterestReportLine {
+  debtId: string;
+  borrowerId: string;
+  accruedInterestCents: MoneyCents;
+  openingInterestArrearsCents: MoneyCents;
+  interestPaidCents: MoneyCents;
+  closingInterestArrearsCents: MoneyCents;
+  missedContractualService: boolean;
+}
+
 export interface DebtArrearsReportLine {
   debtId: string;
   borrowerId: string;
+  unpaidInterestCents: MoneyCents;
   unpaidDueCents: MoneyCents;
   totalArrearsCents: MoneyCents;
   overdueQuarters: number;
@@ -107,6 +118,7 @@ export interface QuarterReport {
   contractRenewals?: ContractRenewalResult[];
   debtRepayments?: DebtRepaymentReportLine[];
   debtArrears?: DebtArrearsReportLine[];
+  debtInterestService?: DebtInterestReportLine[];
   debtDrawdowns?: DebtDrawdownReportLine[];
   loanAcceptances?: LoanAcceptanceReportLine[];
   creditDecisions?: CreditDecisionReportLine[];
