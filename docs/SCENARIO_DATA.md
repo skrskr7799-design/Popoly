@@ -68,16 +68,16 @@ The first quarter begins from a stable operating run-rate. This is a baseline fo
 | Contract A price | $510k / MW-quarter |
 | Contract B price | $485k / MW-quarter |
 | Flexible service price | $415k / MW-quarter |
-| Revenue | $8.16m |
+| Revenue | $8.165m |
 | Energy consumed | 36,720 MWh |
 | Effective energy price | $72 / MWh |
-| Energy expense | $2.6448m |
+| Energy expense | $2.64384m |
 | Operations and staffing | $1.35m |
 | Maintenance | $0.62m |
 | Network and connectivity | $0.46m |
 | Overhead, compliance and insurance | $0.58m |
-| Total operating expenses | $5.6548m |
-| Operating cash contribution before financing and capex | $2.5052m |
+| Total operating expenses | $5.65384m |
+| Operating cash contribution before financing and capex | $2.51116m |
 
 Energy calculation: 17 MW average load × 2,160 hours = 36,720 MWh. Energy expense is 36,720 × $72. A future variable load/efficiency model may refine this, but units must remain explicit.
 
