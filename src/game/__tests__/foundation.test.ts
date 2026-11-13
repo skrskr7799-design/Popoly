@@ -107,15 +107,21 @@ describe('explicit debt principal repayments', () => {
     const debt = result.state.debts.find((item) => item.id === 'nodeworks-infrastructure-debt')!;
     const nodeworks = result.state.organizations.find((item) => item.id === 'nodeworks')!;
     const bridge = result.report.entityCashBridges.find((item) => item.organizationId === 'nodeworks')!;
+    const lender = result.state.organizations.find((item) => item.id === 'frontier-development-bank')!;
+    const lenderBridge = result.report.entityCashBridges.find((item) => item.organizationId === 'frontier-development-bank')!;
     expect(debt.principalCents).toBe(1_300_000_000);
     expect(nodeworks.debtCents).toBe(1_300_000_000);
     expect(nodeworks.cashCents).toBe(539_616_000);
     expect(bridge.interestExpenseCents).toBe(31_500_000);
     expect(bridge.financingCashFlowCents).toBe(-100_000_000);
     expect(bridge.closingCashCents).toBe(539_616_000);
+    expect(lenderBridge.principalReceivedCents).toBe(100_000_000);
+    expect(lenderBridge.interestIncomeCents).toBe(31_500_000);
+    expect(lender.cashCents).toBe(lenderBridge.closingCashCents);
     expect(result.report.debtRepayments).toEqual([{
       debtId: 'nodeworks-infrastructure-debt',
       borrowerId: 'nodeworks',
+      lenderId: 'frontier-development-bank',
       principalCents: 100_000_000,
       repaymentType: 'voluntary',
     }]);
