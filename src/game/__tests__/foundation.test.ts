@@ -1034,3 +1034,114 @@ describe('debt covenant monitoring and enforcement', () => {
     expect(borrowing.ok).toBe(true);
   });
 });
+
+
+describe('debt refinancing and lender-led restructuring', () => {
+  it('refinances an existing instrument atomically and settles the previous creditor', () => {
+    const opening = initializeGame();
+    const prepared = {
+      ...opening,
+      debts: opening.debts.map((debt) => debt.id === 'nodeworks-infrastructure-debt'
+        ? { ...debt, lenderId: 'northstar-commercial-bank' } : debt),
+      lenders: opening.lenders.map((lender) => lender.organizationId === 'northstar-commercial-bank'
+        ? { ...lender, availableCapacityCents: moneyFromCents(2_000_000_000) } : lender),
+    };
+    const requested = advanceQuarter(prepared, { requestCredit: [{
+      borrowerId: 'nodeworks', requestedPrincipalCents: 1_500_000_000, termQuarters: 6,
+    }] });
+    expect(requested.ok).toBe(true);
+    if (!requested.ok) return;
+    const offer = requested.state.loanOffers.find((item) =>
+      item.lenderId === 'northstar-commercial-bank' && item.borrowerId === 'nodeworks' &&
+      item.id === 'northstar-commercial-bank-nodeworks-q1')!;
+    expect(offer.principalCents).toBe(1_500_000_000);
+    const result = advanceQuarter(requested.state, { refinanceDebts: [{
+      debtId: 'nodeworks-infrastructure-debt', offerId: offer.id, feeBasisPoints: 100,
+    }] });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    const oldDebt = result.state.debts.find((item) => item.id === 'nodeworks-infrastructure-debt')!;
+    const newDebt = result.state.debts.find((item) => item.id === `loan-${offer.id}`)!;
+    expect(oldDebt.principalCents).toBe(0);
+    expect(newDebt.principalCents).toBe(1_500_000_000);
+    expect(newDebt.lenderId).toBe('northstar-commercial-bank');
+    expect(result.state.organizations.find((item) => item.id === 'nodeworks')!.debtCents).toBe(1_500_000_000);
+    expect(result.state.organizations.find((item) => item.id === 'northstar-commercial-bank')!.cashCents)
+      .toBe(prepared.organizations.find((item) => item.id === 'northstar-commercial-bank')!.cashCents - 100_000_000);
+    expect(result.report.debtRefinancings?.[0]).toMatchObject({
+      oldDebtId: 'nodeworks-infrastructure-debt', newDebtId: `loan-${offer.id}`,
+      refinancedPrincipalCents: 1_400_000_000, feeCents: 14_000_000, netCashReleasedCents: 86_000_000,
+    });
+    expect(result.report.entityCashBridges.find((item) => item.organizationId === 'nodeworks')!.financingCashFlowCents)
+      .toBe(86_000_000);
+    expect(validateGameState(result.state)).toEqual([]);
+  });
+
+  it('rejects refinancing when the replacement offer cannot cover principal and fees', () => {
+    const opening = initializeGame();
+    const prepared = {
+      ...opening,
+      debts: opening.debts.map((debt) => debt.id === 'nodeworks-infrastructure-debt'
+        ? { ...debt, lenderId: 'northstar-commercial-bank' } : debt),
+    };
+    const requested = advanceQuarter(prepared, { requestCredit: [{
+      borrowerId: 'nodeworks', requestedPrincipalCents: 100_000_000, termQuarters: 6,
+    }] });
+    expect(requested.ok).toBe(true);
+    if (!requested.ok) return;
+    const offer = requested.state.loanOffers.find((item) =>
+      item.lenderId === 'northstar-commercial-bank' && item.id === 'northstar-commercial-bank-nodeworks-q1')!;
+    const before = JSON.stringify(requested.state);
+    const result = advanceQuarter(requested.state, { refinanceDebts: [{
+      debtId: 'nodeworks-infrastructure-debt', offerId: offer.id,
+    }] });
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.issues.some((item) => item.code === 'command.debt_refinance_amount_insufficient')).toBe(true);
+    expect(JSON.stringify(requested.state)).toBe(before);
+  });
+
+  it('allows a distressed borrower to negotiate a maturity extension, rate reduction and covenant waiver', () => {
+    const requested = advanceQuarter(initializeGame(), { requestCredit: [{
+      borrowerId: 'nodeworks', requestedPrincipalCents: 200_000_000, termQuarters: 6,
+    }] });
+    expect(requested.ok).toBe(true);
+    if (!requested.ok) return;
+    const offer = requested.state.loanOffers.find((item) =>
+      item.lenderId === 'northstar-commercial-bank' && item.borrowerId === 'nodeworks' &&
+      item.covenantTerms !== undefined && item.status === 'available')!;
+    const funded = advanceQuarter(requested.state, { acceptLoanOffers: [{ offerId: offer.id }] });
+    expect(funded.ok).toBe(true);
+    if (!funded.ok) return;
+    const mildlyDistressed = (state: ReturnType<typeof initializeGame>) => ({
+      ...state,
+      operatingCompanies: state.operatingCompanies.map((company) => ({
+        ...company, cashCosts: { ...company.cashCosts, operationsAndStaffingCents: moneyFromCents(375_000_000) },
+      })),
+    });
+    const first = advanceQuarter(mildlyDistressed(funded.state));
+    expect(first.ok).toBe(true);
+    if (!first.ok) return;
+    const second = advanceQuarter(mildlyDistressed(first.state));
+    expect(second.ok).toBe(true);
+    if (!second.ok) return;
+    const distressedDebt = second.state.debts.find((item) => item.id === `loan-${offer.id}`)!;
+    expect(distressedDebt.covenantStatus).toBe('breached');
+    const restructured = advanceQuarter(mildlyDistressed(second.state), { restructureDebts: [{
+      debtId: distressedDebt.id,
+      requestedMaturityQuarter: offer.maturityQuarter + 2,
+      requestedQuarterlyInterestRate: offer.quarterlyInterestRate,
+      requestCovenantWaiver: true,
+      reason: 'Temporary energy-cost shock; preserve operating continuity.',
+    }] });
+    expect(restructured.ok).toBe(true);
+    if (!restructured.ok) return;
+    const updated = restructured.state.debts.find((item) => item.id === distressedDebt.id)!;
+    expect(restructured.report.debtRestructurings?.[0]?.status).toBe('accepted');
+    expect(restructured.report.debtRestructurings?.[0]?.covenantWaived).toBe(true);
+    expect(updated.maturityQuarter).toBe(offer.maturityQuarter + 2);
+    expect(updated.quarterlyInterestRate).toBe(offer.quarterlyInterestRate);
+    expect(updated.covenantTerms).toBeUndefined();
+    expect(updated.covenantStatus).toBe('compliant');
+    expect(validateGameState(restructured.state)).toEqual([]);
+  });
+});
