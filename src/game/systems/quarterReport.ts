@@ -26,6 +26,19 @@ export interface ContractRenewalResult {
   counterPriceCents?: MoneyCents; termQuarters?: number; competitorBidAvailable?: boolean; competitorProviderId?: string; message: string;
 }
 
+export interface CreditDecisionReportLine {
+  lenderId: string;
+  borrowerId: string;
+  requestedPrincipalCents: MoneyCents;
+  offeredPrincipalCents?: MoneyCents;
+  quarterlyInterestRate?: number;
+  creditScore: number;
+  creditRating: 'AAA' | 'AA' | 'A' | 'BBB' | 'BB' | 'B' | 'CCC';
+  status: 'offered' | 'rejected';
+  reason: string;
+  offerId?: string;
+}
+
 export interface LoanAcceptanceReportLine {
   offerId: string;
   lenderId: string;
@@ -64,6 +77,7 @@ export interface QuarterReport {
   debtRepayments?: DebtRepaymentReportLine[];
   debtDrawdowns?: DebtDrawdownReportLine[];
   loanAcceptances?: LoanAcceptanceReportLine[];
+  creditDecisions?: CreditDecisionReportLine[];
   contractsInRenewalWindow?: string[];
 }
 
