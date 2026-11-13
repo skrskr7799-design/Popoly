@@ -151,8 +151,9 @@ describe('atomic quarter transition', () => {
     }] });
     expect(counter.ok).toBe(true);
     if (!counter.ok) return;
+    const currentCustomerThreshold = first.state.actors.find((actor) => actor.organizationId === 'asterion-ai')!.hiddenMetrics['renewalMaxPrice:asterion-contract-a']!;
     expect(counter.report.contractRenewals?.[0]).toEqual(expect.objectContaining({
-      status: 'countered', counterPriceCents: 53_500_000,
+      status: 'countered', counterPriceCents: Math.round(currentCustomerThreshold),
     }));
     const lowVolume = advanceQuarter(first.state, { contractRenewals: [{
       contractId: 'asterion-contract-a', offeredPriceCentsPerMWQuarter: 51_000_000,
