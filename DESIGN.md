@@ -23,7 +23,10 @@ The chosen direction is a **hybrid model**: corporate strategy is the starting i
 ## Documentation map
 
 | [Prototype Audit](docs/AUDIT.md) | Findings from the current code review and recommended rebuild direction |
-| [Vertical Slice](docs/VERTICAL_SLICE.md) | Proposed first playable scenario, loop, mechanics, and acceptance criteria |
+| [Vertical Slice](docs/VERTICAL_SLICE.md) | Accepted first playable scenario and confirmed design choices |
+| [Core Loop Specification](docs/CORE_LOOP_SPEC.md) | Quarterly player loop, leadership capacity, campaign flow, and intelligence experience |
+| [Economy Model](docs/ECONOMY_MODEL.md) | Operating economics, accounting, energy, equipment, contracts, and ownership invariants |
+| [Technical Specification](docs/TECHNICAL_SPEC.md) | Simulation engine contract, commands, deterministic resolution, persistence, and tests |
 
 | Document | Purpose |
 |---|---|
@@ -55,6 +58,6 @@ The audit will classify existing work as preserve, refactor, replace, remove, or
 
 ## Project status
 
-This documentation is the initial agreed foundation, not a complete game design specification. Detailed decisions about world scale, map structure, time progression, actor simulation, influence, victory conditions, and the first playable scenario remain to be made collaboratively.
+This documentation is the agreed foundation and the first playable scenario specification. The vertical-slice direction and core loop are accepted; numerical balancing, detailed content, and later grand-strategy expansion remain iterative design work.
 
 The implementation status of each system must be verified against the repository and actual runtime checks before being reported as complete.
