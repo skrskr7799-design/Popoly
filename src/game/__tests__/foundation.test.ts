@@ -163,6 +163,41 @@ describe('atomic quarter transition', () => {
     expect(lowVolume.report.contractRenewals?.[0]?.status).toBe('rejected');
   });
 
+  it('lets Kestrel submit a confidential renewal bid when it has enough spare capacity', () => {
+    let state = initializeGame(2035);
+    const first = advanceQuarter(state);
+    expect(first.ok).toBe(true);
+    if (!first.ok) return;
+    const second = advanceQuarter(first.state);
+    expect(second.ok).toBe(true);
+    if (!second.ok) return;
+    state = second.state;
+    expect(state.quarter).toBe(3);
+    const renewal = advanceQuarter(state, { contractRenewals: [{
+      contractId: 'asterion-contract-b', offeredPriceCentsPerMWQuarter: 48_000_000,
+      offeredWorkloadMW: 5, termQuarters: 4,
+    }] });
+    expect(renewal.ok).toBe(true);
+    if (!renewal.ok) return;
+    expect(renewal.report.contractRenewals?.[0]).toEqual(expect.objectContaining({
+      status: 'rejected', competitorBidAvailable: true, competitorProviderId: 'kestrel-compute',
+    }));
+    expect(renewal.report.contractRenewals?.[0]?.message).not.toMatch(/\\d/);
+    expect(renewal.state.operatingCompanies[0]!.contracts.find((item) => item.id === 'asterion-contract-b')!.termEndQuarter).toBe(5);
+  });
+
+  it('does not let a rival bid for a fixed contract beyond its spare capacity', () => {
+    const state = initializeGame(2035);
+    const result = advanceQuarter(state, { contractRenewals: [{
+      contractId: 'asterion-contract-a', offeredPriceCentsPerMWQuarter: 53_000_000,
+      offeredWorkloadMW: 8, termQuarters: 4,
+    }] });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.report.contractRenewals?.[0]?.status).toBe('accepted');
+    expect(result.report.contractRenewals?.[0]?.competitorBidAvailable).not.toBe(true);
+  });
+
   it('expires an unrenewed fixed contract and reallocates its guaranteed volume', () => {
     let state = initializeGame();
     let lastReport: ReturnType<typeof advanceQuarter> | undefined;
