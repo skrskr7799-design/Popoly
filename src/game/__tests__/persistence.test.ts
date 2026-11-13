@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { initializeGame } from '../engine/initialize';
+import { advanceQuarter } from '../engine/advanceQuarter';
 import { canonicalJson } from '../persistence/canonicalJson';
 import { createCampaignSave, serializeCampaignSave } from '../persistence/save';
 import { loadCampaignSave } from '../persistence/load';
@@ -165,6 +166,25 @@ describe('campaign save core', () => {
     expect(restored.value.state.quarter).toBe(1);
     expect(restored.value.currentRevisionError?.code).toBe('save.json_invalid');
     expect(await repository.read(metadata.campaignId, 'current')).toEqual({ ok: true, value: '{corrupt' });
+  });
+
+  it('continues deterministically after restoring a saved campaign snapshot', async () => {
+    const opening = advanceQuarter(initializeGame(2035));
+    expect(opening.ok).toBe(true);
+    if (!opening.ok) return;
+
+    const created = await createCampaignSave(opening.state, {
+      ...metadata, updatedAt: '2035-04-01T00:00:00.000Z',
+    }, testDigest);
+    expect(created.ok).toBe(true);
+    if (!created.ok) return;
+    const loaded = await loadCampaignSave(serializeCampaignSave(created.value), compatibility, testDigest);
+    expect(loaded.ok).toBe(true);
+    if (!loaded.ok) return;
+
+    const uninterrupted = advanceQuarter(opening.state);
+    const restored = advanceQuarter(loaded.value.state);
+    expect(restored).toEqual(uninterrupted);
   });
 
 });
