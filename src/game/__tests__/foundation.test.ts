@@ -134,7 +134,7 @@ describe('explicit debt principal repayments', () => {
   it('automatically services scheduled principal and records it as a financing outflow', () => {
     const state = initializeGame();
     state.debts = state.debts.map((debt) => debt.id === 'nodeworks-infrastructure-debt'
-      ? { ...debt, scheduledPrincipalCentsPerQuarter: 50_000_000 }
+      ? { ...debt, scheduledPrincipalCentsPerQuarter: 50_000_000 as typeof debt.principalCents }
       : debt);
     const result = advanceQuarter(state);
     expect(result.ok).toBe(true);
@@ -153,6 +153,8 @@ describe('explicit debt principal repayments', () => {
     state.debts = state.debts.map((debt) => debt.id === 'nodeworks-infrastructure-debt'
       ? { ...debt, maturityQuarter: 1 }
       : debt);
+    const nodeworks = state.organizations.find((item) => item.id === 'nodeworks')!;
+    nodeworks.cashCents = 2_000_000_000 as typeof nodeworks.cashCents;
     const result = advanceQuarter(state);
     expect(result.ok).toBe(true);
     if (!result.ok) return;
