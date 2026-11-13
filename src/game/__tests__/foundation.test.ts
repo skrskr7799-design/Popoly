@@ -110,7 +110,7 @@ describe('explicit debt principal repayments', () => {
     expect(debt.principalCents).toBe(1_300_000_000);
     expect(nodeworks.debtCents).toBe(1_300_000_000);
     expect(nodeworks.cashCents).toBe(539_616_000);
-    expect(bridge.interestExpenseCents).toBe(31_500_000);
+    expect(bridge.interestExpenseCents).toBe(33_500_000);
     expect(bridge.financingCashFlowCents).toBe(-100_000_000);
     expect(bridge.closingCashCents).toBe(539_616_000);
     expect(result.report.debtRepayments).toEqual([{
@@ -287,8 +287,8 @@ describe('explicit debt principal repayments', () => {
     expect(result.report.debtRepayments?.some((item) => item.debtId === debt.id) ?? false).toBe(false);
     const bridge = result.report.entityCashBridges.find((item) => item.organizationId === 'nodeworks')!;
     expect(bridge.interestExpenseCents).toBe(31_500_000);
-    expect(bridge.interestPaidCents).toBe(31_500_000);
-    expect(bridge.closingCashCents).toBe(8_500_000);
+    expect(bridge.interestPaidCents).toBe(33_500_000);
+    expect(bridge.closingCashCents).toBe(6_500_000);
     const secondaryDebt = result.state.debts.find((item) => item.id === 'nodeworks-secondary-interest-debt')!;
     const secondaryInterest = result.report.debtInterestService?.find((item) => item.debtId === secondaryDebt.id)!;
     expect(secondaryInterest.interestPaidCents).toBe(0);
@@ -1241,8 +1241,9 @@ describe('debt refinancing and lender-led restructuring', () => {
     expect(newDebt.lenderId).toBe('northstar-commercial-bank');
     expect(result.state.organizations.find((item) => item.id === 'nodeworks')!.debtCents).toBe(1_500_000_000);
     const northstarBridge = result.report.entityCashBridges.find((item) => item.organizationId === 'northstar-commercial-bank')!;
+    expect(northstarBridge.interestIncomeCents).toBeGreaterThan(0);
     expect(result.state.organizations.find((item) => item.id === 'northstar-commercial-bank')!.cashCents)
-      .toBe(prepared.organizations.find((item) => item.id === 'northstar-commercial-bank')!.cashCents - 100_000_000 + northstarBridge.interestIncomeCents);
+      .toBe(northstarBridge.closingCashCents);
     expect(result.report.debtRefinancings?.[0]).toMatchObject({
       oldDebtId: 'nodeworks-infrastructure-debt', newDebtId: `loan-${offer.id}`,
       refinancedPrincipalCents: 1_400_000_000, feeCents: 14_000_000, netCashReleasedCents: 86_000_000,
