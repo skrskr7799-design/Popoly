@@ -55,10 +55,10 @@ export interface IntelligenceEstimate {
   subjectId: EntityId; metric: string; min: number; max: number; knowledge: KnowledgeClass;
   confidence: number; observedQuarter: number; source: string;
 }
-export interface GameState {
+export interface StrategicProjectState {\n  id: string;\n  initiativeId: string;\n  startedQuarter: number;\n  remainingQuarters: number;\n  leadershipCost: number;\n  initialCostCents: MoneyCents;\n}\nexport interface GameState {
   schemaVersion: 1; scenarioId: string; scenarioVersion: string; seed: number; quarter: number;
   organizations: Organization[]; ownership: OwnershipStake[]; debts: DebtInstrument[];
   holding: HoldingState; operatingCompanies: OperatingCompanyState[];
-  regionalMarkets: RegionalMarketState[]; actors: ActorState[]; playerIntelligence: IntelligenceEstimate[];
+  regionalMarkets: RegionalMarketState[]; actors: ActorState[]; playerIntelligence: IntelligenceEstimate[]; projects: StrategicProjectState[];
 }
 export interface ValidationIssue { code: string; message: string; entityId?: EntityId; }
