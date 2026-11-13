@@ -128,7 +128,7 @@ The first playable engine slice now includes a transactional quarter resolver, a
 - Refinancing and restructuring outcomes are exposed in quarter-report lines.
 - Scheduled and maturity principal shortfalls are recorded per debt instrument as arrears without double-counting principal. Borrower liquidity is allocated in debt-ledger order; one unpaid instrument does not incorrectly default every other facility.
 - One consecutive missed contractual principal-payment quarter produces overdue status; two produce payment default. A paid scheduled obligation cures arrears and resets the overdue counter. Defaulted borrowers are blocked from additional credit requests, loan acceptances, and revolving drawdowns.
-- The quarter report exposes unpaid due amount, cumulative principal arrears, overdue duration, and status. This first pass does not yet accrue interest arrears or implement acceleration, cross-default, creditor collection, collateral enforcement, insolvency, or asset transfers.
+- The quarter report exposes unpaid due amount, cumulative principal arrears, overdue duration, and status. Interest arrears are tracked separately from principal and are included in contractual debt-service status; interest-on-interest is not charged. Acceleration, cross-default, creditor collection, collateral enforcement, insolvency, and asset transfers remain future work.
 
 - Lenders are legal organizations with separate lending-capacity and risk-appetite records.
 - Scenario-originated loan offers identify a single borrower and state principal, quarterly rate, maturity, expiry, and optional collateral description.
