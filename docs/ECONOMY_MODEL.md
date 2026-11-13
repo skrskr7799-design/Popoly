@@ -266,7 +266,15 @@ A debt instrument may define a fixed quarterly principal installment and a final
 The quarter is rejected atomically if mandatory scheduled or maturity principal cannot be funded from the borrower's opening cash after the quarter's modeled operating and interest flows are accounted for. The first implementation does not yet model arrears, covenant breaches, lender grace periods, or refinancing; those belong to the subsequent credit-facility and distress systems. Interest continues to accrue on opening principal for the quarter, and principal paid during the quarter reduces the following quarter's interest base.
 
 
-## 20. Committed credit facility drawdowns
+## 21. Lender-originated loan offers
+
+The credit market distinguishes committed revolving facilities from new term-loan offers. A lender is represented by a legal organization plus a lending policy record containing remaining lending capacity and a broad risk-appetite profile. A loan offer names one lender, one legal borrower, a principal amount, quarterly interest rate, maturity quarter, expiry quarter, and optional collateral description.
+
+Accepting an available offer creates a new debt instrument for the named borrower and transfers the proceeds from the lender's cash to that borrower's cash. The lender's remaining lending capacity falls by the accepted principal. The financing flow is recorded in the quarter cash bridges; the new loan's interest begins in the following quarter because the current quarter's interest report is calculated before origination. The loan's maturity is enforced by the existing balloon-repayment rule.
+
+Offers may be accepted only once, while available, and no later than their expiry quarter. Acceptance is rejected atomically if the lender lacks either remaining credit capacity or cash liquidity. Multiple acceptances from one lender are aggregated for both checks. An offer is marked expired after its final valid quarter. No subsidiary/holding cash pooling occurs: the loan proceeds, debt balance, and future debt service all belong to the exact named borrower.
+
+The opening scenario includes two illustrative lender offers with different pricing, borrower, collateral language, and risk appetite. These are scenario inputs, not yet the output of a dynamic credit-underwriting model. Bank-specific credit scoring, covenant negotiation, collateral enforcement, refinancing, arrears, and lender competition remain subsequent increments.
 
 A debt instrument with a committed facility limit may be drawn in an explicit quarter command. The drawdown increases the facility principal and the legal borrower's cash and debt balances by the same amount. Aggregate outstanding principal may never exceed the committed limit. Term loans without a facility limit cannot be redrawn.
 
