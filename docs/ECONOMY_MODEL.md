@@ -297,6 +297,10 @@ A debt instrument with a committed facility limit may be drawn in an explicit qu
 The borrower's financing cash bridge records the proceeds as an inflow and the lender's bridge records the matching outflow. Principal repayments are credited to the named lender and restore its available lending capacity. Drawdowns are applied after the current quarter's interest report is calculated, so new borrowing affects interest from the following quarter. A drawdown cannot fund another command in the same quarter: affordability checks for projects and principal repayments use opening cash. This avoids implicit ordering and makes financing decisions auditable. The facility's undrawn commitment is the difference between its limit and outstanding principal.
 
 
+Project commitments are recorded as negative investment cash flow in the holding company's entity cash bridge. The bridge's closing cash is the authoritative closing balance used to build the next state; the same commitment must not be deducted a second time after bridge construction. A valid quarter transition must finish with non-negative legal-entity cash unless an explicit overdraft or insolvency facility is introduced.
+
+Debt-service coverage uses the target quarter's contractual cash obligation: accrued current interest plus carried interest arrears, and scheduled principal plus principal arrears; when maturity or acceleration is effective, the full remaining principal is due. Settled instruments do not contribute debt service. The same calculation is used by underwriting and covenant monitoring so that arrears and balloon obligations cannot disappear from credit risk.
+
 ## 24. Debt refinancing
 
 A borrower may replace one outstanding debt instrument with an available lender offer for the same legal entity. The replacement offer must cover the old principal plus a one-time refinancing fee (default 100 basis points; configurable from 0 to 1,000 basis points). The old instrument is settled in full and retained in the ledger with zero principal; the new instrument records its lender, principal, rate, maturity, and covenant package.

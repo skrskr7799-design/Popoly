@@ -6,6 +6,7 @@ import { buildQuarterReport } from '../systems/quarterReport';
 import { createRandomState, nextRandom } from '../engine/random';
 import { validateGameState } from '../domain/invariants';
 import { advanceQuarter } from '../engine/advanceQuarter';
+import { calculateCreditAssessment } from '../systems/finance';
 
 describe('The Compute Bottleneck opening state', () => {
   it('initializes with valid ownership and entity references', () => {
@@ -795,6 +796,9 @@ describe('strategic initiatives and project lifecycle', () => {
     expect(result.state.projects[0]!.remainingQuarters).toBe(3);
     expect(result.state.organizations.find((item) => item.id === 'meridian-group')!.cashCents)
       .toBe(1_074_000_000);
+    const holdingBridge = result.report.entityCashBridges.find((item) => item.organizationId === 'meridian-group')!;
+    expect(holdingBridge.investmentCashFlowCents).toBe(-320_000_000);
+    expect(holdingBridge.closingCashCents).toBe(result.state.organizations.find((item) => item.id === 'meridian-group')!.cashCents);
     expect(state.projects).toHaveLength(0);
   });
 
@@ -1566,6 +1570,95 @@ describe('contractual cross-default', () => {
   });
 });
 
+
+describe('quarter funding and debt-service invariants', () => {
+  it('aggregates revolving drawdowns and accepted offers against one lender cash and capacity budget', () => {
+    const opening = initializeGame();
+    const state = {
+      ...opening,
+      lenders: opening.lenders.map((lender) => lender.organizationId === 'northstar-commercial-bank'
+        ? { ...lender, availableCapacityCents: moneyFromCents(300_000_000) } : lender),
+    };
+    const result = advanceQuarter(state, {
+      debtDrawdowns: [{ debtId: 'meridian-revolver', principalCents: 200_000_000 }],
+      acceptLoanOffers: [{ offerId: 'northstar-nodeworks-q1' }],
+    });
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.issues.some((item) => item.code === 'command.lender_capacity_insufficient')).toBe(true);
+  });
+
+  it('rejects drawing a facility that is also being refinanced in the same quarter', () => {
+    const opening = initializeGame();
+    const state = {
+      ...opening,
+      loanOffers: opening.loanOffers.map((offer) => offer.id === 'frontier-meridian-q1'
+        ? { ...offer, principalCents: moneyFromCents(310_000_000) } : offer),
+    };
+    const result = advanceQuarter(state, {
+      debtDrawdowns: [{ debtId: 'meridian-revolver', principalCents: 10_000_000 }],
+      refinanceDebts: [{ debtId: 'meridian-revolver', offerId: 'frontier-meridian-q1' }],
+    });
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.issues.some((item) => item.code === 'command.debt_drawdown_refinance_conflict')).toBe(true);
+  });
+
+  it('rejects a same-quarter acceleration notice and restructuring proposal for one debt', () => {
+    const state = initializeGame();
+    state.debts = state.debts.map((debt) => debt.id === 'nodeworks-infrastructure-debt'
+      ? { ...debt, paymentStatus: 'defaulted' as const, overdueQuarters: 2 } : debt);
+    const result = advanceQuarter(state, {
+      accelerateDebts: [{ debtId: 'nodeworks-infrastructure-debt' }],
+      restructureDebts: [{ debtId: 'nodeworks-infrastructure-debt', requestedMaturityQuarter: 10 }],
+    });
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.issues.some((item) => item.code === 'command.debt_acceleration_restructure_conflict')).toBe(true);
+  });
+
+  it('includes arrears and maturity principal in credit DSCR while excluding settled debt', () => {
+    const state = initializeGame();
+    state.debts = [{
+      id: 'test-maturing-debt', borrowerId: 'nodeworks', principalCents: moneyFromCents(100_000_000),
+      quarterlyInterestRate: 0.01, maturityQuarter: state.quarter,
+      arrearsPrincipalCents: moneyFromCents(10_000_000), arrearsInterestCents: moneyFromCents(5_000_000),
+      scheduledPrincipalCentsPerQuarter: moneyFromCents(10_000_000),
+    }, {
+      id: 'test-settled-debt', borrowerId: 'nodeworks', principalCents: moneyFromCents(0),
+      quarterlyInterestRate: 0.05, scheduledPrincipalCentsPerQuarter: moneyFromCents(50_000_000),
+      paymentStatus: 'settled',
+    }];
+    const assessment = calculateCreditAssessment(state, 'nodeworks', moneyFromCents(53_000_000));
+    expect(assessment?.debtServiceCoverage).toBeCloseTo(0.5, 6);
+  });
+
+  it('rejects negative cash balances and non-finite reputation values in persisted state', () => {
+    const state = initializeGame();
+    state.organizations = state.organizations.map((organization) => organization.id === 'nodeworks'
+      ? { ...organization, cashCents: moneyFromCents(-1), reputation: Number.NaN } : organization);
+    const issues = validateGameState(state);
+    expect(issues.some((item) => item.code === 'finance.cash_negative')).toBe(true);
+    expect(issues.some((item) => item.code === 'organization.reputation_out_of_range')).toBe(true);
+  });
+
+  it('keeps Kestrel effective capacity and workload synchronized after expansion and flexible allocation', () => {
+    const state = initializeGame();
+    state.actors = state.actors.map((actor) => actor.organizationId === 'kestrel-compute'
+      ? { ...actor, hiddenMetrics: { ...actor.hiddenMetrics, expansionPipelineQuarters: 1 } }
+      : actor);
+    state.equipmentOrders = [{
+      id: 'kestrel-expansion-delivery', buyerId: 'kestrel-compute', quantityMWEquivalent: 2,
+      placedQuarter: 0, deliveryQuarter: 1, status: 'delivered',
+    }];
+    const result = advanceQuarter(state);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    const kestrel = result.state.actors.find((actor) => actor.organizationId === 'kestrel-compute')!;
+    const asterion = result.state.actors.find((actor) => actor.organizationId === 'asterion-ai')!;
+    expect(kestrel.hiddenMetrics.effectiveCapacityMW).toBe(26);
+    expect(kestrel.hiddenMetrics.effectiveCapacityMinMW).toBe(24);
+    expect(kestrel.hiddenMetrics.currentWorkloadMW).toBeCloseTo(19 + (asterion.hiddenMetrics.kestrelFlexibleMW ?? 0), 8);
+    expect(kestrel.hiddenMetrics.currentWorkloadMW).toBeLessThanOrEqual(kestrel.hiddenMetrics.effectiveCapacityMW!);
+  });
+});
 
 describe('creditor acceleration', () => {
   it('issues a one-quarter notice and makes the full outstanding principal due next quarter', () => {

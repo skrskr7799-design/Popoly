@@ -81,6 +81,14 @@ This file records important decisions and their rationale. Add new entries rathe
 **Rationale:** Uncertainty becomes a strategic resource while preserving fair and explainable information boundaries.
 
 
+## D-013 — Unified lender funding limits and debt-service coverage
+
+**Status:** Accepted  
+**Decision:** All lender-funded outflows in one quarter share the same opening cash and lending-capacity budget, regardless of whether they originate from revolving drawdowns, new loan acceptance, or refinancing. A single debt cannot be drawn and refinanced, or accelerated and restructured, in the same quarter. Credit assessment and covenant DSCR use one target-quarter debt-service calculation that includes arrears and due balloon principal while excluding settled debt.
+
+**Rationale:** The simulation must not create lender liquidity through command ordering or understate borrower obligations by omitting overdue or maturity payments.
+
+
 ## D-012 — Lender-funded revolving facility drawdowns
 
 **Status:** Accepted  

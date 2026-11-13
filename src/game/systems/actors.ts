@@ -174,6 +174,7 @@ function updateActor(
         metrics.expansionPipelineQuarters = 0;
         metrics.effectiveCapacityMinMW = (metrics.effectiveCapacityMinMW ?? 0) + 2;
         metrics.effectiveCapacityMaxMW = (metrics.effectiveCapacityMaxMW ?? 0) + 2;
+        metrics.effectiveCapacityMW = (metrics.effectiveCapacityMW ?? metrics.effectiveCapacityMinMW - 2) + 2;
         actions.push({
           actorId,
           kind: 'capacity-expansion-completed',
@@ -370,6 +371,16 @@ export function advanceAutonomousActors(
         nodeworksFlexibleMW: allocation.nodeworksMW,
         kestrelFlexibleMW: allocation.kestrelMW,
         otherFlexibleMW: allocation.otherMW,
+      } };
+    }
+    const kestrelIndex = actors.findIndex((actor) => actor.organizationId === 'kestrel-compute');
+    if (kestrelIndex >= 0) {
+      const kestrel = actors[kestrelIndex]!;
+      const previousFlexibleMW = asterion.hiddenMetrics.kestrelFlexibleMW ?? 0;
+      const currentWorkloadMW = kestrel.hiddenMetrics.currentWorkloadMW ?? kestrel.hiddenMetrics.deliveredWorkloadMaxMW ?? 0;
+      actors[kestrelIndex] = { ...kestrel, hiddenMetrics: {
+        ...kestrel.hiddenMetrics,
+        currentWorkloadMW: Math.max(0, currentWorkloadMW - previousFlexibleMW + allocation.kestrelMW),
       } };
     }
     const companies = actorState.operatingCompanies.map((company) => {

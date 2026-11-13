@@ -16,7 +16,10 @@ export function validateGameState(state: GameState): ValidationIssue[] {
     if (!Number.isSafeInteger(organization.cashCents) || !Number.isSafeInteger(organization.debtCents)) {
       issues.push({ code: 'finance.money_not_integer', message: 'Cash and debt must use integer cents.', entityId: organization.id });
     }
-    if (organization.reputation < 0 || organization.reputation > 100) {
+    if (Number.isSafeInteger(organization.cashCents) && organization.cashCents < 0) {
+      issues.push({ code: 'finance.cash_negative', message: 'Cash cannot be negative until an explicit overdraft or insolvency mechanism is modeled.', entityId: organization.id });
+    }
+    if (!Number.isFinite(organization.reputation) || organization.reputation < 0 || organization.reputation > 100) {
       issues.push({ code: 'organization.reputation_out_of_range', message: 'Reputation must be between 0 and 100.', entityId: organization.id });
     }
   }

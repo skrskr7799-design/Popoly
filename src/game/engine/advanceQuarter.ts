@@ -4,7 +4,7 @@ import type { GameState, StrategicProjectState, ValidationIssue } from '../domai
 import { getInitiativeDefinition } from '../scenario/initiatives';
 import { advanceAutonomousActors, getRivalRenewalBid } from '../systems/actors';
 import { buildQuarterReport, type ContractNegotiationResult, type ContractRenewalResult, type CreditDecisionReportLine, type CovenantReportLine, type DebtRestructuringReportLine, type QuarterReport } from '../systems/quarterReport';
-import { calculateCreditAssessment, calculateScenarioDebtService } from '../systems/finance';
+import { calculateCreditAssessment, calculateDebtServiceObligation, calculateScenarioDebtService } from '../systems/finance';
 
 export interface WorkloadDecision {
   companyId: string;
@@ -294,6 +294,9 @@ function validateCommands(state: GameState, commands: QuarterCommands): Validati
     if (refinanceDebtIds.has(proposal.debtId)) {
       issues.push(issue('command.debt_restructure_refinance_conflict', 'A debt cannot be restructured and refinanced in the same quarter.', proposal.debtId));
     }
+    if (acceleratedDebtIds.has(proposal.debtId)) {
+      issues.push(issue('command.debt_acceleration_restructure_conflict', 'A debt cannot receive an acceleration notice and be restructured in the same quarter.', proposal.debtId));
+    }
     if (debt.acceleratedAtQuarter !== undefined) {
       issues.push(issue('command.debt_restructure_accelerated', 'An accelerated debt cannot be amended through ordinary restructuring; the creditor must first withdraw or replace its demand.', proposal.debtId));
     }
@@ -342,8 +345,9 @@ function validateCommands(state: GameState, commands: QuarterCommands): Validati
 
   const seenDebtDrawdowns = new Set<string>();
   const drawdownByFacility = new Map<string, number>();
-  const drawdownCapacityUsed = new Map<string, number>();
-  const drawdownCashUsed = new Map<string, number>();
+  // Every lender-funded outflow in this quarter shares one opening-capacity and cash budget.
+  const lenderCapacityUsed = new Map<string, number>();
+  const lenderCashUsed = new Map<string, number>();
   for (const drawdown of commands.debtDrawdowns ?? []) {
     if (seenDebtDrawdowns.has(drawdown.debtId)) {
       issues.push(issue('command.debt_drawdown_duplicate', 'Only one drawdown per credit facility is allowed in a quarter.', drawdown.debtId));
@@ -353,6 +357,10 @@ function validateCommands(state: GameState, commands: QuarterCommands): Validati
     const facility = state.debts.find((item) => item.id === drawdown.debtId);
     if (!facility) {
       issues.push(issue('command.debt_unknown', 'Credit drawdown references an unknown debt instrument.', drawdown.debtId));
+      continue;
+    }
+    if (refinanceDebtIds.has(drawdown.debtId)) {
+      issues.push(issue('command.debt_drawdown_refinance_conflict', 'A revolving facility cannot be drawn and refinanced in the same quarter.', drawdown.debtId));
       continue;
     }
     if (borrowerHasBorrowingRestriction(facility.borrowerId)) {
@@ -382,15 +390,15 @@ function validateCommands(state: GameState, commands: QuarterCommands): Validati
       issues.push(issue('command.debt_drawdown_lender_missing', 'The revolving facility lender must have a represented lending policy and organization.', facility.lenderId));
       continue;
     }
-    const capacityUsed = (drawdownCapacityUsed.get(facility.lenderId) ?? 0) + drawdown.principalCents;
-    const cashUsed = (drawdownCashUsed.get(facility.lenderId) ?? 0) + drawdown.principalCents;
+    const capacityUsed = (lenderCapacityUsed.get(facility.lenderId) ?? 0) + drawdown.principalCents;
+    const cashUsed = (lenderCashUsed.get(facility.lenderId) ?? 0) + drawdown.principalCents;
     if (capacityUsed > lender.availableCapacityCents || cashUsed > lenderOrganization.cashCents) {
       issues.push(issue('command.lender_capacity_insufficient', 'The facility lender lacks sufficient remaining lending capacity or cash liquidity for this drawdown.', facility.lenderId));
       continue;
     }
     drawdownByFacility.set(drawdown.debtId, totalDrawdown);
-    drawdownCapacityUsed.set(facility.lenderId, capacityUsed);
-    drawdownCashUsed.set(facility.lenderId, cashUsed);
+    lenderCapacityUsed.set(facility.lenderId, capacityUsed);
+    lenderCashUsed.set(facility.lenderId, cashUsed);
   }
 
   const seenCreditRequests = new Set<string>();
@@ -420,7 +428,6 @@ function validateCommands(state: GameState, commands: QuarterCommands): Validati
   }
 
   const seenLoanOffers = new Set<string>();
-  const lenderCapacityUsed = new Map<string, number>();
   const loanFundingCommands = [
     ...(commands.acceptLoanOffers ?? []),
     ...(commands.refinanceDebts ?? []).map((item) => ({ offerId: item.offerId })),
@@ -455,12 +462,14 @@ function validateCommands(state: GameState, commands: QuarterCommands): Validati
       issues.push(issue('command.loan_offer_party_missing', 'The lender or borrower for this offer is missing.', acceptance.offerId));
       continue;
     }
-    const used = (lenderCapacityUsed.get(offer.lenderId) ?? 0) + offer.principalCents;
-    if (used > lender.availableCapacityCents || used > lenderOrg.cashCents) {
+    const usedCapacity = (lenderCapacityUsed.get(offer.lenderId) ?? 0) + offer.principalCents;
+    const usedCash = (lenderCashUsed.get(offer.lenderId) ?? 0) + offer.principalCents;
+    if (usedCapacity > lender.availableCapacityCents || usedCash > lenderOrg.cashCents) {
       issues.push(issue('command.lender_capacity_insufficient', 'The lender no longer has enough available lending capacity or liquidity.', offer.lenderId));
       continue;
     }
-    lenderCapacityUsed.set(offer.lenderId, used);
+    lenderCapacityUsed.set(offer.lenderId, usedCapacity);
+    lenderCashUsed.set(offer.lenderId, usedCash);
   }
 
   const seenContractOffers = new Set<string>();
@@ -1301,9 +1310,9 @@ export function advanceQuarter(state: GameState, commands: QuarterCommands = {})
         if (!terms || (debt.covenantStartQuarter ?? 1) > report.quarter || debt.principalCents <= 0) return debt;
         const borrower = candidate.organizations.find((item) => item.id === debt.borrowerId);
         const operatingCashFlow = report.companies.find((item) => item.companyId === debt.borrowerId)?.operations.operatingCashContributionCents ?? moneyFromCents(0);
-        const borrowerDebts = candidate.debts.filter((item) => item.borrowerId === debt.borrowerId && item.principalCents > 0);
-        const interestAndScheduled = borrowerDebts.reduce((sum, item) =>
-          sum + Math.round(item.principalCents * item.quarterlyInterestRate) + (item.scheduledPrincipalCentsPerQuarter ?? 0), 0);
+        const interestAndScheduled = candidate.debts
+          .filter((item) => item.borrowerId === debt.borrowerId)
+          .reduce((sum, item) => sum + calculateDebtServiceObligation(item, report.quarter), 0);
         const dscr = interestAndScheduled > 0 ? operatingCashFlow / interestAndScheduled : operatingCashFlow > 0 ? 10 : 0;
         const annualCashFlowProxy = Math.max(operatingCashFlow * 4, borrower?.cashCents ?? 0, 1);
         const leverage = (borrower?.debtCents ?? 0) / annualCashFlowProxy;
@@ -1388,6 +1397,23 @@ export function advanceQuarter(state: GameState, commands: QuarterCommands = {})
 
     const autonomousTurn = advanceAutonomousActors(candidate, serviceSnapshot);
     candidate = autonomousTurn.state;
+    // Project commitments are real holding-company investment outflows and must
+    // appear in the same bridge used to derive final legal-entity cash.
+    if (cashCommitted > 0) {
+      const applyProjectCashOutflow = (bridge: typeof report.entityCashBridges[number]) => {
+        if (bridge.organizationId !== state.holding.organizationId) return bridge;
+        return {
+          ...bridge,
+          investmentCashFlowCents: moneyFromCents(bridge.investmentCashFlowCents - cashCommitted),
+          netCashChangeCents: moneyFromCents(bridge.netCashChangeCents - cashCommitted),
+          closingCashCents: moneyFromCents(bridge.closingCashCents - cashCommitted),
+        };
+      };
+      report.entityCashBridges = report.entityCashBridges.map(applyProjectCashOutflow);
+      report.companies = report.companies.map((company) => ({
+        ...company, cashBridge: applyProjectCashOutflow(company.cashBridge),
+      }));
+    }
     const closingCash = new Map(report.entityCashBridges.map((bridge) => [
       bridge.organizationId, bridge.closingCashCents,
     ]));
@@ -1397,8 +1423,7 @@ export function advanceQuarter(state: GameState, commands: QuarterCommands = {})
       organizations: candidate.organizations.map((organization) => {
         const cashCents = closingCash.get(organization.id);
         if (cashCents === undefined) return organization;
-        const projectCommitment = organization.id === state.holding.organizationId ? cashCommitted : 0;
-        return { ...organization, cashCents: moneyFromCents(cashCents - projectCommitment) };
+        return { ...organization, cashCents: cashCents };
       }),
     };
 

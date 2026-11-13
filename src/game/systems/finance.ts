@@ -19,6 +19,18 @@ export interface CreditAssessment {
   quarterlyOperatingCashFlowCents: MoneyCents;
 }
 
+export function calculateDebtServiceObligation(debt: DebtInstrument, quarter: number): number {
+  if (debt.paymentStatus === 'settled') return 0;
+  const principal = Math.max(0, debt.principalCents);
+  const interestDue = Math.round(principal * debt.quarterlyInterestRate) + (debt.arrearsInterestCents ?? 0);
+  const principalDue = principal <= 0 ? 0
+    : (debt.acceleratedAtQuarter !== undefined && debt.acceleratedAtQuarter <= quarter) ||
+      (debt.maturityQuarter !== undefined && debt.maturityQuarter <= quarter)
+      ? principal
+      : Math.min(principal, (debt.arrearsPrincipalCents ?? 0) + (debt.scheduledPrincipalCentsPerQuarter ?? 0));
+  return interestDue + principalDue;
+}
+
 export function calculateCreditAssessment(
   state: GameState,
   borrowerId: string,
@@ -27,9 +39,8 @@ export function calculateCreditAssessment(
   const borrower = state.organizations.find((item) => item.id === borrowerId);
   if (!borrower) return undefined;
   const borrowerDebts = state.debts.filter((debt) => debt.borrowerId === borrowerId);
-  const interest = borrowerDebts.reduce((sum, debt) => sum + Math.round(debt.principalCents * debt.quarterlyInterestRate), 0);
-  const scheduled = borrowerDebts.reduce((sum, debt) => sum + (debt.scheduledPrincipalCentsPerQuarter ?? 0), 0);
-  const debtService = interest + scheduled;
+  const debtService = borrowerDebts.reduce((sum, debt) =>
+    sum + calculateDebtServiceObligation(debt, state.quarter), 0);
   const debtServiceCoverage = debtService > 0
     ? quarterlyOperatingCashFlowCents / debtService
     : quarterlyOperatingCashFlowCents > 0 ? 10 : 0;
