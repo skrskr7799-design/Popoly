@@ -43,3 +43,39 @@ This file records important decisions and their rationale. Add new entries rathe
 **Decision:** Military warfare, huge production chains, individual employee simulation, thousands of actors, multiplayer, and blockchain are not part of the initial foundation.
 
 **Rationale:** These features can be evaluated later if they strengthen the proven core game.
+
+
+## D-007 — Existing holding-company start
+
+**Status:** Accepted  
+**Decision:** The player begins as the leader of an existing holding company controlling an operating company, rather than founding the group from zero.
+
+**Rationale:** This puts the player immediately into strategic management and lets the opening focus on inherited assets, obligations, control, and choices.
+
+## D-008 — Mixed interconnected industry scope
+
+**Status:** Accepted  
+**Decision:** The first slice connects compute infrastructure, energy, semiconductors/equipment, and AI/digital-service demand.
+
+**Rationale:** These dependencies create meaningful bottlenecks without requiring a broad multi-industry simulation.
+
+## D-009 — Guided opening with sandbox continuation
+
+**Status:** Accepted  
+**Decision:** The eight-quarter opening scenario can continue as a sandbox using the same campaign state.
+
+**Rationale:** The scenario teaches and tests the core loop without imposing an artificial end to an interesting campaign.
+
+## D-010 — Leadership capacity as the strategic action constraint
+
+**Status:** Accepted  
+**Decision:** Major initiatives compete for limited executive attention; routine operations continue automatically.
+
+**Rationale:** This models the finite bandwidth of a holding-company leadership team rather than an abstract action-point counter.
+
+## D-011 — Estimates-based rival intelligence
+
+**Status:** Accepted  
+**Decision:** The player receives public information plus estimates of competitor conditions, with confidence and freshness indicators. Hidden world truth remains separate from player knowledge.
+
+**Rationale:** Uncertainty becomes a strategic resource while preserving fair and explainable information boundaries.
