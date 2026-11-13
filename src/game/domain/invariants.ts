@@ -75,7 +75,16 @@ export function validateGameState(state: GameState): ValidationIssue[] {
     }
   }
 
-  const projectIds = new Set<string>();\n  for (const project of state.projects) {\n    if (projectIds.has(project.id)) issues.push({ code: 'project.id_duplicate', message: 'Strategic project IDs must be unique.', entityId: project.id });\n    projectIds.add(project.id);\n    if (!Number.isInteger(project.startedQuarter) || project.startedQuarter < 1 || !Number.isInteger(project.remainingQuarters) || project.remainingQuarters < 0 || !Number.isFinite(project.leadershipCost) || project.leadershipCost < 0 || !Number.isSafeInteger(project.initialCostCents) || project.initialCostCents < 0) {\n      issues.push({ code: 'project.state_invalid', message: 'Strategic project contains invalid timing, leadership, or cost data.', entityId: project.id });\n    }\n  }\n\n  for (const contract of state.operatingCompanies.flatMap((company) => company.contracts)) {
+  const projectIds = new Set<string>();
+  for (const project of state.projects) {
+    if (projectIds.has(project.id)) issues.push({ code: 'project.id_duplicate', message: 'Strategic project IDs must be unique.', entityId: project.id });
+    projectIds.add(project.id);
+    if (!Number.isInteger(project.startedQuarter) || project.startedQuarter < 1 || !Number.isInteger(project.remainingQuarters) || project.remainingQuarters < 0 || !Number.isFinite(project.leadershipCost) || project.leadershipCost < 0 || !Number.isSafeInteger(project.initialCostCents) || project.initialCostCents < 0) {
+      issues.push({ code: 'project.state_invalid', message: 'Strategic project contains invalid timing, leadership, or cost data.', entityId: project.id });
+    }
+  }
+
+  for (const contract of state.operatingCompanies.flatMap((company) => company.contracts)) {
     if (!organizationIds.has(contract.customerId) || !organizationIds.has(contract.providerId)) {
       issues.push({ code: 'contract.organization_missing', message: 'Contract references a missing organization.', entityId: contract.id });
     }
