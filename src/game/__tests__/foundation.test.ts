@@ -238,8 +238,13 @@ describe('explicit debt principal repayments', () => {
       cashCosts: { operationsAndStaffingCents: 0, maintenanceCents: 0,
         networkAndConnectivityCents: 0, overheadComplianceInsuranceCents: 0 },
     }));
-    state.debts = state.debts.map((debt) => debt.id === 'nodeworks-infrastructure-debt'
-      ? { ...debt, scheduledPrincipalCentsPerQuarter: 20_000_000 as typeof debt.principalCents } : debt);
+    state.debts = [...state.debts.map((debt) => debt.id === 'nodeworks-infrastructure-debt'
+      ? { ...debt, scheduledPrincipalCentsPerQuarter: 20_000_000 as typeof debt.principalCents } : debt), {
+      id: 'nodeworks-secondary-interest-debt', borrowerId: 'nodeworks', lenderId: 'frontier-development-bank',
+      principalCents: 100_000_000 as typeof state.debts[number]['principalCents'], quarterlyInterestRate: 0.02,
+    }];
+    state.organizations = state.organizations.map((item) => item.id === 'nodeworks'
+      ? { ...item, debtCents: 1_500_000_000 as typeof item.debtCents } : item);
     const result = advanceQuarter(state);
     expect(result.ok).toBe(true);
     if (!result.ok) return;
@@ -255,6 +260,11 @@ describe('explicit debt principal repayments', () => {
     expect(bridge.interestExpenseCents).toBe(31_500_000);
     expect(bridge.interestPaidCents).toBe(31_500_000);
     expect(bridge.closingCashCents).toBe(8_500_000);
+    const secondaryDebt = result.state.debts.find((item) => item.id === 'nodeworks-secondary-interest-debt')!;
+    const secondaryInterest = result.report.debtInterestService?.find((item) => item.debtId === secondaryDebt.id)!;
+    expect(secondaryInterest.interestPaidCents).toBe(0);
+    expect(secondaryInterest.closingInterestArrearsCents).toBe(2_000_000);
+    expect(secondaryDebt.arrearsInterestCents).toBe(2_000_000);
   });
 
   it('services affordable debts in ledger order without falsely defaulting every facility of the borrower', () => {
@@ -1200,6 +1210,29 @@ describe('debt refinancing and lender-led restructuring', () => {
     expect(result.report.entityCashBridges.find((item) => item.organizationId === 'nodeworks')!.financingCashFlowCents)
       .toBe(86_000_000);
     expect(validateGameState(result.state)).toEqual([]);
+  });
+
+  it('refuses to refinance an instrument while accrued interest arrears remain unpaid', () => {
+    const opening = initializeGame();
+    const prepared = {
+      ...opening,
+      organizations: opening.organizations.map((item) => item.id === 'nodeworks'
+        ? { ...item, cashCents: 0 as typeof item.cashCents } : item),
+      operatingCompanies: opening.operatingCompanies.map((company) => ({
+        ...company, deliveredWorkloadMW: 0,
+        cashCosts: { operationsAndStaffingCents: 0, maintenanceCents: 0,
+          networkAndConnectivityCents: 0, overheadComplianceInsuranceCents: 0 },
+      })),
+      debts: opening.debts.map((debt) => debt.id === 'nodeworks-infrastructure-debt'
+        ? { ...debt, lenderId: 'northstar-commercial-bank', arrearsInterestCents: 50_000_000 as typeof debt.principalCents }
+        : debt),
+    };
+    const result = advanceQuarter(prepared, { refinanceDebts: [{
+      debtId: 'nodeworks-infrastructure-debt', offerId: 'northstar-nodeworks-q1',
+    }] });
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.issues.some((item) => item.code === 'command.debt_refinance_interest_arrears_unsettled')).toBe(true);
+    expect(prepared.debts.find((item) => item.id === 'nodeworks-infrastructure-debt')?.arrearsInterestCents).toBe(50_000_000);
   });
 
   it('rejects refinancing when the replacement offer cannot cover principal and fees', () => {
