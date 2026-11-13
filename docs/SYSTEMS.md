@@ -125,7 +125,10 @@ The first playable engine slice now includes a transactional quarter resolver, a
 - A cure resets the breach streak and restores compliance. An active borrowing restriction blocks new credit requests, acceptance of other offers, and revolving drawdowns for the same legal borrower.
 - Borrowers can refinance an existing instrument using an available offer for the same legal entity. The replacement loan must cover old principal plus an explicit fee; the old creditor is repaid, the new lender funds the replacement, and the net cash release/debt-ledger changes commit atomically.
 - Newly originated debt stores its lender identity. A borrower can ask that creditor to extend maturity, reduce the rate or scheduled principal, or waive covenants. The lender accepts/rejects deterministically from its risk appetite and the borrower's distress/credit condition; approved terms apply after the current quarter report.
-- Refinancing and restructuring outcomes are exposed in quarter-report lines. Collateral valuation/enforcement, lender relationship history, arrears, default, cross-default, and insolvency are not implemented yet.
+- Refinancing and restructuring outcomes are exposed in quarter-report lines.
+- Scheduled and maturity principal shortfalls are recorded per debt instrument as arrears without double-counting principal. Borrower liquidity is allocated in debt-ledger order; one unpaid instrument does not incorrectly default every other facility.
+- One consecutive missed contractual principal-payment quarter produces overdue status; two produce payment default. A paid scheduled obligation cures arrears and resets the overdue counter. Defaulted borrowers are blocked from additional credit requests, loan acceptances, and revolving drawdowns.
+- The quarter report exposes unpaid due amount, cumulative principal arrears, overdue duration, and status. This first pass does not yet accrue interest arrears or implement acceleration, cross-default, creditor collection, collateral enforcement, insolvency, or asset transfers.
 
 - Lenders are legal organizations with separate lending-capacity and risk-appetite records.
 - Scenario-originated loan offers identify a single borrower and state principal, quarterly rate, maturity, expiry, and optional collateral description.
