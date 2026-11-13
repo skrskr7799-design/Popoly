@@ -5,7 +5,7 @@ import { createRandomState, nextRandom } from '../engine/random';
 
 export interface ActorAction {
   actorId: string;
-  kind: 'demand-growth' | 'capacity-expansion-started' | 'capacity-expansion-completed' | 'capacity-expansion-delayed' | 'equipment-procurement-delayed' | 'equipment-delivery-delayed' | 'energy-price-adjustment' | 'regulatory-review' | 'customer-allocation';
+  kind: 'demand-growth' | 'capacity-expansion-started' | 'capacity-expansion-completed' | 'capacity-expansion-delayed' | 'equipment-procurement-delayed' | 'equipment-delivery-delayed' | 'energy-price-adjustment' | 'regulatory-review' | 'customer-allocation' | 'competitor-commercial-terms';
   summary: string;
 }
 
@@ -41,6 +41,36 @@ function updateActor(
       kind: 'demand-growth',
       summary: 'Asterion AI expanded its compute demand forecast.',
     });
+  }
+
+  if (actorId === 'kestrel-compute') {
+    const nodeworks = state.operatingCompanies.find((company) => company.organizationId === 'nodeworks');
+    const nodeworksPrice = nodeworks?.contracts.find((contract) => contract.flexibility === 'flexible')?.priceCentsPerMWQuarter;
+    const capacity = metrics.effectiveCapacityMW ?? metrics.effectiveCapacityMinMW ?? 0;
+    const workload = metrics.currentWorkloadMW ?? metrics.deliveredWorkloadMaxMW ?? 0;
+    const utilization = capacity > 0 ? workload / capacity : 1;
+    const currentPrice = metrics.priceCentsPerMWQuarter ?? 40_500_000;
+    let revisedPrice = currentPrice;
+
+    // Kestrel competes aggressively while it has room to sell, but protects
+    // margin when its own fleet is close to full utilization.
+    if (nodeworksPrice && utilization < 0.85 && capacity - workload >= 3) {
+      const target = nodeworksPrice * (0.965 + roll * 0.015);
+      revisedPrice = Math.round(Math.max(38_000_000, Math.min(46_000_000, target)));
+    } else if (utilization >= 0.9) {
+      revisedPrice = Math.round(Math.min(46_000_000, currentPrice * (1.005 + roll * 0.01)));
+    }
+
+    if (revisedPrice !== currentPrice) {
+      metrics.priceCentsPerMWQuarter = revisedPrice;
+      actions.push({
+        actorId,
+        kind: 'competitor-commercial-terms',
+        summary: utilization >= 0.9
+          ? 'Kestrel Compute revised its commercial terms as available capacity tightened.'
+          : 'Kestrel Compute revised its commercial terms to compete for additional customer workload.',
+      });
+    }
   }
 
   if (actorId === 'kestrel-compute') {
@@ -169,6 +199,7 @@ export function advanceAutonomousActors(state: GameState): {
   const actorState = { ...state, equipmentOrders: state.equipmentOrders.map((order) => ({ ...order })) };
   const actors = actorState.actors.map((actor) => updateActor(actor, actorState, actions, initialFirmHeadroom));
 
+  actorState.actors = actors;
   const asterion = actors.find((actor) => actor.organizationId === 'asterion-ai');
   if (asterion && Number.isFinite(asterion.hiddenMetrics.demandMW)) {
     const allocation = allocateAsterionFlexibleDemand(actorState, asterion.hiddenMetrics.demandMW);
