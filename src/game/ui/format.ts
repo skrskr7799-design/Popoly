@@ -20,5 +20,6 @@ export function formatPercent(value: number, digits = 1): string {
 }
 
 export function formatQuarter(quarter: number): string {
-  return `Q${quarter} · 2035`;
+  const year = 2035 + Math.floor((quarter - 1) / 4);
+  return `Q${((quarter - 1) % 4) + 1} · ${year}`;
 }
