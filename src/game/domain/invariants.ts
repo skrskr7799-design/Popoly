@@ -32,7 +32,7 @@ export function validateGameState(state: GameState): ValidationIssue[] {
     issues.push({ code: 'quarter.invalid', message: 'Quarter must be a positive integer.' });
   }
   if (!organizationIds.has(state.holding.organizationId) ||
-      !Number.isInteger(state.holding.leadershipCapacityPerQuarter) || state.holding.leadershipCapacityPerQuarter < 1 ||
+      !Number.isSafeInteger(state.holding.leadershipCapacityPerQuarter) || state.holding.leadershipCapacityPerQuarter < 0 ||
       !Number.isFinite(state.holding.institutionalAccess) || state.holding.institutionalAccess < 0 || state.holding.institutionalAccess > 100 ||
       !Number.isSafeInteger(state.holding.revolverLimitCents) || state.holding.revolverLimitCents < 0 ||
       !['balanced', 'growth', 'conservative'].includes(state.holding.strategicRiskPolicy)) {
@@ -175,8 +175,14 @@ export function validateGameState(state: GameState): ValidationIssue[] {
     if (!isFiniteNonNegative(company.deliveredWorkloadMW)) {
       issues.push({ code: 'workload.invalid', message: 'Delivered workload must be finite and non-negative.', entityId: company.organizationId });
     }
-    for (const [name, value] of Object.entries(company.cashCosts ?? {})) {
-      if (!Number.isSafeInteger(value) || value < 0) {
+    const cashCostFields = {
+      operationsAndStaffingCents: company.cashCosts?.operationsAndStaffingCents,
+      maintenanceCents: company.cashCosts?.maintenanceCents,
+      networkAndConnectivityCents: company.cashCosts?.networkAndConnectivityCents,
+      overheadComplianceInsuranceCents: company.cashCosts?.overheadComplianceInsuranceCents,
+    };
+    for (const [name, value] of Object.entries(cashCostFields)) {
+      if (!Number.isSafeInteger(value) || value! < 0) {
         issues.push({ code: 'company.cash_cost_invalid', message: `${name} must be a non-negative integer number of cents.`, entityId: company.organizationId });
       }
     }
@@ -226,7 +232,8 @@ export function validateGameState(state: GameState): ValidationIssue[] {
   for (const market of state.regionalMarkets) {
     if (regionalIds.has(market.id)) issues.push({ code: 'market.id_duplicate', message: 'Regional market IDs must be unique.', entityId: market.id });
     regionalIds.add(market.id);
-    if (typeof market.name !== 'string' || market.name.trim().length === 0 ||
+    if (typeof market.id !== 'string' || market.id.trim().length === 0 ||
+        typeof market.name !== 'string' || market.name.trim().length === 0 ||
         !Number.isFinite(market.quarterHours) || market.quarterHours <= 0 ||
         !isFiniteNonNegative(market.availablePowerMW) || !isFiniteNonNegative(market.committedPowerMW) ||
         !Number.isSafeInteger(market.referenceEnergyPriceCentsPerMWh) || market.referenceEnergyPriceCentsPerMWh < 0 ||
@@ -266,7 +273,8 @@ export function validateGameState(state: GameState): ValidationIssue[] {
   for (const order of state.equipmentOrders) {
     if (equipmentOrderIds.has(order.id)) issues.push({ code: 'equipment.order_id_duplicate', message: 'Equipment order IDs must be unique.', entityId: order.id });
     equipmentOrderIds.add(order.id);
-    if (!organizationIds.has(order.buyerId) || !isFiniteNonNegative(order.quantityMWEquivalent) ||
+    if (typeof order.id !== 'string' || order.id.trim().length === 0 ||
+        !organizationIds.has(order.buyerId) || !isFiniteNonNegative(order.quantityMWEquivalent) ||
         order.quantityMWEquivalent <= 0 || !Number.isInteger(order.placedQuarter) ||
         order.placedQuarter < 1 || !Number.isInteger(order.deliveryQuarter) ||
         order.deliveryQuarter < order.placedQuarter ||
@@ -292,7 +300,12 @@ export function validateGameState(state: GameState): ValidationIssue[] {
   for (const project of state.projects) {
     if (projectIds.has(project.id)) issues.push({ code: 'project.id_duplicate', message: 'Strategic project IDs must be unique.', entityId: project.id });
     projectIds.add(project.id);
-    if (!Number.isInteger(project.startedQuarter) || project.startedQuarter < 1 || !Number.isInteger(project.remainingQuarters) || project.remainingQuarters < 0 || !Number.isFinite(project.leadershipCost) || project.leadershipCost < 0 || !Number.isSafeInteger(project.initialCostCents) || project.initialCostCents < 0) {
+    if (typeof project.id !== 'string' || project.id.trim().length === 0 ||
+        typeof project.initiativeId !== 'string' || project.initiativeId.trim().length === 0 ||
+        !Number.isInteger(project.startedQuarter) || project.startedQuarter < 1 || project.startedQuarter > state.quarter ||
+        !Number.isInteger(project.remainingQuarters) || project.remainingQuarters < 0 ||
+        !Number.isFinite(project.leadershipCost) || project.leadershipCost < 0 ||
+        !Number.isSafeInteger(project.initialCostCents) || project.initialCostCents < 0) {
       issues.push({ code: 'project.state_invalid', message: 'Strategic project contains invalid timing, leadership, or cost data.', entityId: project.id });
     }
   }
@@ -303,7 +316,9 @@ export function validateGameState(state: GameState): ValidationIssue[] {
     if (!organizationIds.has(contract.customerId) || !organizationIds.has(contract.providerId)) {
       issues.push({ code: 'contract.organization_missing', message: 'Contract references a missing organization.', entityId: contract.id });
     }
-    if (!isFiniteNonNegative(contract.workloadMW) || !Number.isSafeInteger(contract.priceCentsPerMWQuarter) || contract.priceCentsPerMWQuarter < 0 ||
+    if (typeof contract.id !== 'string' || contract.id.trim().length === 0 ||
+        !['contracted', 'flexible'].includes(contract.flexibility) ||
+        !isFiniteNonNegative(contract.workloadMW) || !Number.isSafeInteger(contract.priceCentsPerMWQuarter) || contract.priceCentsPerMWQuarter < 0 ||
         (contract.termEndQuarter !== undefined && (!Number.isInteger(contract.termEndQuarter) || contract.termEndQuarter < 1)) ||
         (contract.renewalNoticeQuarters !== undefined && (!Number.isInteger(contract.renewalNoticeQuarters) || contract.renewalNoticeQuarters < 0)) ||
         (contract.minimumWorkloadMW !== undefined && (!isFiniteNonNegative(contract.minimumWorkloadMW) || contract.minimumWorkloadMW > contract.workloadMW)) ||
