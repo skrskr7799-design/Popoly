@@ -87,3 +87,11 @@ This file records important decisions and their rationale. Add new entries rathe
 **Decision:** A revolving-facility drawdown is funded by the facility's named lender. The lender's cash and remaining lending capacity decrease by the draw amount; the legal borrower's cash, debt balance, and facility principal increase by the same amount. The draw is permitted only when the facility commitment, lender capacity, and lender liquidity all cover it. Repayment restores the lender's cash and available capacity.
 
 **Rationale:** Revolving credit must preserve double-entry cash movement and remain consistent with the existing term-loan acceptance and principal-repayment flows. The committed facility limit and the lender's general lending capacity remain separate constraints.
+
+
+## D-012 — Lender-funded revolving facility drawdowns
+
+**Status:** Accepted  
+**Decision:** A revolving-facility drawdown is funded by the facility's named lender. The lender's cash and remaining lending capacity decrease by the draw amount; the legal borrower's cash, debt balance, and facility principal increase by the same amount. The draw is permitted only when the facility commitment, lender capacity, and lender liquidity all cover it. Repayment restores the lender's cash and available capacity.
+
+**Rationale:** Revolving credit must preserve double-entry cash movement and remain consistent with the existing term-loan acceptance and principal-repayment flows. The committed facility limit and the lender's general lending capacity remain separate constraints.
