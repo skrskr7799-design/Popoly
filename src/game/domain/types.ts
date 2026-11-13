@@ -26,6 +26,10 @@ export interface ServiceContract {
   termEndQuarter?: number;
   renewalNoticeQuarters?: number;
   minimumWorkloadMW?: number;
+  /** Minimum service reliability required by this agreement (0..1). */
+  slaTargetReliability?: number;
+  /** Share of this contract's quarterly revenue credited when the SLA is breached, in basis points. */
+  slaServiceCreditBps?: number;
 }
 export interface InfrastructureCapacity {
   installedITMW: number; gridAllocationMW: number; commissionedEquipmentMW: number;
