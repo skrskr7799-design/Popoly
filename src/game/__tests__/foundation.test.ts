@@ -931,4 +931,24 @@ describe('independent lender underwriting', () => {
     if (!result.ok) expect(result.issues.some((item) => item.code === 'command.credit_request_duplicate')).toBe(true);
     expect(JSON.stringify(state)).toBe(before);
   });
+
+  it('allows a newly underwritten offer to be accepted in the following quarter', () => {
+    const requested = advanceQuarter(initializeGame(), { requestCredit: [{
+      borrowerId: 'nodeworks', requestedPrincipalCents: 200_000_000, termQuarters: 6,
+    }] });
+    expect(requested.ok).toBe(true);
+    if (!requested.ok) return;
+    const offerId = requested.report.creditDecisions?.find((item) =>
+      item.lenderId === 'northstar-commercial-bank' && item.status === 'offered')?.offerId;
+    expect(offerId).toBeDefined();
+    const funded = advanceQuarter(requested.state, { acceptLoanOffers: [{ offerId: offerId! }] });
+    expect(funded.ok).toBe(true);
+    if (!funded.ok) return;
+    expect(funded.state.debts.some((debt) => debt.id === `loan-${offerId}` && debt.borrowerId === 'nodeworks')).toBe(true);
+    expect(funded.state.organizations.find((item) => item.id === 'nodeworks')!.debtCents)
+      .toBe(requested.state.organizations.find((item) => item.id === 'nodeworks')!.debtCents + 200_000_000);
+    expect(funded.report.loanAcceptances?.some((item) => item.offerId === offerId)).toBe(true);
+    expect(validateGameState(funded.state)).toEqual([]);
+  });
+
 });
