@@ -16,8 +16,20 @@ export interface Organization {
   reputation: number;
 }
 export interface OwnershipStake { ownerId: EntityId; companyId: EntityId; shares: number; votingShares: number; }
+export interface DebtCovenantTerms {
+  minimumDebtServiceCoverage?: number;
+  maximumDebtToAnnualCashFlow?: number;
+  restrictAdditionalBorrowing?: boolean;
+  graceQuarters?: number;
+  breachRatePremium?: number;
+}
 export interface DebtInstrument {
   id: EntityId; borrowerId: EntityId; principalCents: MoneyCents; quarterlyInterestRate: number; facilityLimitCents?: MoneyCents;
+  covenantTerms?: DebtCovenantTerms;
+  covenantStartQuarter?: number;
+  covenantBreachStreak?: number;
+  covenantStatus?: 'compliant' | 'grace' | 'breached';
+  covenantPenaltyApplied?: boolean;
   /** Contractual principal amount due each quarter, in integer cents. */
   scheduledPrincipalCentsPerQuarter?: MoneyCents;
   /** Final maturity quarter; any remaining principal becomes due in full in this quarter. */
@@ -93,6 +105,7 @@ export interface LoanOfferState {
   maturityQuarter: number;
   expiresAfterQuarter: number;
   collateralDescription?: string;
+  covenantTerms?: DebtCovenantTerms;
   creditScore: number;
   creditRating: 'AAA' | 'AA' | 'A' | 'BBB' | 'BB' | 'B' | 'CCC';
   status: 'available' | 'accepted' | 'expired' | 'withdrawn';
