@@ -952,3 +952,80 @@ describe('independent lender underwriting', () => {
   });
 
 });
+
+
+describe('debt covenant monitoring and enforcement', () => {
+  const createFundedLoan = () => {
+    const requested = advanceQuarter(initializeGame(), { requestCredit: [{
+      borrowerId: 'nodeworks', requestedPrincipalCents: 200_000_000, termQuarters: 6,
+    }] });
+    if (!requested.ok) throw new Error('credit request failed');
+    const offer = requested.state.loanOffers.find((item) => item.lenderId === 'northstar-commercial-bank' &&
+      item.borrowerId === 'nodeworks' && item.status === 'available')!;
+    const funded = advanceQuarter(requested.state, { acceptLoanOffers: [{ offerId: offer.id }] });
+    if (!funded.ok) throw new Error('loan acceptance failed');
+    return { state: funded.state, offer, loanId: `loan-${offer.id}` };
+  };
+  const distressed = (state: ReturnType<typeof initializeGame>) => ({
+    ...state,
+    operatingCompanies: state.operatingCompanies.map((company) => ({
+      ...company, cashCosts: { ...company.cashCosts, operationsAndStaffingCents: moneyFromCents(2_000_000_000) },
+    })),
+  });
+
+  it('attaches lender covenants and monitors them after the loan becomes effective', () => {
+    const { state, offer, loanId } = createFundedLoan();
+    const loan = state.debts.find((item) => item.id === loanId)!;
+    expect(offer.covenantTerms?.minimumDebtServiceCoverage).toBeGreaterThan(0);
+    expect(loan.covenantStartQuarter).toBe(3);
+    expect(loan.covenantStatus).toBe('compliant');
+    const result = advanceQuarter(distressed(state));
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    const update = result.report.covenantUpdates?.find((item) => item.debtId === loanId);
+    expect(update?.status).toBe('grace');
+    expect(update?.reasons.length).toBeGreaterThan(0);
+    expect(result.state.debts.find((item) => item.id === loanId)?.covenantBreachStreak).toBe(1);
+  });
+
+  it('restricts new borrowing and applies a one-time rate step-up after grace expires', () => {
+    const { state, offer, loanId } = createFundedLoan();
+    const first = advanceQuarter(distressed(state));
+    expect(first.ok).toBe(true);
+    if (!first.ok) return;
+    const second = advanceQuarter(distressed(first.state));
+    expect(second.ok).toBe(true);
+    if (!second.ok) return;
+    const loan = second.state.debts.find((item) => item.id === loanId)!;
+    expect(loan.covenantStatus).toBe('breached');
+    expect(loan.covenantPenaltyApplied).toBe(true);
+    expect(loan.quarterlyInterestRate).toBeGreaterThan(offer.quarterlyInterestRate);
+    const blocked = advanceQuarter(second.state, { requestCredit: [{
+      borrowerId: 'nodeworks', requestedPrincipalCents: 100_000_000, termQuarters: 4,
+    }] });
+    expect(blocked.ok).toBe(false);
+    if (!blocked.ok) expect(blocked.issues.some((item) => item.code === 'command.covenant_borrowing_restricted')).toBe(true);
+  });
+
+  it('restores compliance and borrowing eligibility after financial performance recovers', () => {
+    const { state, loanId } = createFundedLoan();
+    const first = advanceQuarter(distressed(state));
+    expect(first.ok).toBe(true);
+    if (!first.ok) return;
+    const second = advanceQuarter(distressed(first.state));
+    expect(second.ok).toBe(true);
+    if (!second.ok) return;
+    const normalCosts = initializeGame().operatingCompanies[0]!.cashCosts;
+    const curedState = { ...second.state, operatingCompanies: second.state.operatingCompanies.map((company) => ({
+      ...company, cashCosts: normalCosts,
+    })) };
+    const cured = advanceQuarter(curedState);
+    expect(cured.ok).toBe(true);
+    if (!cured.ok) return;
+    expect(cured.report.covenantUpdates?.find((item) => item.debtId === loanId)?.status).toBe('compliant');
+    const borrowing = advanceQuarter(cured.state, { requestCredit: [{
+      borrowerId: 'nodeworks', requestedPrincipalCents: 100_000_000, termQuarters: 4,
+    }] });
+    expect(borrowing.ok).toBe(true);
+  });
+});
