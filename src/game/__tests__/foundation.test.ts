@@ -108,6 +108,7 @@ describe('explicit debt principal repayments', () => {
     const nodeworks = result.state.organizations.find((item) => item.id === 'nodeworks')!;
     const bridge = result.report.entityCashBridges.find((item) => item.organizationId === 'nodeworks')!;
     const lender = result.state.organizations.find((item) => item.id === 'frontier-development-bank')!;
+    const openingLenderCapacity = state.lenders.find((item) => item.organizationId === 'frontier-development-bank')!.availableCapacityCents;
     const lenderBridge = result.report.entityCashBridges.find((item) => item.organizationId === 'frontier-development-bank')!;
     expect(debt.principalCents).toBe(1_300_000_000);
     expect(nodeworks.debtCents).toBe(1_300_000_000);
@@ -118,6 +119,8 @@ describe('explicit debt principal repayments', () => {
     expect(lenderBridge.principalReceivedCents).toBe(100_000_000);
     expect(lenderBridge.interestIncomeCents).toBe(31_500_000);
     expect(lender.cashCents).toBe(lenderBridge.closingCashCents);
+    expect(result.state.lenders.find((item) => item.organizationId === 'frontier-development-bank')!.availableCapacityCents)
+      .toBe(openingLenderCapacity + 100_000_000);
     expect(result.report.debtRepayments).toEqual([{
       debtId: 'nodeworks-infrastructure-debt',
       borrowerId: 'nodeworks',
