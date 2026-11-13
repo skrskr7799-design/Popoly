@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { initializeGame } from '../engine/initialize';
+import { moneyFromCents } from '../domain/money';
 import { calculateOperatingQuarter } from '../systems/economy';
 import { buildQuarterReport } from '../systems/quarterReport';
 import { createRandomState, nextRandom } from '../engine/random';
@@ -538,7 +539,7 @@ describe('lender-originated credit market', () => {
 
     const constrained = initializeGame();
     constrained.lenders = constrained.lenders.map((item) => item.organizationId === 'northstar-commercial-bank'
-      ? { ...item, availableCapacityCents: 100_000_000 } : item);
+      ? { ...item, availableCapacityCents: moneyFromCents(100_000_000) } : item);
     const before = JSON.stringify(constrained);
     const capacityResult = advanceQuarter(constrained, { acceptLoanOffers: [{ offerId: 'northstar-nodeworks-q1' }] });
     expect(capacityResult.ok).toBe(false);
