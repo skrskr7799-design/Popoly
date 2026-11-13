@@ -113,6 +113,15 @@ The first playable engine slice now includes a transactional quarter resolver, a
 
 ### Credit market foundation
 
+- Lenders are legal organizations with separate liquidity, remaining lending capacity, base rates, minimum credit scores, risk appetite, and cash-flow lending limits.
+- A borrower may request credit once per quarter. Every lender independently assesses the exact legal borrower using operating cash flow, debt service, leverage, liquidity, and reputation.
+- The initial deterministic credit score maps to a 300–850 score and rating band. Lender policy then determines eligibility, maximum offer size, and a score-sensitive quarterly interest rate.
+- Decisions may be offers, reduced offers, or rejections with an auditable reason. Offers are created after the current quarter report and cannot be accepted until a later quarter.
+- Accepting an offer transfers cash from lender to the named borrower, consumes lender capacity, and creates debt against that borrower. Holding and subsidiary balances remain legally separate.
+- Lender liquidity and remaining credit capacity are both checked; multiple acceptances are aggregated and the quarter rejects atomically if either limit is exceeded.
+- New loan interest begins in the following quarter; maturity uses the existing balloon principal repayment mechanism. Unaccepted offers expire after their final valid quarter.
+- The first credit score and collateral description are intentionally simplified. Collateral valuation/enforcement, covenants, refinancing, arrears, and lender distress behavior are not implemented yet.
+
 - Lenders are legal organizations with separate lending-capacity and risk-appetite records.
 - Scenario-originated loan offers identify a single borrower and state principal, quarterly rate, maturity, expiry, and optional collateral description.
 - Accepting an offer transfers cash from lender to borrower, consumes lender capacity, and creates debt against that exact borrower. Holding and subsidiary balances remain legally separate.
