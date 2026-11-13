@@ -1,6 +1,6 @@
 import { moneyFromCents } from '../domain/money';
 import type { ActorState, GameState, RegionalMarketState } from '../domain/types';
-import { calculateEffectiveCapacityMW } from './economy';
+import { calculateEffectiveCapacityMW, calculateOperatingQuarter } from './economy';
 import { createRandomState, nextRandom } from '../engine/random';
 
 export interface ActorAction {
@@ -224,7 +224,7 @@ export function advanceAutonomousActors(state: GameState): {
   let regionalMarkets: RegionalMarketState[] = state.regionalMarkets.map((market) => ({ ...market }));
   const initialFirmHeadroom = regionalMarkets[0]?.immediateFirmPowerHeadroomMW ?? 0;
   const actorState = { ...state, equipmentOrders: state.equipmentOrders.map((order) => ({ ...order })) };
-  const actors = actorState.actors.map((actor) => updateActor(actor, actorState, actions, initialFirmHeadroom));
+  const relationshipUpdatedActors = actorState.actors.map((actor) => actor.organizationId === 'asterion-ai'\n    ? updateAsterionRelationship(actorState, actor) : actor);\n  const actors = relationshipUpdatedActors.map((actor) => updateActor(actor, actorState, actions, initialFirmHeadroom));
 
   actorState.actors = actors;
   // Agreements are served through their stated end quarter. If no renewal
@@ -340,5 +340,5 @@ export function advanceAutonomousActors(state: GameState): {
     });
   }
 
-  return { state: { ...state, actors, regionalMarkets, operatingCompanies: actorState.operatingCompanies, equipmentOrders: actorState.equipmentOrders }, actions };
+  return { state: { ...state, actors, playerIntelligence: updateRenewalRiskIntelligence(state, actors), regionalMarkets, operatingCompanies: actorState.operatingCompanies, equipmentOrders: actorState.equipmentOrders }, actions };
 }
