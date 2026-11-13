@@ -31,6 +31,9 @@ export function validateGameState(state: GameState): ValidationIssue[] {
     if (!organizationIds.has(debt.borrowerId) || !Number.isSafeInteger(debt.principalCents) ||
         debt.principalCents < 0 || !Number.isFinite(debt.quarterlyInterestRate) ||
         debt.quarterlyInterestRate < 0 ||
+        (debt.scheduledPrincipalCentsPerQuarter !== undefined &&
+          (!Number.isSafeInteger(debt.scheduledPrincipalCentsPerQuarter) || debt.scheduledPrincipalCentsPerQuarter < 0)) ||
+        (debt.maturityQuarter !== undefined && (!Number.isInteger(debt.maturityQuarter) || debt.maturityQuarter < 1)) ||
         (debt.facilityLimitCents !== undefined &&
           (!Number.isSafeInteger(debt.facilityLimitCents) || debt.facilityLimitCents < debt.principalCents))) {
       issues.push({ code: 'finance.debt_invalid', message: 'Debt instrument has an invalid borrower, principal, interest rate, or facility limit.', entityId: debt.id });
