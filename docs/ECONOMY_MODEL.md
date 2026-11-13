@@ -250,3 +250,10 @@ Fixed-term compute agreements may define a minimum provider reliability and a se
 ## 17. Competitive fixed-term renewals
 
 When a fixed-term agreement enters its renewal window, capable competitors may submit confidential alternative bids. A bid is only available when the rival has enough current spare capacity to serve the entire proposed contract volume. The customer compares the player's renewal price with the credible rival offer; the rival's exact price remains hidden from the player. If the rival wins, the incumbent agreement remains unchanged until its contractual expiry, when the existing expiry and reallocation rules apply. Rival bids are deterministic for a given world seed, quarter, and contract, and never create capacity that the rival does not possess.
+
+
+## 18. Explicit debt principal repayment
+
+Debt repayment is an explicit quarter command against a named debt instrument. The command reduces both that instrument's outstanding principal and the borrower's debt balance, and is recorded as a financing cash outflow in the borrower's cash bridge. Interest for the current quarter is calculated on opening principal; a repayment therefore changes the next quarter's interest base, not the interest already accrued for the quarter being resolved.
+
+Repayment is funded only from the legal borrower's opening cash. Multiple repayments by one borrower are aggregated for affordability checks, and the total cannot exceed either opening cash or outstanding principal. A holding company cannot repay a subsidiary's debt, and subsidiary cash cannot fund holding debt, unless a separate, explicit intercompany transaction is introduced in a later financial-system increment. Invalid repayment commands reject the entire quarter atomically.
