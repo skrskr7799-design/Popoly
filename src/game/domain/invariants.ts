@@ -117,7 +117,9 @@ export function validateGameState(state: GameState): ValidationIssue[] {
     if (!isFiniteNonNegative(contract.workloadMW) || !Number.isSafeInteger(contract.priceCentsPerMWQuarter) ||
         (contract.termEndQuarter !== undefined && (!Number.isInteger(contract.termEndQuarter) || contract.termEndQuarter < 1)) ||
         (contract.renewalNoticeQuarters !== undefined && (!Number.isInteger(contract.renewalNoticeQuarters) || contract.renewalNoticeQuarters < 0)) ||
-        (contract.minimumWorkloadMW !== undefined && (!isFiniteNonNegative(contract.minimumWorkloadMW) || contract.minimumWorkloadMW > contract.workloadMW))) {
+        (contract.minimumWorkloadMW !== undefined && (!isFiniteNonNegative(contract.minimumWorkloadMW) || contract.minimumWorkloadMW > contract.workloadMW)) ||
+        (contract.slaTargetReliability !== undefined && (!Number.isFinite(contract.slaTargetReliability) || contract.slaTargetReliability < 0 || contract.slaTargetReliability > 1)) ||
+        (contract.slaServiceCreditBps !== undefined && (!Number.isInteger(contract.slaServiceCreditBps) || contract.slaServiceCreditBps < 0 || contract.slaServiceCreditBps > 10_000))) {
       issues.push({ code: 'contract.value_invalid', message: 'Contract workload and price must be valid.', entityId: contract.id });
     }
   }
