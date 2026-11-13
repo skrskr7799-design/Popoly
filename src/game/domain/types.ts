@@ -22,6 +22,10 @@ export interface DebtInstrument {
 export interface ServiceContract {
   id: EntityId; customerId: EntityId; providerId: EntityId; workloadMW: number;
   priceCentsPerMWQuarter: MoneyCents; flexibility: 'contracted' | 'flexible';
+  /** Contract remains active through this quarter; omitted for rolling flexible supply. */
+  termEndQuarter?: number;
+  renewalNoticeQuarters?: number;
+  minimumWorkloadMW?: number;
 }
 export interface InfrastructureCapacity {
   installedITMW: number; gridAllocationMW: number; commissionedEquipmentMW: number;
