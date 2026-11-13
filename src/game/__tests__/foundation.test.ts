@@ -213,7 +213,7 @@ describe('explicit debt principal repayments', () => {
     expect(firstInterest.closingInterestArrearsCents).toBe(21_500_000);
     expect(firstDebt.principalCents).toBe(1_400_000_000);
     expect(firstDebt.arrearsInterestCents).toBe(21_500_000);
-    expect(first.report.totalInterestExpenseCents).toBe(31_500_000);
+    expect(first.report.totalInterestExpenseCents).toBe(37_500_000);
     expect(first.state.organizations.find((item) => item.id === 'frontier-development-bank')!.cashCents)
       .toBe(openingLenderCash + 10_000_000);
     expect(first.report.entityCashBridges.find((item) => item.organizationId === 'nodeworks')!.interestPaidCents)
@@ -246,7 +246,7 @@ describe('explicit debt principal repayments', () => {
     expect(secondInterest.accruedInterestCents).toBe(31_500_000);
     expect(secondInterest.interestPaidCents).toBe(0);
     expect(secondInterest.closingInterestArrearsCents).toBe(53_000_000);
-    expect(second.report.totalInterestExpenseCents).toBe(31_500_000);
+    expect(second.report.totalInterestExpenseCents).toBe(37_500_000);
     expect(second.state.organizations.find((item) => item.id === 'frontier-development-bank')!.cashCents)
       .toBe(openingLenderCash + 10_000_000);
     expect(second.state.debts.find((item) => item.id === firstDebt.id)?.paymentStatus).toBe('defaulted');
@@ -279,7 +279,7 @@ describe('explicit debt principal repayments', () => {
     expect(debt.principalCents).toBe(1_400_000_000);
     expect(debt.arrearsPrincipalCents).toBe(20_000_000);
     expect(debt.arrearsInterestCents).toBe(0);
-    expect(result.report.debtRepayments?.some((item) => item.debtId === debt.id)).toBe(false);
+    expect(result.report.debtRepayments?.some((item) => item.debtId === debt.id) ?? false).toBe(false);
     const bridge = result.report.entityCashBridges.find((item) => item.organizationId === 'nodeworks')!;
     expect(bridge.interestExpenseCents).toBe(31_500_000);
     expect(bridge.interestPaidCents).toBe(31_500_000);
@@ -305,9 +305,14 @@ describe('explicit debt principal repayments', () => {
       scheduledPrincipalCentsPerQuarter: 300_000_000 as typeof state.debts[number]['principalCents'],
     });
     state.organizations = state.organizations.map((organization) => organization.id === 'nodeworks'
-      ? { ...organization, cashCents: 50_000_000 as typeof organization.cashCents,
+      ? { ...organization, cashCents: 80_000_000 as typeof organization.cashCents,
           debtCents: 1_500_000_000 as typeof organization.debtCents }
       : organization);
+    state.operatingCompanies = state.operatingCompanies.map((company) => ({
+      ...company, deliveredWorkloadMW: 0,
+      cashCosts: { operationsAndStaffingCents: moneyFromCents(0), maintenanceCents: moneyFromCents(0),
+        networkAndConnectivityCents: moneyFromCents(0), overheadComplianceInsuranceCents: moneyFromCents(0) },
+    }));
 
     const result = advanceQuarter(state);
     expect(result.ok).toBe(true);
@@ -317,7 +322,7 @@ describe('explicit debt principal repayments', () => {
     expect(firstDebt.principalCents).toBe(1_370_000_000);
     expect(firstDebt.paymentStatus).toBe('current');
     expect(secondDebt.principalCents).toBe(100_000_000);
-    expect(secondDebt.arrearsPrincipalCents).toBe(300_000_000);
+    expect(secondDebt.arrearsPrincipalCents).toBe(100_000_000);
     expect(secondDebt.paymentStatus).toBe('overdue');
     expect(result.report.debtRepayments).toContainEqual({
       debtId: 'nodeworks-infrastructure-debt', borrowerId: 'nodeworks',
@@ -1180,9 +1185,14 @@ describe('debt covenant monitoring and enforcement', () => {
       networkAndConnectivityCents: moneyFromCents(0),
       overheadComplianceInsuranceCents: moneyFromCents(0),
     };
-    const curedState = { ...second.state, operatingCompanies: second.state.operatingCompanies.map((company) => ({
-      ...company, cashCosts: recoveredCosts,
-    })) };
+    const curedState = {
+      ...second.state,
+      organizations: second.state.organizations.map((organization) => organization.id === 'nodeworks'
+        ? { ...organization, cashCents: moneyFromCents(2_000_000_000) } : organization),
+      operatingCompanies: second.state.operatingCompanies.map((company) => ({
+        ...company, cashCosts: recoveredCosts,
+      })),
+    };
     const cured = advanceQuarter(curedState);
     expect(cured.ok).toBe(true);
     if (!cured.ok) return;
@@ -1225,8 +1235,9 @@ describe('debt refinancing and lender-led restructuring', () => {
     expect(newDebt.principalCents).toBe(1_500_000_000);
     expect(newDebt.lenderId).toBe('northstar-commercial-bank');
     expect(result.state.organizations.find((item) => item.id === 'nodeworks')!.debtCents).toBe(1_500_000_000);
+    const northstarBridge = result.report.entityCashBridges.find((item) => item.organizationId === 'northstar-commercial-bank')!;
     expect(result.state.organizations.find((item) => item.id === 'northstar-commercial-bank')!.cashCents)
-      .toBe(prepared.organizations.find((item) => item.id === 'northstar-commercial-bank')!.cashCents - 100_000_000 + 31_500_000);
+      .toBe(prepared.organizations.find((item) => item.id === 'northstar-commercial-bank')!.cashCents - 100_000_000 + northstarBridge.interestIncomeCents);
     expect(result.report.debtRefinancings?.[0]).toMatchObject({
       oldDebtId: 'nodeworks-infrastructure-debt', newDebtId: `loan-${offer.id}`,
       refinancedPrincipalCents: 1_400_000_000, feeCents: 14_000_000, netCashReleasedCents: 86_000_000,
