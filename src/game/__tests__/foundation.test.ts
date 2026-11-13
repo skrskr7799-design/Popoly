@@ -1425,3 +1425,59 @@ describe('contractual cross-default', () => {
     expect(validateGameState(cured.state)).toEqual([]);
   });
 });
+
+
+describe('creditor acceleration', () => {
+  it('issues a one-quarter notice and makes the full outstanding principal due next quarter', () => {
+    const state = initializeGame();
+    state.quarter = 2;
+    state.debts = state.debts.map((debt) => debt.id === 'nodeworks-infrastructure-debt'
+      ? { ...debt, paymentStatus: 'defaulted' as const, overdueQuarters: 2 }
+      : debt);
+    const notice = advanceQuarter(state, { accelerateDebts: [{ debtId: 'nodeworks-infrastructure-debt' }] });
+    expect(notice.ok).toBe(true);
+    if (!notice.ok) return;
+    const noticedDebt = notice.state.debts.find((debt) => debt.id === 'nodeworks-infrastructure-debt')!;
+    expect(noticedDebt.accelerationNoticeQuarter).toBe(2);
+    expect(noticedDebt.acceleratedAtQuarter).toBe(3);
+    expect(notice.report.debtAccelerations).toContainEqual({
+      debtId: 'nodeworks-infrastructure-debt', borrowerId: 'nodeworks',
+      lenderId: 'frontier-development-bank', effectiveQuarter: 3, action: 'notice-issued',
+    });
+    expect(noticedDebt.principalCents).toBe(1_500_000_000);
+
+    const effective = advanceQuarter(notice.state);
+    expect(effective.ok).toBe(true);
+    if (!effective.ok) return;
+    expect(effective.report.debtAccelerations).toContainEqual({
+      debtId: 'nodeworks-infrastructure-debt', borrowerId: 'nodeworks',
+      lenderId: 'frontier-development-bank', effectiveQuarter: 3, action: 'acceleration-effective',
+    });
+    expect(effective.report.debtArrears?.some((line) =>
+      line.debtId === 'nodeworks-infrastructure-debt' && line.unpaidDueCents > 0)).toBe(true);
+    expect(effective.state.debts.find((debt) => debt.id === 'nodeworks-infrastructure-debt')?.principalCents)
+      .toBe(1_500_000_000);
+    expect(validateGameState(effective.state)).toEqual([]);
+  });
+
+  it('rejects acceleration without a default trigger and prevents ordinary restructuring after notice', () => {
+    const state = initializeGame();
+    const invalid = advanceQuarter(state, { accelerateDebts: [{ debtId: 'nodeworks-infrastructure-debt' }] });
+    expect(invalid.ok).toBe(false);
+    if (!invalid.ok) expect(invalid.issues.some((item) => item.code === 'command.debt_acceleration_no_default')).toBe(true);
+
+    const defaulted = {
+      ...state,
+      debts: state.debts.map((debt) => debt.id === 'nodeworks-infrastructure-debt'
+        ? { ...debt, paymentStatus: 'defaulted' as const, overdueQuarters: 2 } : debt),
+    };
+    const notice = advanceQuarter(defaulted, { accelerateDebts: [{ debtId: 'nodeworks-infrastructure-debt' }] });
+    expect(notice.ok).toBe(true);
+    if (!notice.ok) return;
+    const blocked = advanceQuarter(notice.state, { restructureDebts: [{
+      debtId: 'nodeworks-infrastructure-debt', requestedMaturityQuarter: 10,
+    }] });
+    expect(blocked.ok).toBe(false);
+    if (!blocked.ok) expect(blocked.issues.some((item) => item.code === 'command.debt_restructure_accelerated')).toBe(true);
+  });
+});
