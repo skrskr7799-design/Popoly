@@ -39,6 +39,17 @@ export interface CreditDecisionReportLine {
   offerId?: string;
 }
 
+export interface DebtRefinancingReportLine {
+  oldDebtId: string; newDebtId: string; borrowerId: string; newLenderId: string;
+  refinancedPrincipalCents: MoneyCents; feeCents: MoneyCents; netCashReleasedCents: MoneyCents;
+}
+export interface DebtRestructuringReportLine {
+  debtId: string; borrowerId: string; lenderId: string; status: 'accepted' | 'rejected';
+  previousQuarterlyInterestRate: number; newQuarterlyInterestRate?: number;
+  previousMaturityQuarter?: number; newMaturityQuarter?: number;
+  previousScheduledPrincipalCentsPerQuarter?: MoneyCents; newScheduledPrincipalCentsPerQuarter?: MoneyCents;
+  covenantWaived?: boolean; reason: string;
+}
 export interface CovenantReportLine {
   debtId: string;
   borrowerId: string;
@@ -90,6 +101,8 @@ export interface QuarterReport {
   loanAcceptances?: LoanAcceptanceReportLine[];
   creditDecisions?: CreditDecisionReportLine[];
   covenantUpdates?: CovenantReportLine[];
+  debtRefinancings?: DebtRefinancingReportLine[];
+  debtRestructurings?: DebtRestructuringReportLine[];
   contractsInRenewalWindow?: string[];
 }
 
