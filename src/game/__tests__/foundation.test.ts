@@ -495,6 +495,68 @@ describe('atomic quarter transition', () => {
 });
 
 
+describe('lender-originated credit market', () => {
+  it('accepts a lender offer and books cash and debt only to the named borrower', () => {
+    const state = initializeGame();
+    const result = advanceQuarter(state, { acceptLoanOffers: [{ offerId: 'northstar-nodeworks-q1' }] });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+
+    const nodeworks = result.state.organizations.find((item) => item.id === 'nodeworks')!;
+    const meridian = result.state.organizations.find((item) => item.id === 'meridian-group')!;
+    const northstar = result.state.organizations.find((item) => item.id === 'northstar-commercial-bank')!;
+    expect(nodeworks.cashCents).toBe(839_616_000);
+    expect(nodeworks.debtCents).toBe(1_600_000_000);
+    expect(meridian.cashCents).toBe(1_394_000_000);
+    expect(meridian.debtCents).toBe(300_000_000);
+    expect(northstar.cashCents).toBe(2_300_000_000);
+    expect(result.state.lenders.find((item) => item.organizationId === northstar.id)!.availableCapacityCents).toBe(1_000_000_000);
+    expect(result.state.loanOffers.find((item) => item.id === 'northstar-nodeworks-q1')!.status).toBe('accepted');
+    expect(result.report.loanAcceptances).toEqual([expect.objectContaining({
+      offerId: 'northstar-nodeworks-q1', borrowerId: 'nodeworks', principalCents: 200_000_000,
+    })]);
+    expect(validateGameState(result.state)).toEqual([]);
+
+    const nextReport = buildQuarterReport(result.state);
+    const nextNodeworksBridge = nextReport.entityCashBridges.find((item) => item.organizationId === 'nodeworks')!;
+    expect(nextNodeworksBridge.interestExpenseCents).toBe(37_100_000);
+  });
+
+  it('rejects expired, unavailable, duplicate and over-capacity loan acceptances atomically', () => {
+    const expired = initializeGame();
+    expired.quarter = 3;
+    const expiredResult = advanceQuarter(expired, { acceptLoanOffers: [{ offerId: 'northstar-nodeworks-q1' }] });
+    expect(expiredResult.ok).toBe(false);
+    if (!expiredResult.ok) expect(expiredResult.issues.some((item) => item.code === 'command.loan_offer_expired')).toBe(true);
+
+    const duplicate = initializeGame();
+    const duplicateResult = advanceQuarter(duplicate, { acceptLoanOffers: [
+      { offerId: 'northstar-nodeworks-q1' }, { offerId: 'northstar-nodeworks-q1' },
+    ] });
+    expect(duplicateResult.ok).toBe(false);
+    if (!duplicateResult.ok) expect(duplicateResult.issues.some((item) => item.code === 'command.loan_offer_duplicate')).toBe(true);
+
+    const constrained = initializeGame();
+    constrained.lenders = constrained.lenders.map((item) => item.organizationId === 'northstar-commercial-bank'
+      ? { ...item, availableCapacityCents: 100_000_000 } : item);
+    const before = JSON.stringify(constrained);
+    const capacityResult = advanceQuarter(constrained, { acceptLoanOffers: [{ offerId: 'northstar-nodeworks-q1' }] });
+    expect(capacityResult.ok).toBe(false);
+    if (!capacityResult.ok) expect(capacityResult.issues.some((item) => item.code === 'command.lender_capacity_insufficient')).toBe(true);
+    expect(JSON.stringify(constrained)).toBe(before);
+  });
+
+  it('expires unaccepted offers after their final valid quarter', () => {
+    const state = initializeGame();
+    state.quarter = 2;
+    const result = advanceQuarter(state);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.state.loanOffers.find((item) => item.id === 'northstar-nodeworks-q1')!.status).toBe('expired');
+    expect(result.state.loanOffers.find((item) => item.id === 'frontier-meridian-q1')!.status).toBe('expired');
+  });
+});
+
 describe('strategic initiatives and project lifecycle', () => {
   it('launches initiatives using leadership capacity and holding-company cash', () => {
     const state = initializeGame();
