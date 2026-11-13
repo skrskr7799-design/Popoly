@@ -167,6 +167,7 @@ Player-facing information is a range with confidence and age, not the exact valu
 - Strengths: rapid demand growth, strong funding, high strategic value.
 - Weaknesses: volatile workload forecasts and aggressive price negotiations.
 - Likely responses: split workloads, seek volume discounts, require stronger service guarantees, or invest in own infrastructure.
+- NodeWorks' two anchor contracts have staggered end dates (Q4 and Q5) and a two-quarter renewal notice. Renewal willingness-to-pay and minimum guaranteed volumes are private customer metrics; the player must infer them from negotiation outcomes and market intelligence.
 
 Asterion is not simply a quest-giver. Its procurement choices must be based on price, reliability, available capacity, concentration, and its own growth outlook.
 
@@ -193,7 +194,11 @@ Asterion is not simply a quest-giver. Its procurement choices must be based on p
 - It is not a player-controlled actor and does not exist merely to approve projects.
 - Likely responses: publish reports, set conditions on large expansions, investigate concentration, or offer incentives for resilience investments.
 
-## 6. Leadership capacity and initiative catalogue
+## 6. Contract lifecycle assumptions
+
+The opening NodeWorks/Asterion anchor agreements are fixed-term contracts. Contract A (8 MW) ends after Q4; Contract B (5 MW) ends after Q5. Both enter a two-quarter renewal-notice window. A renewal proposal specifies price per MW-quarter, guaranteed workload, and a new term of 2–8 quarters. Asterion evaluates price and volume against private thresholds. Accepted terms begin in the following quarter; counteroffers and rejections do not silently alter the existing agreement. An agreement remains valid through its stated end quarter. If no renewal is accepted by the end of that quarter, it expires and its guaranteed workload is removed from NodeWorks' future contracted revenue. Asterion then reallocates the uncovered volume to Kestrel up to available capacity; any remainder becomes flexible demand. These thresholds are initial balance hypotheses and should later respond to service quality, supplier concentration, customer growth, and relationship history.
+
+## 7. Leadership capacity and initiative catalogue
 
 Starting leadership capacity: **4 units per quarter**. This is a test value, not a permanent design truth.
 
@@ -215,7 +220,7 @@ A project can span multiple quarters. Launch consumes its stated leadership cost
 
 Unused leadership capacity expires at quarter end in the first prototype. No carryover mechanic is assumed.
 
-## 7. Opening pressure and eight-quarter arc
+## 8. Opening pressure and eight-quarter arc
 
 The opening arc introduces pressure points without scripting a single correct response. Events should be conditional where possible.
 
@@ -232,7 +237,7 @@ The opening arc introduces pressure points without scripting a single correct re
 
 These are scenario beats, not guaranteed identical outcomes. The same pressure may be resolved differently or arrive with different severity based on actor decisions and prior player choices. Do not force the event if its preconditions no longer make sense.
 
-## 8. Viable strategic approaches
+## 9. Viable strategic approaches
 
 The scenario should allow at least three credible strategies:
 
@@ -247,7 +252,7 @@ Secure energy and equipment access, cultivate supplier and institutional relatio
 
 A fourth adaptive strategy should emerge naturally. The design must not give any one strategy a guaranteed advantage across all seeds and actor behaviors.
 
-## 9. Starting intelligence presentation
+## 10. Starting intelligence presentation
 
 At campaign start, the player knows Meridian and NodeWorks' internal operating figures. External actor data is presented as public, reported, or estimated.
 
@@ -264,7 +269,7 @@ Examples:
 
 The exact truth remains in the world state. Estimates are generated from source quality, observation age, and uncertainty. Research improves the player's knowledge; it does not reveal every hidden value.
 
-## 10. Initial scenario acceptance checks
+## 11. Initial scenario acceptance checks
 
 The scenario data is ready for engine implementation when:
 
@@ -277,6 +282,7 @@ The scenario data is ready for engine implementation when:
 - projects cannot commission before equipment, power, and operational prerequisites are met;
 - Asterion and Kestrel make independent supplier/market decisions;
 - rival estimates never leak hidden true state;
+- fixed contracts open a renewal window, preserve service through expiry, and expire/reallocate volume only when no renewal is accepted;
 - leadership capacity prevents over-sponsoring initiatives but does not stop routine operations;
 - the eight-quarter arc remains playable when the player chooses different strategies;
 - quarter eight can transition to sandbox with the same authoritative state.
