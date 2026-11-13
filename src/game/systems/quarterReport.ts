@@ -9,6 +9,16 @@ export interface CompanyQuarterReport {
   cashBridge: EntityCashBridge;
 }
 
+export interface ContractNegotiationResult {
+  contractId: string;
+  providerId: string;
+  customerId: string;
+  offeredPriceCents: MoneyCents;
+  status: 'accepted' | 'countered' | 'rejected';
+  counterPriceCents?: MoneyCents;
+  message: string;
+}
+
 export interface QuarterReport {
   quarter: number;
   companies: CompanyQuarterReport[];
@@ -19,7 +29,8 @@ export interface QuarterReport {
   projectsLaunched?: string[];
   projectsCompleted?: string[];
   projectCashCommitmentCents?: MoneyCents;
-  actorActions?: Array<{ actorId: string; kind: string; summary: string }>; 
+  actorActions?: Array<{ actorId: string; kind: string; summary: string }>;
+  contractNegotiations?: ContractNegotiationResult[];
 }
 
 /**
