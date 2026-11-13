@@ -22,6 +22,8 @@ The chosen direction is a **hybrid model**: corporate strategy is the starting i
 
 ## Documentation map
 
+| [Prototype Audit](docs/AUDIT.md) | Findings from the current code review and recommended rebuild direction |
+
 | Document | Purpose |
 |---|---|
 | [Vision](docs/VISION.md) | Project identity, player fantasy, pillars, and principles |
