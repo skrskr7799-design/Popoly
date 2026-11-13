@@ -17,6 +17,7 @@ import { COMPUTE_BOTTLENECK_SCENARIO_ID, COMPUTE_BOTTLENECK_SCENARIO_VERSION } f
 import { CampaignStoragePanel } from './CampaignStoragePanel';
 import { ContractPortfolioPanel } from './ContractPortfolioPanel';
 import type { ContractRenewalDraft } from './ContractPortfolioPanel';
+import { FinancePanel } from './FinancePanel';
 
 const money = (cents: number) => formatMillions(cents);
 const campaignRepository = new IndexedDbCampaignSaveRepository();
@@ -141,6 +142,10 @@ export default function CampaignApp() {
   const [session, setSession] = useState<CampaignSession | null>(null);
   const [selected, setSelected] = useState<string[]>([]);
   const [renewalDrafts, setRenewalDrafts] = useState<Record<string, ContractRenewalDraft>>({});
+  const [selectedLoanOffers, setSelectedLoanOffers] = useState<string[]>([]);
+  const [creditRequest, setCreditRequest] = useState({
+    borrowerId: 'nodeworks', amountDollars: '', termQuarters: '4', collateral: '',
+  });
   const [report, setReport] = useState<QuarterReport | null>(null);
   const [issues, setIssues] = useState<ValidationIssue[]>([]);
   const [revision, setRevision] = useState(0);
@@ -154,6 +159,8 @@ export default function CampaignApp() {
     setSession(next);
     setSelected([]);
     setRenewalDrafts({});
+    setSelectedLoanOffers([]);
+    setCreditRequest({ borrowerId: 'nodeworks', amountDollars: '', termQuarters: '4', collateral: '' });
     setReport(null);
     setIssues([]);
     setStorageMessage(null);
@@ -195,6 +202,8 @@ export default function CampaignApp() {
       setSession(result.value.session);
       setSelected([]);
     setRenewalDrafts({});
+    setSelectedLoanOffers([]);
+    setCreditRequest({ borrowerId: 'nodeworks', amountDollars: '', termQuarters: '4', collateral: '' });
       setReport(null);
       setIssues([]);
       setStorageMessage(result.value.recoveredFromPrevious
@@ -243,6 +252,8 @@ export default function CampaignApp() {
         setSession(restored.value.session);
         setSelected([]);
     setRenewalDrafts({});
+    setSelectedLoanOffers([]);
+    setCreditRequest({ borrowerId: 'nodeworks', amountDollars: '', termQuarters: '4', collateral: '' });
         setReport(null);
         setIssues([]);
         setShowStorage(false);
@@ -303,8 +314,23 @@ export default function CampaignApp() {
       termQuarters: Number(draft.termQuarters),
     }];
   });
+  const requestedAmountCents = Math.round(Number(creditRequest.amountDollars) * 100);
+  const creditRequests = creditRequest.amountDollars.trim() && Number.isFinite(requestedAmountCents) &&
+    requestedAmountCents > 0 && Number.isInteger(Number(creditRequest.termQuarters))
+    ? [{
+      borrowerId: creditRequest.borrowerId,
+      requestedPrincipalCents: requestedAmountCents,
+      termQuarters: Number(creditRequest.termQuarters),
+      ...(creditRequest.collateral.trim() ? { collateralDescription: creditRequest.collateral.trim() } : {}),
+    }]
+    : [];
   const resolveQuarter = () => {
-    const result = session.advance({ launchInitiatives: selected, contractRenewals: renewalCommands });
+    const result = session.advance({
+      launchInitiatives: selected,
+      contractRenewals: renewalCommands,
+      acceptLoanOffers: selectedLoanOffers.map((offerId) => ({ offerId })),
+      requestCredit: creditRequests,
+    });
     if (!result.ok) {
       setIssues(result.issues);
       return;
@@ -312,6 +338,8 @@ export default function CampaignApp() {
     setReport(result.report);
     setSelected([]);
     setRenewalDrafts({});
+    setSelectedLoanOffers([]);
+    setCreditRequest({ borrowerId: 'nodeworks', amountDollars: '', termQuarters: '4', collateral: '' });
     setIssues([]);
     setRevision((value) => value + 1);
   };
@@ -324,6 +352,7 @@ export default function CampaignApp() {
         <span className="pop-nav-label">CORPORATE GROUP</span>
         <button type="button" className="pop-nav-item active" onClick={() => scrollToSection('group-overview')}><Building2 size={17} /> Meridian Group</button>
         <button type="button" className="pop-nav-item" onClick={() => scrollToSection('nodeworks')}><Cpu size={17} /> NodeWorks</button>
+        <button type="button" className="pop-nav-item" onClick={() => scrollToSection('finance')}><Landmark size={17} /> Group finance</button>
         <span className="pop-nav-label">WORLD</span>
         <button type="button" className="pop-nav-item" onClick={() => scrollToSection('regional-market')}><Globe2 size={17} /> Regional market</button>
         <button type="button" className="pop-nav-item" onClick={() => scrollToSection('intelligence')}><Radar size={17} /> Intelligence</button>
@@ -396,6 +425,15 @@ export default function CampaignApp() {
             report={currentReport}
             drafts={renewalDrafts}
             onDraftChange={(contractId, draft) => setRenewalDrafts((current) => ({ ...current, [contractId]: draft }))}
+          />
+          <FinancePanel
+            state={state}
+            report={currentReport}
+            selectedOfferIds={selectedLoanOffers}
+            onToggleOffer={(offerId) => setSelectedLoanOffers((current) =>
+              current.includes(offerId) ? current.filter((id) => id !== offerId) : [...current, offerId])}
+            creditRequest={creditRequest}
+            onCreditRequestChange={setCreditRequest}
           />
         </div>
 
