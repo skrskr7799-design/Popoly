@@ -65,8 +65,8 @@ export function createComputeBottleneckState(seed = 2035): GameState {
     projects: [],
     equipmentOrders: [],
     lenders: [
-      { organizationId: 'northstar-commercial-bank', availableCapacityCents: moneyFromDollars(12_000_000), riskAppetite: 'conservative' },
-      { organizationId: 'frontier-development-bank', availableCapacityCents: moneyFromDollars(9_000_000), riskAppetite: 'growth' },
+      { organizationId: 'northstar-commercial-bank', availableCapacityCents: moneyFromDollars(12_000_000), riskAppetite: 'conservative', baseQuarterlyInterestRate: 0.018, minimumCreditScore: 620, maxLoanToAnnualCashFlow: 2.2 },
+      { organizationId: 'frontier-development-bank', availableCapacityCents: moneyFromDollars(9_000_000), riskAppetite: 'growth', baseQuarterlyInterestRate: 0.02, minimumCreditScore: 500, maxLoanToAnnualCashFlow: 2.8 },
     ],
     loanOffers: [
       { id: 'northstar-nodeworks-q1', lenderId: 'northstar-commercial-bank', borrowerId: 'nodeworks',
