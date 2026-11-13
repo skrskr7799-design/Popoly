@@ -304,7 +304,9 @@ export function advanceAutonomousActors(state: GameState): {
   let regionalMarkets: RegionalMarketState[] = state.regionalMarkets.map((market) => ({ ...market }));
   const initialFirmHeadroom = regionalMarkets[0]?.immediateFirmPowerHeadroomMW ?? 0;
   const actorState = { ...state, equipmentOrders: state.equipmentOrders.map((order) => ({ ...order })) };
-  const relationshipUpdatedActors = actorState.actors.map((actor) => actor.organizationId === 'asterion-ai'\n    ? updateAsterionRelationship(actorState, actor) : actor);\n  const actors = relationshipUpdatedActors.map((actor) => updateActor(actor, actorState, actions, initialFirmHeadroom));
+  const relationshipUpdatedActors = actorState.actors.map((actor) => actor.organizationId === 'asterion-ai'
+    ? updateAsterionRelationship(actorState, actor) : actor);
+  const actors = relationshipUpdatedActors.map((actor) => updateActor(actor, actorState, actions, initialFirmHeadroom));
 
   actorState.actors = actors;
   // Agreements are served through their stated end quarter. If no renewal
