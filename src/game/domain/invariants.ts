@@ -46,6 +46,30 @@ export function validateGameState(state: GameState): ValidationIssue[] {
     }
   }
 
+  const lenderIds = new Set<string>();
+  for (const lender of state.lenders) {
+    if (lenderIds.has(lender.organizationId)) issues.push({ code: 'finance.lender_duplicate', message: 'Lender organization IDs must be unique.', entityId: lender.organizationId });
+    lenderIds.add(lender.organizationId);
+    if (!organizationIds.has(lender.organizationId) ||
+        !Number.isSafeInteger(lender.availableCapacityCents) || lender.availableCapacityCents < 0 ||
+        !['conservative', 'balanced', 'growth'].includes(lender.riskAppetite)) {
+      issues.push({ code: 'finance.lender_invalid', message: 'Lender capacity or policy is invalid.', entityId: lender.organizationId });
+    }
+  }
+  const loanOfferIds = new Set<string>();
+  for (const offer of state.loanOffers) {
+    if (loanOfferIds.has(offer.id)) issues.push({ code: 'finance.loan_offer_duplicate', message: 'Loan offer IDs must be unique.', entityId: offer.id });
+    loanOfferIds.add(offer.id);
+    if (!lenderIds.has(offer.lenderId) || !organizationIds.has(offer.borrowerId) ||
+        !Number.isSafeInteger(offer.principalCents) || offer.principalCents <= 0 ||
+        !Number.isFinite(offer.quarterlyInterestRate) || offer.quarterlyInterestRate < 0 ||
+        !Number.isInteger(offer.maturityQuarter) || offer.maturityQuarter < 1 ||
+        !Number.isInteger(offer.expiresAfterQuarter) || offer.expiresAfterQuarter < 1 ||
+        !['available', 'accepted', 'expired', 'withdrawn'].includes(offer.status)) {
+      issues.push({ code: 'finance.loan_offer_invalid', message: 'Loan offer contains an invalid lender, borrower, amount, rate, schedule, or status.', entityId: offer.id });
+    }
+  }
+
   for (const company of state.operatingCompanies) {
     if (!organizationIds.has(company.organizationId)) {
       issues.push({ code: 'company.organization_missing', message: 'Operating company references a missing organization.', entityId: company.organizationId });
