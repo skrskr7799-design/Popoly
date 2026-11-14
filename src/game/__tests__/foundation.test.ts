@@ -1176,6 +1176,34 @@ describe('customer relationship and renewal intelligence', () => {
     expect(result.state.playerIntelligence.some((item) => item.metric === 'renewalMaxPrice:asterion-contract-a')).toBe(false);
   });
 
+  it('prices renewal risk using Kestrel capacity freed by flexible-demand reallocation', () => {
+    const makeState = (flexibleMW: number) => {
+      const state = initializeGame(2035);
+      state.actors = state.actors.map((actor) => {
+        if (actor.organizationId === 'asterion-ai') {
+          return { ...actor, hiddenMetrics: { ...actor.hiddenMetrics, kestrelFlexibleMW: flexibleMW } };
+        }
+        if (actor.organizationId === 'kestrel-compute') {
+          return { ...actor, hiddenMetrics: {
+            ...actor.hiddenMetrics, effectiveCapacityMW: 24, currentWorkloadMW: 24,
+          } };
+        }
+        return actor;
+      });
+      return state;
+    };
+
+    const withoutRebalancing = advanceAutonomousActors(makeState(0)).state;
+    const withRebalancing = advanceAutonomousActors(makeState(8)).state;
+    const riskWithout = withoutRebalancing.playerIntelligence.find((item) =>
+      item.metric === 'contractRenewalRisk:asterion-contract-a')!;
+    const riskWith = withRebalancing.playerIntelligence.find((item) =>
+      item.metric === 'contractRenewalRisk:asterion-contract-a')!;
+
+    expect(riskWith.min).toBeGreaterThan(riskWithout.min + 10);
+    expect(riskWith.max).toBeGreaterThan(riskWithout.max + 10);
+  });
+
   it('keeps relationship outcomes and intelligence deterministic for the same seed', () => {
     const first = advanceQuarter(initializeGame(991));
     const second = advanceQuarter(initializeGame(991));
