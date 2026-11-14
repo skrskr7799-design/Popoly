@@ -22,6 +22,7 @@ import { RegionalCommandMap } from './RegionalCommandMap';
 import { CommandCenterBriefing } from './CommandCenterBriefing';
 import { CorporationOverview } from './CorporationOverview';
 import { MarketsOverview } from './MarketsOverview';
+import { QuarterStrategyOverview } from './QuarterStrategyOverview';
 
 const money = (cents: number) => formatMillions(cents);
 const campaignRepository = new IndexedDbCampaignSaveRepository();
@@ -411,6 +412,12 @@ export default function CampaignApp() {
       {storageMessage && <div className="pop-storage-message">{storageMessage}<button onClick={() => setStorageMessage(null)}>Dismiss</button></div>}
       {showStorage && storagePanel}
       <footer className="pop-footer"><span>POPOLY / THE COMPUTE BOTTLENECK</span><span>MARKET INTELLIGENCE · {formatQuarter(state.quarter)}</span><button onClick={restartCampaign}>Restart campaign</button></footer>
+      </> : activeView === 'strategy' ? <>
+      <QuarterStrategyOverview state={state} selected={selected} active={active} issues={issues}
+        onToggle={toggle} onResolve={resolveQuarter} />
+      {storageMessage && <div className="pop-storage-message">{storageMessage}<button onClick={() => setStorageMessage(null)}>Dismiss</button></div>}
+      {showStorage && storagePanel}
+      <footer className="pop-footer"><span>POPOLY / THE COMPUTE BOTTLENECK</span><span>STRATEGIC PLANNING · {formatQuarter(state.quarter)}</span><button onClick={restartCampaign}>Restart campaign</button></footer>
       </> : <>
       <section className="pop-hero pop-command-hero">
         <div className="pop-hero-copy"><span className="pop-eyebrow"><i className="pop-eyebrow-pulse" /> STRATEGIC POSITION · NORTH REGION · 2035</span><h2>The future is<br /><em>under construction.</em></h2>
