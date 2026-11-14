@@ -84,8 +84,13 @@ describe('formal administration transitions', () => {
     expect(result.state.organizations.find((item) => item.id === 'nodeworks')?.cashCents).toBe(0);
     expect(result.state.assets?.filter((item) => item.ownerId === 'nodeworks' && item.disposedQuarter === undefined)).toHaveLength(0);
     expect(result.state.operatingCompanies.find((item) => item.organizationId === 'nodeworks')?.contracts).toHaveLength(0);
+    const shareholderBase = Math.floor(preview.shareholderResidualCents * 7_200_000 / 10_000_000);
+    const founderBase = Math.floor(preview.shareholderResidualCents * 1_800_000 / 10_000_000);
+    const fundBase = Math.floor(preview.shareholderResidualCents * 1_000_000 / 10_000_000);
+    const shareholderRemainder = preview.shareholderResidualCents - shareholderBase - founderBase - fundBase;
+    const meridianResidual = shareholderBase + (shareholderRemainder >= 2 ? 1 : 0);
     expect(result.state.organizations.find((item) => item.id === 'meridian-group')?.cashCents)
-      .toBe((parentCashBefore ?? 0) + Math.floor(preview.shareholderResidualCents * 7_200_000 / 10_000_000));
+      .toBe((parentCashBefore ?? 0) + meridianResidual);
     expect(result.state.debts.filter((item) => item.borrowerId === 'meridian-group')
       .map((item) => [item.id, item.principalCents])).toEqual(parentDebtBefore);
 
