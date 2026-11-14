@@ -103,7 +103,7 @@ export function CorporationOverview({
           <span><ShieldCheck size={13} /> {gameText("Separate balance sheets")}</span>
         </div>
       </div>
-      <div className="pop-corp-intro-visual" aria-label="Meridian Group owns and directs NodeWorks">
+      <div className="pop-corp-intro-visual" aria-label={gameText("Meridian Group owns and directs NodeWorks")}>
         <div className="pop-corp-orbit orbit-one" /><div className="pop-corp-orbit orbit-two" />
         <div className="pop-corp-orbit-core"><span>{gameText("MG")}</span><small>{gameText("GROUP")}</small></div>
         <div className="pop-corp-orbit-node"><Factory size={18} /><small>{gameText("NODEWORKS")}</small></div>
@@ -178,10 +178,10 @@ export function CorporationOverview({
         <span className="pop-pill">{activeContracts.length} active agreements</span>
       </div>
       <div className="pop-corp-commercial">
-        <Metric label="Contracted workload" value={contractedMW.toFixed(1) + ' MW'} detail="Firm customer commitments" tone="good" />
-        <Metric label="Flexible workload" value={flexibleMW.toFixed(1) + ' MW'} detail="Demand with flexible terms" />
-        <Metric label="Quarter revenue" value={formatMoney(operations?.revenueCents ?? 0, true)} detail="Latest resolved quarter" tone="good" />
-        <Metric label="Operating contribution" value={formatMoney(operations?.operatingCashContributionCents ?? 0, true)} detail="After operating expenses" tone={(operations?.operatingCashContributionCents ?? 0) >= 0 ? 'good' : 'warn'} />
+        <Metric label={gameText("Contracted workload")} value={contractedMW.toFixed(1) + ' MW'} detail="Firm customer commitments" tone="good" />
+        <Metric label={gameText("Flexible workload")} value={flexibleMW.toFixed(1) + ' MW'} detail="Demand with flexible terms" />
+        <Metric label={gameText("Quarter revenue")} value={formatMoney(operations?.revenueCents ?? 0, true)} detail="Latest resolved quarter" tone="good" />
+        <Metric label={gameText("Operating contribution")} value={formatMoney(operations?.operatingCashContributionCents ?? 0, true)} detail="After operating expenses" tone={(operations?.operatingCashContributionCents ?? 0) >= 0 ? 'good' : 'warn'} />
       </div>
     </section>
 
@@ -194,9 +194,9 @@ export function CorporationOverview({
         <span className="pop-pill">{gameText("Entity-level accounting")}</span>
       </div>
       <div className="pop-corp-finance-summary">
-        <Metric label="Group cash" value={formatMoney((holding?.cashCents ?? 0) + (subsidiary?.cashCents ?? 0), true)} detail="Combined view · not pooled" />
-        <Metric label="Group debt" value={formatMoney(debtTotal([...holdingDebt, ...subsidiaryDebt]), true)} detail="Across both legal entities" tone="warn" />
-        <Metric label="Quarter interest" value={formatMoney(report.totalInterestExpenseCents, true)} detail="Latest resolved quarter" />
+        <Metric label={gameText("Group cash")} value={formatMoney((holding?.cashCents ?? 0) + (subsidiary?.cashCents ?? 0), true)} detail="Combined view · not pooled" />
+        <Metric label={gameText("Group debt")} value={formatMoney(debtTotal([...holdingDebt, ...subsidiaryDebt]), true)} detail="Across both legal entities" tone="warn" />
+        <Metric label={gameText("Quarter interest")} value={formatMoney(report.totalInterestExpenseCents, true)} detail="Latest resolved quarter" />
       </div>
       <FinancePanel state={state} report={report} selectedOfferIds={selectedLoanOffers}
         onToggleOffer={onToggleLoanOffer} creditRequest={creditRequest}
