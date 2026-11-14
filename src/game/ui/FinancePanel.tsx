@@ -177,7 +177,7 @@ export function FinancePanel({
     {operatingCompany?.status !== 'administration' && operatingCompany?.status !== 'liquidated' && operatingHealth?.status === 'distressed' && !administrationCase && <div className="pop-finance-subsection pop-administration pop-administration-warning">
       <div className="pop-finance-subtitle"><strong>Creditor protection may be required</strong><span className="pop-pill pop-pill-warn">Distressed</span></div>
       <p>NodeWorks is in financial distress. Filing opens a formal administration case; it does not erase debt or transfer Meridian Group's cash to the subsidiary.</p>
-      <button type="button" className="pop-secondary-button pop-admin-danger" onClick={onFileAdministration}>File for administration</button>
+      <button type="button" className="pop-secondary-button pop-admin-danger" onClick={() => onFileAdministration()}>File for administration</button>
     </div>}
     {resolvedAdministrationCase?.status === 'liquidated' && resolvedAdministrationCase.resolution && <div className="pop-finance-subsection pop-administration pop-administration-closed">
       <div className="pop-finance-subtitle"><strong>NodeWorks liquidation completed</strong><span className="pop-pill pop-pill-warn">Closed · {formatQuarter(resolvedAdministrationCase.resolvedQuarter ?? state.quarter)}</span></div>
