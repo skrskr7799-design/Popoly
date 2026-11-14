@@ -78,6 +78,12 @@ export interface EntityCashBridge {
   financingCashFlowCents: MoneyCents;
   netCashChangeCents: MoneyCents;
   closingCashCents: MoneyCents;
+  /** Cash remitted against trade and operating obligations this quarter. */
+  operatingPayablesPaidCents?: MoneyCents;
+  /** New operating obligations recognized this quarter, whether paid or unpaid. */
+  operatingPayablesAccruedCents?: MoneyCents;
+  /** Closing unpaid operating obligations for this legal entity. */
+  operatingPayablesOutstandingCents?: MoneyCents;
 }
 
 /** Calculates interest on opening principal; principal repayment is a separate financing decision. */
