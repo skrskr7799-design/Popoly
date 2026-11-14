@@ -1,3 +1,5 @@
+import { gameText, useGameLocale } from '../../i18n/game';
+import { useI18n } from '../../i18n';
 import { useState, type ReactNode } from 'react';
 import {
   Activity, ArrowUpRight, Banknote, Building2, Check, FolderOpen,
@@ -81,7 +83,7 @@ function InitiativeCard({ initiative, selected, active, affordable, onToggle }: 
     <div className="pop-initiative-icon"><Icon size={18} /></div>
     <div className="pop-initiative-copy">
       <div className="pop-initiative-heading"><strong>{initiative.name}</strong>
-        {active ? <span className="pop-pill">In progress</span> : selected ? <span className="pop-selected"><Check size={13} /> Selected</span> : null}
+        {active ? <span className="pop-pill">{gameText("In progress")}</span> {gameText(": selected ?")} <span className="pop-selected"><Check size={13} /> {gameText("Selected")}</span> : null}
       </div>
       <p>{initiative.description}</p>
       <small>{effectDetail(initiative)}</small>
@@ -94,15 +96,15 @@ function InitiativeCard({ initiative, selected, active, affordable, onToggle }: 
 function OpeningScreen({ onStart, onOpenArchive }: { onStart: () => void; onOpenArchive: () => void }) {
   return <main className="pop-opening">
     <div className="pop-opening-mark"><Building2 size={28} /></div>
-    <span className="pop-eyebrow">POPOLY · STRATEGIC SIMULATION</span>
-    <h1>The Compute<br /><em>Bottleneck</em></h1>
-    <p>Lead Meridian Group through eight decisive quarters. Control the dependencies that shape the future of regional compute infrastructure.</p>
+    <span className="pop-eyebrow">{gameText("POPOLY · STRATEGIC SIMULATION")}</span>
+    <h1>{gameText("The Compute")}<br /><em>{gameText("Bottleneck")}</em></h1>
+    <p>{gameText("Lead Meridian Group through eight decisive quarters. Control the dependencies that shape the future of regional compute infrastructure.")}</p>
     <div className="pop-opening-facts">
-      <span><Landmark size={16} /> Meridian Group</span><span><Cpu size={16} /> NodeWorks</span><span><Globe2 size={16} /> North Region · 2035</span>
+      <span><Landmark size={16} /> {gameText("Meridian Group")}</span><span><Cpu size={16} /> {gameText("NodeWorks")}</span><span><Globe2 size={16} /> {gameText("North Region · 2035")}</span>
     </div>
-    <button className="pop-primary pop-start" onClick={onStart}>Establish command <ChevronRight size={17} /></button>
-    <button className="pop-opening-archive" onClick={onOpenArchive}><FolderOpen size={15} /> Resume a saved campaign</button>
-    <small className="pop-muted">New campaign · Seed 2035 · Eight-quarter opening</small>
+    <button className="pop-primary pop-start" onClick={onStart}>{gameText("Establish command")} <ChevronRight size={17} /></button>
+    <button className="pop-opening-archive" onClick={onOpenArchive}><FolderOpen size={15} /> {gameText("Resume a saved campaign")}</button>
+    <small className="pop-muted">{gameText("New campaign · Seed 2035 · Eight-quarter opening")}</small>
   </main>;
 }
 
@@ -119,15 +121,15 @@ function QuarterReportPanel({ report, state }: { report: QuarterReport; state: G
   const initiativeName = (id: string) =>
     COMPUTE_BOTTLENECK_INITIATIVES.find((item) => item.id === id)?.name ?? id.replaceAll('-', ' ');
   return <section className="pop-panel pop-report">
-    <SectionTitle eyebrow="RESOLUTION" title={`${formatQuarter(report.quarter)} · Quarter review`} right={<span className="pop-pill pop-pill-green">Resolved</span>} />
+    <SectionTitle eyebrow="RESOLUTION" title={`${formatQuarter(report.quarter)} · Quarter review`} right={<span className="pop-pill pop-pill-green">{gameText("Resolved")}</span>} />
     <div className="pop-report-grid">
-      <div><small>NodeWorks revenue</small><strong>{money(company?.operations.revenueCents ?? 0)}</strong></div>
-      <div><small>Operating contribution</small><strong className={(company?.operations.operatingCashContributionCents ?? 0) >= 0 ? 'tone-good' : 'tone-warn'}>{money(company?.operations.operatingCashContributionCents ?? 0)}</strong></div>
-      <div><small>Energy expense</small><strong>{money(company?.operations.energyCostCents ?? 0)}</strong></div>
-      <div><small>NodeWorks closing cash</small><strong>{money(companyBridge?.closingCashCents ?? getCash(state, 'nodeworks'))}</strong></div>
-      <div><small>Meridian closing cash</small><strong>{money(holdingBridge?.closingCashCents ?? getCash(state, 'meridian-group'))}</strong></div>
-      <div><small>NodeWorks interest paid</small><strong>{money(companyBridge?.interestPaidCents ?? 0)}</strong></div>
-      <div><small>NodeWorks principal repaid</small><strong>{money(principalRepaid)}</strong></div>
+      <div><small>{gameText("NodeWorks revenue")}</small><strong>{money(company?.operations.revenueCents ?? 0)}</strong></div>
+      <div><small>{gameText("Operating contribution")}</small><strong className={(company?.operations.operatingCashContributionCents ?? 0) >= 0 ? 'tone-good' : 'tone-warn'}>{money(company?.operations.operatingCashContributionCents ?? 0)}</strong></div>
+      <div><small>{gameText("Energy expense")}</small><strong>{money(company?.operations.energyCostCents ?? 0)}</strong></div>
+      <div><small>{gameText("NodeWorks closing cash")}</small><strong>{money(companyBridge?.closingCashCents ?? getCash(state, 'nodeworks'))}</strong></div>
+      <div><small>{gameText("Meridian closing cash")}</small><strong>{money(holdingBridge?.closingCashCents ?? getCash(state, 'meridian-group'))}</strong></div>
+      <div><small>{gameText("NodeWorks interest paid")}</small><strong>{money(companyBridge?.interestPaidCents ?? 0)}</strong></div>
+      <div><small>{gameText("NodeWorks principal repaid")}</small><strong>{money(principalRepaid)}</strong></div>
     </div>
     {launched.length > 0 && <div className="pop-report-line"><Check size={15} /> Initiatives launched: {launched.map(initiativeName).join(', ')}</div>}
     {completed.length > 0 && <div className="pop-report-line"><Sparkles size={15} /> Projects completed: {completed.map(initiativeName).join(', ')}</div>}
@@ -139,13 +141,15 @@ function QuarterReportPanel({ report, state }: { report: QuarterReport; state: G
     {report.covenantUpdates?.map((item) => <div className="pop-report-line" key={item.debtId}><ShieldCheck size={15} /> Covenant {item.debtId}: {item.status} · DSCR {item.debtServiceCoverage.toFixed(2)}×{item.reasons.length ? ` · ${item.reasons.join('; ')}` : ''}</div>)}
     {report.debtRestructurings?.map((item, index) => <div className="pop-report-line" key={`${item.debtId}-restructure-${index}`}><Banknote size={15} /> Restructuring {item.debtId}: {item.status} — {item.reason}</div>)}
     {report.debtRefinancings?.map((item) => <div className="pop-report-line" key={item.oldDebtId}><Banknote size={15} /> Refinanced {item.oldDebtId}: {money(item.refinancedPrincipalCents)} · fee {money(item.feeCents)}</div>)}
-    {actions.length > 0 ? <div className="pop-event-list"><span className="pop-eyebrow">WORLD ACTIVITY</span>{actions.map((action, index) =>
+    {actions.length > 0 ? <div className="pop-event-list"><span className="pop-eyebrow">{gameText("WORLD ACTIVITY")}</span>{actions.map((action, index) =>
       <div className="pop-event" key={`${action.actorId}-${index}`}><span>{action.actorId.replaceAll('-', ' ')}</span><p>{action.summary}</p></div>)}</div>
-      : <p className="pop-muted pop-report-empty">No major external events were recorded this quarter.</p>}
+      : <p className="pop-muted pop-report-empty">{gameText("No major external events were recorded this quarter.")}</p>}
   </section>;
 }
 
 export default function CampaignApp() {
+  const locale = useGameLocale();
+  const setLocale = useI18n((store) => store.setLocale);
   const [session, setSession] = useState<CampaignSession | null>(null);
   const [activeView, setActiveView] = useState<'command' | 'corporation' | 'markets' | 'strategy'>('command');
   const [selected, setSelected] = useState<string[]>([]);
@@ -305,7 +309,7 @@ export default function CampaignApp() {
     busy={storageBusy} onLoad={(id) => void loadCampaign(id)} onExport={(id) => void exportCampaign(id)}
     onImport={(file) => void importCampaign(file)} onRefresh={() => void refreshCampaigns()} />;
 
-  if (!session) return <div className="pop-opening-shell"><OpeningScreen onStart={startCampaign} onOpenArchive={openArchive} />
+  if (!session) return <div className="pop-opening-shell"><div className="pop-language-control"><button type="button" className="pop-secondary-button" onClick={() => setLocale(locale === "ru" ? "en" : "ru")} aria-label="Change language">{locale === "ru" ? "EN" : "RU"}</button><OpeningScreen onStart={startCampaign} onOpenArchive={openArchive} /></div>
     {showStorage && <div className="pop-opening-storage">{storagePanel}</div>}
   </div>;
 
@@ -360,7 +364,7 @@ export default function CampaignApp() {
   const fileNodeWorksAdministration = (requestedTrigger?: AdministrationTrigger) => {
     const hasDebtDefault = state.debts.some((debt) => debt.borrowerId === 'nodeworks' && debt.paymentStatus === 'defaulted');
     const hasOverdueTrade = (state.operatingPayables ?? []).some((payable) =>
-      payable.entityId === 'nodeworks' && payable.outstandingAmountCents > 0 && payable.dueQuarter < state.quarter);
+      payable.entityId === 'nodeworks' && payable.outstandingAmountCents > {gameText("0 && payable.dueQuarter")} < state.quarter);
     const result = session.openAdministration('nodeworks', requestedTrigger ??
       (hasDebtDefault ? 'debt-default' : hasOverdueTrade ? 'trade-creditor-arrears' : 'voluntary'));
     if (!result.ok) {
@@ -431,27 +435,27 @@ export default function CampaignApp() {
 
   return <div className="pop-app" data-revision={revision} data-view={activeView}>
     <aside className="pop-sidebar">
-      <div className="pop-brand"><div className="pop-brand-mark">P</div><div><strong>POPOLY</strong><small>TECH DOMINION</small></div></div>
-      <div className="pop-campaign-tag"><span className="pop-live-dot" /> LIVE CAMPAIGN</div>
+      <div className="pop-brand"><div className="pop-brand-mark">P</div><div><strong>{gameText("POPOLY")}</strong><small>{gameText("TECH DOMINION")}</small></div></div>
+      <div className="pop-campaign-tag"><span className="pop-live-dot" /> {gameText("LIVE CAMPAIGN")}</div>
       <div className="pop-side-nav">
-        <span className="pop-nav-label">STRATEGIC OFFICE</span>
-        <button type="button" className={`pop-nav-item ${activeView === 'command' ? 'active' : ''}`} aria-current={activeView === 'command' ? 'page' : undefined} onClick={() => setActiveView('command')}><Activity size={17} /> Command center</button>
-        <button type="button" className={`pop-nav-item ${activeView === 'corporation' ? 'active' : ''}`} aria-current={activeView === 'corporation' ? 'page' : undefined} onClick={() => setActiveView('corporation')}><Building2 size={17} /> Corporation</button>
-        <button type="button" className={`pop-nav-item ${activeView === 'markets' ? 'active' : ''}`} aria-current={activeView === 'markets' ? 'page' : undefined} onClick={() => setActiveView('markets')}><Globe2 size={17} /> Markets & intel</button>
-        <button type="button" className={`pop-nav-item ${activeView === 'strategy' ? 'active' : ''}`} aria-current={activeView === 'strategy' ? 'page' : undefined} onClick={() => setActiveView('strategy')}><Radar size={17} /> Quarter strategy</button>
+        <span className="pop-nav-label">{gameText("STRATEGIC OFFICE")}</span>
+        <button type="button" className={`pop-nav-item ${activeView === 'command' ? 'active' : ''}`} aria-current={activeView === 'command' ? 'page' : undefined} onClick={() => setActiveView('command')}><Activity size={17} /> {gameText("Command center")}</button>
+        <button type="button" className={`pop-nav-item ${activeView === 'corporation' ? 'active' : ''}`} aria-current={activeView === 'corporation' ? 'page' : undefined} onClick={() => setActiveView('corporation')}><Building2 size={17} /> {gameText("Corporation")}</button>
+        <button type="button" className={`pop-nav-item ${activeView === 'markets' ? 'active' : ''}`} aria-current={activeView === 'markets' ? 'page' : undefined} onClick={() => setActiveView('markets')}><Globe2 size={17} /> {gameText("Markets & intel")}</button>
+        <button type="button" className={`pop-nav-item ${activeView === 'strategy' ? 'active' : ''}`} aria-current={activeView === 'strategy' ? 'page' : undefined} onClick={() => setActiveView('strategy')}><Radar size={17} /> {gameText("Quarter strategy")}</button>
       </div>
-      <div className="pop-sidebar-bottom"><span>THE COMPUTE BOTTLENECK</span><small>Scenario v0.1.0</small><small>Campaign {session.campaignId.slice(0, 8)}</small></div>
+      <div className="pop-sidebar-bottom"><span>{gameText("THE COMPUTE BOTTLENECK")}</span><small>{gameText("Scenario v0.1.0")}</small><small>Campaign {session.campaignId.slice(0, 8)}</small></div>
     </aside>
 
     <main className="pop-main">
-      <header className="pop-topbar"><div><span className="pop-eyebrow">MERIDIAN GROUP / EXECUTIVE OFFICE</span><h1>{({ command: 'Command center', corporation: 'Corporate group', markets: 'Markets & intelligence', strategy: 'Quarter strategy' } as const)[activeView]}</h1></div>
-        <div className="pop-topbar-right"><span className="pop-quarter-chip">{formatQuarter(state.quarter)}</span><span className="pop-status"><i /> {session.stage === 'guided' ? 'Guided campaign' : 'Sandbox mode'}</span><button className="pop-secondary-button" onClick={() => void saveCurrentCampaign()} disabled={storageBusy}><Banknote size={14} /> Save</button><button className="pop-quiet-button" onClick={() => showStorage ? setShowStorage(false) : openArchive()}><FolderOpen size={14} /> Archive</button></div>
+      <header className="pop-topbar"><div><span className="pop-eyebrow">{gameText("MERIDIAN GROUP / EXECUTIVE OFFICE")}</span><h1>{({ command: 'Command center', corporation: 'Corporate group', markets: 'Markets & intelligence', strategy: 'Quarter strategy' } as const)[activeView]}</h1></div>
+        <div className="pop-topbar-right"><span className="pop-quarter-chip">{formatQuarter(state.quarter)}</span><button type="button" className="pop-quiet-button" onClick={() => setLocale(locale === "ru" ? "en" : "ru")} aria-label="Change language">{locale === "ru" ? "EN" : "RU"}</button><span className="pop-status"><i /> {session.stage === 'guided' ? 'Guided campaign' : 'Sandbox mode'}</span><button className="pop-secondary-button" onClick={() => void saveCurrentCampaign()} disabled={storageBusy}><Banknote size={14} /> {gameText("Save")}</button><button className="pop-quiet-button" onClick={() => showStorage ? setShowStorage(false) : openArchive()}><FolderOpen size={14} /> {gameText("Archive")}</button></div>
       </header>
       <nav className="pop-mobile-nav" aria-label="Game navigation">
-        <button className={activeView === 'command' ? 'active' : ''} aria-current={activeView === 'command' ? 'page' : undefined} onClick={() => setActiveView('command')}><Activity size={16} /><span>Command</span></button>
-        <button className={activeView === 'corporation' ? 'active' : ''} aria-current={activeView === 'corporation' ? 'page' : undefined} onClick={() => setActiveView('corporation')}><Building2 size={16} /><span>Group</span></button>
-        <button className={activeView === 'markets' ? 'active' : ''} aria-current={activeView === 'markets' ? 'page' : undefined} onClick={() => setActiveView('markets')}><Globe2 size={16} /><span>Markets</span></button>
-        <button className={activeView === 'strategy' ? 'active' : ''} aria-current={activeView === 'strategy' ? 'page' : undefined} onClick={() => setActiveView('strategy')}><Radar size={16} /><span>Strategy</span></button>
+        <button className={activeView === 'command' ? 'active' : ''} aria-current={activeView === 'command' ? 'page' : undefined} onClick={() => setActiveView('command')}><Activity size={16} /><span>{gameText("Command")}</span></button>
+        <button className={activeView === 'corporation' ? 'active' : ''} aria-current={activeView === 'corporation' ? 'page' : undefined} onClick={() => setActiveView('corporation')}><Building2 size={16} /><span>{gameText("Group")}</span></button>
+        <button className={activeView === 'markets' ? 'active' : ''} aria-current={activeView === 'markets' ? 'page' : undefined} onClick={() => setActiveView('markets')}><Globe2 size={16} /><span>{gameText("Markets")}</span></button>
+        <button className={activeView === 'strategy' ? 'active' : ''} aria-current={activeView === 'strategy' ? 'page' : undefined} onClick={() => setActiveView('strategy')}><Radar size={16} /><span>{gameText("Strategy")}</span></button>
       </nav>
 
       {activeView === 'corporation' ? <CorporationOverview
@@ -471,32 +475,32 @@ export default function CampaignApp() {
         onReorganizeAdministration={completeNodeWorksReorganization}
         onLiquidateAdministration={liquidateNodeWorks}
         onProposeWorkout={proposeNodeWorksWorkout}
-      /> : activeView === 'markets' ? <>
+      /> {gameText(": activeView === 'markets' ?")} <>
       <MarketsOverview state={state} report={currentReport} activityReport={report ?? undefined} />
-      {storageMessage && <div className="pop-storage-message">{storageMessage}<button onClick={() => setStorageMessage(null)}>Dismiss</button></div>}
+      {storageMessage && <div className="pop-storage-message">{storageMessage}<button onClick={() => setStorageMessage(null)}>{gameText("Dismiss")}</button></div>}
       {showStorage && storagePanel}
-      <footer className="pop-footer"><span>POPOLY / THE COMPUTE BOTTLENECK</span><span>MARKET INTELLIGENCE · {formatQuarter(state.quarter)}</span><button onClick={restartCampaign}>Restart campaign</button></footer>
-      </> : activeView === 'strategy' ? <>
-      {company?.status === 'liquidated' ? <section className="pop-panel pop-administration pop-administration-closed"><div className="pop-finance-subtitle"><strong>Campaign concluded</strong><span className="pop-pill pop-pill-warn">Liquidation</span></div><p>NodeWorks has been liquidated. The subsidiary's assets and remaining creditor claims have been resolved through the administration waterfall. Post-insolvency group operations are not yet part of this campaign.</p><button className="pop-primary" onClick={restartCampaign}>Start a new campaign</button></section> : <QuarterStrategyOverview state={state} selected={selected} active={active} issues={issues} onToggle={toggle} onResolve={resolveQuarter} />}
-      {storageMessage && <div className="pop-storage-message">{storageMessage}<button onClick={() => setStorageMessage(null)}>Dismiss</button></div>}
+      <footer className="pop-footer"><span>{gameText("POPOLY / THE COMPUTE BOTTLENECK")}</span><span>MARKET INTELLIGENCE · {formatQuarter(state.quarter)}</span><button onClick={restartCampaign}>{gameText("Restart campaign")}</button></footer>
+      </> {gameText(": activeView === 'strategy' ?")} <>
+      {company?.status === 'liquidated' ? <section className="pop-panel pop-administration pop-administration-closed"><div className="pop-finance-subtitle"><strong>{gameText("Campaign concluded")}</strong><span className="pop-pill pop-pill-warn">{gameText("Liquidation")}</span></div><p>{gameText("NodeWorks has been liquidated. The subsidiary's assets and remaining creditor claims have been resolved through the administration waterfall. Post-insolvency group operations are not yet part of this campaign.")}</p><button className="pop-primary" onClick={restartCampaign}>{gameText("Start a new campaign")}</button></section> : <QuarterStrategyOverview state={state} selected={selected} active={active} issues={issues} onToggle={toggle} onResolve={resolveQuarter} />}
+      {storageMessage && <div className="pop-storage-message">{storageMessage}<button onClick={() => setStorageMessage(null)}>{gameText("Dismiss")}</button></div>}
       {showStorage && storagePanel}
-      <footer className="pop-footer"><span>POPOLY / THE COMPUTE BOTTLENECK</span><span>STRATEGIC PLANNING · {formatQuarter(state.quarter)}</span><button onClick={restartCampaign}>Restart campaign</button></footer>
+      <footer className="pop-footer"><span>{gameText("POPOLY / THE COMPUTE BOTTLENECK")}</span><span>STRATEGIC PLANNING · {formatQuarter(state.quarter)}</span><button onClick={restartCampaign}>{gameText("Restart campaign")}</button></footer>
       </> : <>
       <section className="pop-hero pop-command-hero">
-        <div className="pop-hero-copy"><span className="pop-eyebrow"><i className="pop-eyebrow-pulse" /> STRATEGIC POSITION · NORTH REGION · 2035</span><h2>The future is<br /><em>under construction.</em></h2>
-          <p>Meridian Group is building the infrastructure behind the next compute economy. Power, equipment, capacity and demand are converging into one strategic contest.</p>
-          <div className="pop-hero-meta"><span><b className="pop-live-dot" /> {company?.status === 'liquidated' ? 'CAMPAIGN CONCLUDED' : 'LIVE CAMPAIGN'}</span><span>MERIDIAN GROUP</span><span>THE COMPUTE BOTTLENECK</span></div>
+        <div className="pop-hero-copy"><span className="pop-eyebrow"><i className="pop-eyebrow-pulse" /> {gameText("STRATEGIC POSITION · NORTH REGION · 2035")}</span><h2>{gameText("The future is")}<br /><em>{gameText("under construction.")}</em></h2>
+          <p>{gameText("Meridian Group is building the infrastructure behind the next compute economy. Power, equipment, capacity and demand are converging into one strategic contest.")}</p>
+          <div className="pop-hero-meta"><span><b className="pop-live-dot" /> {company?.status === 'liquidated' ? 'CAMPAIGN CONCLUDED' : 'LIVE CAMPAIGN'}</span><span>{gameText("MERIDIAN GROUP")}</span><span>{gameText("THE COMPUTE BOTTLENECK")}</span></div>
         </div>
-        <div className="pop-hero-visual"><RegionalCommandMap market={market} company={company} /><div className="pop-map-caption"><span>NORTH REGION / INFRASTRUCTURE NETWORK</span><span>SCHEMATIC VIEW · NOT TO SCALE</span></div></div>
-        <div className="pop-hero-progress"><span>CAMPAIGN PROGRESS</span><strong>{Math.min(session.completedQuarters, GUIDED_CAMPAIGN_QUARTERS)} <small>/ {GUIDED_CAMPAIGN_QUARTERS}</small></strong><div className="pop-progress"><i style={{ width: `${Math.min(100, session.completedQuarters / GUIDED_CAMPAIGN_QUARTERS * 100)}%` }} /></div><small>{session.stage === 'sandbox' ? 'Opening complete · Continue freely' : `${GUIDED_CAMPAIGN_QUARTERS - session.completedQuarters} quarters remaining`}</small></div>
+        <div className="pop-hero-visual"><RegionalCommandMap market={market} company={company} /><div className="pop-map-caption"><span>{gameText("NORTH REGION / INFRASTRUCTURE NETWORK")}</span><span>{gameText("SCHEMATIC VIEW · NOT TO SCALE")}</span></div></div>
+        <div className="pop-hero-progress"><span>{gameText("CAMPAIGN PROGRESS")}</span><strong>{Math.min(session.completedQuarters, GUIDED_CAMPAIGN_QUARTERS)} <small>/ {GUIDED_CAMPAIGN_QUARTERS}</small></strong><div className="pop-progress"><i style={{ width: `${Math.min(100, session.completedQuarters / GUIDED_CAMPAIGN_QUARTERS * 100)}%` }} /></div><small>{session.stage === 'sandbox' ? 'Opening complete · Continue freely' : `${GUIDED_CAMPAIGN_QUARTERS - session.completedQuarters} quarters remaining`}</small></div>
       </section>
 
-      {storageMessage && <div className="pop-storage-message">{storageMessage}<button onClick={() => setStorageMessage(null)}>Dismiss</button></div>}
+      {storageMessage && <div className="pop-storage-message">{storageMessage}<button onClick={() => setStorageMessage(null)}>{gameText("Dismiss")}</button></div>}
       {showStorage && storagePanel}
 
       <CommandCenterBriefing state={state} report={currentReport} completedQuarters={session.completedQuarters}
         onOpenStrategy={() => setActiveView('strategy')} onOpenMarkets={() => setActiveView('markets')} />
-      {company?.status === 'liquidated' && <section className="pop-panel pop-administration pop-administration-closed"><div className="pop-finance-subtitle"><strong>Campaign concluded</strong><span className="pop-pill pop-pill-warn">Liquidation</span></div><p>NodeWorks has ceased operations. The liquidation ledger is final; quarter progression is disabled because post-insolvency group play is not yet implemented.</p><button className="pop-primary" onClick={restartCampaign}>Start a new campaign</button></section>}
+      {company?.status === 'liquidated' && <section className="pop-panel pop-administration pop-administration-closed"><div className="pop-finance-subtitle"><strong>{gameText("Campaign concluded")}</strong><span className="pop-pill pop-pill-warn">{gameText("Liquidation")}</span></div><p>{gameText("NodeWorks has ceased operations. The liquidation ledger is final; quarter progression is disabled because post-insolvency group play is not yet implemented.")}</p><button className="pop-primary" onClick={restartCampaign}>{gameText("Start a new campaign")}</button></section>}
 
       <section id="group-overview" className="pop-stat-grid">
         <StatCard label="MERIDIAN · CASH" value={money(holdingCash)} note={`Debt ${money(holdingDebt)}`} icon={Banknote} tone="good" />
@@ -509,10 +513,10 @@ export default function CampaignApp() {
         <div className="pop-column">
           <section id="quarter-agenda" className="pop-panel pop-agenda-panel">
             <SectionTitle eyebrow="EXECUTIVE AGENDA" title="Choose this quarter's priorities" right={<span className="pop-pill">{selected.length} selected</span>} />
-            <p className="pop-panel-intro">Sponsor initiatives using Meridian's cash and limited leadership bandwidth. Routine operations continue automatically.</p>
+            <p className="pop-panel-intro">{gameText("Sponsor initiatives using Meridian's cash and limited leadership bandwidth. Routine operations continue automatically.")}</p>
             <div className="pop-budget">
-              <div><span>Leadership bandwidth</span><strong>{remainingLeadership} <small>/ {leadershipAvailable} units left</small></strong><div className="pop-budget-track"><i style={{ width: `${leadershipAvailable ? leadershipSelected / leadershipAvailable * 100 : 0}%` }} /></div></div>
-              <div><span>Capital commitment</span><strong>{money(cashSelected)} <small>committed · {money(remainingCash)} remaining</small></strong><div className="pop-budget-track cash"><i style={{ width: `${holdingCash ? cashSelected / holdingCash * 100 : 0}%` }} /></div></div>
+              <div><span>{gameText("Leadership bandwidth")}</span><strong>{remainingLeadership} <small>/ {leadershipAvailable} units left</small></strong><div className="pop-budget-track"><i style={{ width: `${leadershipAvailable ? leadershipSelected / leadershipAvailable * 100 : 0}%` }} /></div></div>
+              <div><span>{gameText("Capital commitment")}</span><strong>{money(cashSelected)} <small>committed · {money(remainingCash)} remaining</small></strong><div className="pop-budget-track cash"><i style={{ width: `${holdingCash ? cashSelected / holdingCash * 100 : 0}%` }} /></div></div>
             </div>
             <div className="pop-initiative-list">
               {COMPUTE_BOTTLENECK_INITIATIVES.map((initiative) => {
@@ -527,20 +531,20 @@ export default function CampaignApp() {
             <div className="pop-agenda-footer"><span>{selected.length ? `${selected.length} initiative(s) queued for resolution` : 'No strategic commitments selected'}</span>
               <button className="pop-primary" onClick={resolveQuarter} disabled={company?.status === 'liquidated'}>{company?.status === 'liquidated' ? 'Campaign concluded' : 'Resolve quarter'} <ArrowUpRight size={16} /></button>
             </div>
-            {issues.length > 0 && <div className="pop-issues"><div><CircleAlert size={16} /> Engine validation</div>{issues.map((item, index) => <p key={`${item.code}-${index}`}><strong>{item.code}</strong> — {item.message}</p>)}</div>}
+            {issues.length > 0 && <div className="pop-issues"><div><CircleAlert size={16} /> {gameText("Engine validation")}</div>{issues.map((item, index) => <p key={`${item.code}-${index}`}><strong>{item.code}</strong> — {item.message}</p>)}</div>}
           </section>
 
           {report && <QuarterReportPanel report={report} state={state} />}
           <section id="nodeworks" className="pop-panel">
             <SectionTitle eyebrow="OPERATING COMPANY" title="NodeWorks" right={<span className={company?.status === 'liquidated' ? 'pop-pill pop-pill-warn' : 'pop-pill pop-pill-green'}>{company?.status === 'liquidated' ? 'Liquidated' : company?.status === 'administration' ? 'In administration' : 'Controlled subsidiary'}</span>} />
             <div className="pop-operating-summary">
-              <div><span>Installed IT</span><strong>{company?.capacity.installedITMW.toFixed(1)} MW</strong></div>
-              <div><span>Grid allocation</span><strong>{company?.capacity.gridAllocationMW.toFixed(1)} MW</strong></div>
-              <div><span>Equipment</span><strong>{company?.capacity.commissionedEquipmentMW.toFixed(1)} MW</strong></div>
-              <div><span>Operational limit</span><strong>{company?.capacity.operationalLimitMW.toFixed(1)} MW</strong></div>
+              <div><span>{gameText("Installed IT")}</span><strong>{company?.capacity.installedITMW.toFixed(1)} MW</strong></div>
+              <div><span>{gameText("Grid allocation")}</span><strong>{company?.capacity.gridAllocationMW.toFixed(1)} MW</strong></div>
+              <div><span>{gameText("Equipment")}</span><strong>{company?.capacity.commissionedEquipmentMW.toFixed(1)} MW</strong></div>
+              <div><span>{gameText("Operational limit")}</span><strong>{company?.capacity.operationalLimitMW.toFixed(1)} MW</strong></div>
             </div>
             <div className="pop-capacity-track"><i style={{ width: `${Math.min(100, (operating?.deliveredWorkloadMW ?? 0) / Math.max(1, operating?.effectiveCapacityMW ?? 1) * 100)}%` }} /></div>
-            <small className="pop-muted">Delivered workload is constrained by the lowest of installed, grid, equipment and operational capacity, adjusted for reliability.</small>
+            <small className="pop-muted">{gameText("Delivered workload is constrained by the lowest of installed, grid, equipment and operational capacity, adjusted for reliability.")}</small>
           </section>
           <ContractPortfolioPanel
             company={company}
@@ -571,12 +575,12 @@ export default function CampaignApp() {
           <section id="regional-market" className="pop-panel">
             <SectionTitle eyebrow="MARKET CONDITIONS" title="North Region" />
             <div className="pop-market-metrics">
-              <div><Zap size={16} /><span>Regional power</span><strong>{market?.availablePowerMW.toFixed(0)} MW</strong></div>
-              <div><Activity size={16} /><span>Committed load</span><strong>{market?.committedPowerMW.toFixed(0)} MW</strong></div>
-              <div><ArrowUpRight size={16} /><span>Immediate firm headroom</span><strong>{market?.immediateFirmPowerHeadroomMW.toFixed(0)} MW</strong></div>
-              <div><Cpu size={16} /><span>Equipment delivery pool</span><strong>{market?.equipmentDeliveryPoolMWEquivalentPerQuarter.toFixed(0)} MW-eq / qtr</strong></div>
+              <div><Zap size={16} /><span>{gameText("Regional power")}</span><strong>{market?.availablePowerMW.toFixed(0)} MW</strong></div>
+              <div><Activity size={16} /><span>{gameText("Committed load")}</span><strong>{market?.committedPowerMW.toFixed(0)} MW</strong></div>
+              <div><ArrowUpRight size={16} /><span>{gameText("Immediate firm headroom")}</span><strong>{market?.immediateFirmPowerHeadroomMW.toFixed(0)} MW</strong></div>
+              <div><Cpu size={16} /><span>{gameText("Equipment delivery pool")}</span><strong>{market?.equipmentDeliveryPoolMWEquivalentPerQuarter.toFixed(0)} MW-eq / qtr</strong></div>
             </div>
-            <div className="pop-energy-price"><span>Reference energy price</span><strong>{formatMoney(market?.referenceEnergyPriceCentsPerMWh ?? 0)} <small>/ MWh</small></strong></div>
+            <div className="pop-energy-price"><span>{gameText("Reference energy price")}</span><strong>{formatMoney(market?.referenceEnergyPriceCentsPerMWh ?? 0)} <small>{gameText("/ MWh")}</small></strong></div>
           </section>
 
           <section id="intelligence" className="pop-panel">
@@ -594,16 +598,16 @@ export default function CampaignApp() {
           <section className="pop-panel">
             <SectionTitle eyebrow="PROJECT PIPELINE" title="Active initiatives" />
             {state.projects.filter((project) => project.remainingQuarters > 0).length === 0
-              ? <p className="pop-muted">No active strategic projects. Your executive bandwidth is available for new priorities.</p>
+              ? <p className="pop-muted">{gameText("No active strategic projects. Your executive bandwidth is available for new priorities.")}</p>
               : state.projects.filter((project) => project.remainingQuarters > 0).map((project) => {
                 const definition = COMPUTE_BOTTLENECK_INITIATIVES.find((item) => item.id === project.initiativeId);
-                return <div className="pop-project" key={project.id}><div><strong>{definition?.name ?? project.initiativeId}</strong><span>{project.remainingQuarters} quarters remaining</span></div><span className="pop-project-status">IN PROGRESS</span></div>;
+                return <div className="pop-project" key={project.id}><div><strong>{definition?.name ?? project.initiativeId}</strong><span>{project.remainingQuarters} quarters remaining</span></div><span className="pop-project-status">{gameText("IN PROGRESS")}</span></div>;
               })}
           </section>
         </div>
       </div>
 
-      <footer className="pop-footer"><span>POPOLY / THE COMPUTE BOTTLENECK</span><span>SIMULATION BUILD 0.1.0</span><button onClick={restartCampaign}>Restart campaign</button></footer>
+      <footer className="pop-footer"><span>{gameText("POPOLY / THE COMPUTE BOTTLENECK")}</span><span>{gameText("SIMULATION BUILD 0.1.0")}</span><button onClick={restartCampaign}>{gameText("Restart campaign")}</button></footer>
       </>}
     </main>
   </div>;
