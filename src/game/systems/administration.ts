@@ -1,5 +1,5 @@
 import type {
-  AdministrationCase, GameState, MoneyCents,
+  AdministrationCase, GameState,
 } from '../domain/types';
 import { moneyFromCents } from '../domain/money';
 import { calculateLiquidationWaterfall, type LiquidationWaterfall } from './liquidation';
