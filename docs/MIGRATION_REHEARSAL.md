@@ -8,8 +8,8 @@
 ## 1. Repository snapshot
 
 - Target `main` HEAD: `3c8c1183490562111f820dafd602eca18826df11`.
-- Candidate snapshot validated in push and PR CI: `0eea3ca7767735b35c885b21ce246b5a4be6601e`.
-- GitHub compare reports source branch **645 commits ahead, 0 behind**, across **111 changed files**.
+- Candidate snapshot validated in push and PR CI: `ae46c48b8b75af3f786f534ebdf9730aa3587475`.
+- GitHub compare reports source branch **649 commits ahead, 0 behind**, across **111 changed files**.
 - The PR is open, draft, and currently reported mergeable. It is not merged.
 - The source branch is ahead of the current target without target-only commits to reconcile. The history range is large; review the complete PR commit/file list before choosing the final merge strategy.
 - No merge, force-push, branch deletion, or change to `main` is part of this rehearsal.
