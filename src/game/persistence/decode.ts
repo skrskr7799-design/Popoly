@@ -92,7 +92,8 @@ export function isGameStateShape(value: unknown): value is GameState {
         isNumber(item.openedQuarter) && isString(item.status) && isRecord(item.terms) &&
         isNumber(item.terms.standstillQuarters) && isNumber(item.terms.maturityExtensionQuarters) &&
         isNumber(item.terms.interestReductionBps) && isNumber(item.terms.principalWriteDownBps) &&
-        isNumber(item.terms.tradePayableWriteDownBps) && typeof item.terms.covenantWaiver === 'boolean' &&
+        isNumber(item.terms.tradePayableWriteDownBps) && isNumber(item.terms.debtToEquityConversionBps) &&
+        (item.terms.equityPreMoneyValuationCents === undefined || isNumber(item.terms.equityPreMoneyValuationCents)) && typeof item.terms.covenantWaiver === 'boolean' &&
         isNumber(item.totalClaimsCents) && isNumber(item.acceptedClaimsCents) &&
         isNumber(item.approvalThresholdBps) && records(item.votes) &&
         item.votes.every((vote) => isString(vote.creditorId) && isString(vote.creditorKind) &&
@@ -105,6 +106,8 @@ export function isGameStateShape(value: unknown): value is GameState {
         (item.effectiveQuarter === undefined || isNumber(item.effectiveQuarter)) &&
         (item.completedQuarter === undefined || isNumber(item.completedQuarter)) &&
         (item.breachedQuarter === undefined || isNumber(item.breachedQuarter)) &&
+        (item.debtConvertedCents === undefined || isNumber(item.debtConvertedCents)) &&
+        (item.newSharesIssued === undefined || isNumber(item.newSharesIssued)) &&
         (item.resolutionNote === undefined || isString(item.resolutionNote))))) return false;
   if (!state.actors.every((item) => isString(item.organizationId) && isStringArray(item.goals) &&
       isRecord(item.hiddenMetrics) && Object.values(item.hiddenMetrics).every(isNumber))) return false;

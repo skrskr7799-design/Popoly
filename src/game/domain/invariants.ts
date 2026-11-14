@@ -463,6 +463,8 @@ export function validateGameState(state: GameState): ValidationIssue[] {
       !Number.isSafeInteger(terms.interestReductionBps) || terms.interestReductionBps < 0 || terms.interestReductionBps > 500 ||
       !Number.isSafeInteger(terms.principalWriteDownBps) || terms.principalWriteDownBps < 0 || terms.principalWriteDownBps > 2500 ||
       !Number.isSafeInteger(terms.tradePayableWriteDownBps) || terms.tradePayableWriteDownBps < 0 || terms.tradePayableWriteDownBps > 1500 ||
+      !Number.isSafeInteger(terms.debtToEquityConversionBps) || terms.debtToEquityConversionBps < 0 || terms.debtToEquityConversionBps > 5000 ||
+      (terms.debtToEquityConversionBps > 0 && (!Number.isSafeInteger(terms.equityPreMoneyValuationCents) || (terms.equityPreMoneyValuationCents ?? 0) <= 0)) ||
       typeof terms.covenantWaiver !== 'boolean';
     const invalidVotes = workout.votes.some((vote) => {
       const duplicate = voteIds.has(vote.creditorId); voteIds.add(vote.creditorId);
@@ -503,7 +505,11 @@ export function validateGameState(state: GameState): ValidationIssue[] {
         (workout.status === 'breached' && (!Number.isInteger(workout.breachedQuarter) || !workout.milestones.some((item) => item.status === 'missed'))) ||
         (workout.effectiveQuarter !== undefined && (!Number.isInteger(workout.effectiveQuarter) || workout.effectiveQuarter < workout.openedQuarter || workout.effectiveQuarter > state.quarter)) ||
         (workout.completedQuarter !== undefined && (workout.completedQuarter < workout.openedQuarter || workout.completedQuarter > state.quarter)) ||
-        (workout.breachedQuarter !== undefined && (workout.breachedQuarter < workout.openedQuarter || workout.breachedQuarter > state.quarter))) {
+        (workout.breachedQuarter !== undefined && (workout.breachedQuarter < workout.openedQuarter || workout.breachedQuarter > state.quarter)) ||
+        (workout.debtConvertedCents !== undefined && (!Number.isSafeInteger(workout.debtConvertedCents) || workout.debtConvertedCents < 0)) ||
+        (workout.newSharesIssued !== undefined && (!Number.isSafeInteger(workout.newSharesIssued) || workout.newSharesIssued < 0)) ||
+        (workout.status === 'active' && terms.debtToEquityConversionBps > 0 &&
+          ((workout.debtConvertedCents ?? 0) <= 0 || (workout.newSharesIssued ?? 0) <= 0))) {
       issues.push({ code: 'finance.creditor_workout_invalid', message: 'Creditor workout, votes, terms, milestones or lifecycle dates are invalid.', entityId: workout.id });
     }
     workoutIds.add(workout.id);

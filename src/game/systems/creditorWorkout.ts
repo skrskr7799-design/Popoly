@@ -8,6 +8,8 @@ export interface CreditorWorkoutProposal {
   covenantWaiver: boolean; deadlineQuarters: number;
   minimumOperatingCashContributionCents: number; maximumOperatingPayablesCents: number;
   maximumDebtArrearsCents: number;
+  debtToEquityConversionBps?: number;
+  equityPreMoneyValuationCents?: number;
 }
 export interface CreditorWorkoutTransition { ok: true; state: GameState; workout: CreditorWorkout; }
 export interface CreditorWorkoutFailure { ok: false; code: string; message: string; }
@@ -53,15 +55,19 @@ function voteForCreditor(state: GameState, creditor: ReturnType<typeof creditorC
   const rateLimit = lender.riskAppetite === 'conservative' ? 100 : lender.riskAppetite === 'balanced' ? 200 : 350;
   const extensionLimit = lender.riskAppetite === 'conservative' ? 3 : lender.riskAppetite === 'balanced' ? 5 : 8;
   const standstillLimit = lender.riskAppetite === 'conservative' ? 1 : lender.riskAppetite === 'balanced' ? 2 : 3;
+  const conversionLimit = lender.riskAppetite === 'conservative' ? 1_000 : lender.riskAppetite === 'balanced' ? 2_500 : 5_000;
   const exceeds = effectiveHaircut > haircutLimit || terms.interestReductionBps > rateLimit ||
-    terms.maturityExtensionQuarters > extensionLimit || terms.standstillQuarters > standstillLimit;
+    terms.maturityExtensionQuarters > extensionLimit || terms.standstillQuarters > standstillLimit ||
+    terms.debtToEquityConversionBps > conversionLimit;
   const farBeyond = effectiveHaircut > haircutLimit + 800 || terms.interestReductionBps > rateLimit + 200 ||
-    terms.maturityExtensionQuarters > extensionLimit + 3 || terms.standstillQuarters > standstillLimit + 1;
+    terms.maturityExtensionQuarters > extensionLimit + 3 || terms.standstillQuarters > standstillLimit + 1 ||
+    terms.debtToEquityConversionBps > conversionLimit + 1_500;
   const counterTerms = {
     ...terms, principalWriteDownBps: Math.min(effectiveHaircut, haircutLimit),
     interestReductionBps: Math.min(terms.interestReductionBps, rateLimit),
     maturityExtensionQuarters: Math.min(terms.maturityExtensionQuarters, extensionLimit),
     standstillQuarters: Math.min(terms.standstillQuarters, standstillLimit),
+    debtToEquityConversionBps: Math.min(terms.debtToEquityConversionBps, conversionLimit),
   };
   return {
     ...base, vote: farBeyond ? 'rejected' : exceeds ? 'countered' : 'accepted',
@@ -79,15 +85,17 @@ export function proposeCreditorWorkout(state: GameState, input: CreditorWorkoutP
   if ((state.creditorWorkouts ?? []).some((item) => item.entityId === input.entityId && item.status === 'active')) {
     return fail('workout.already_active', 'This company already has an active creditor workout.');
   }
+  const conversionBps = input.debtToEquityConversionBps ?? 0;
   const values = [input.standstillQuarters, input.maturityExtensionQuarters, input.interestReductionBps,
-    input.principalWriteDownBps, input.tradePayableWriteDownBps, input.deadlineQuarters,
+    input.principalWriteDownBps, input.tradePayableWriteDownBps, input.deadlineQuarters, conversionBps,
     input.minimumOperatingCashContributionCents, input.maximumOperatingPayablesCents, input.maximumDebtArrearsCents];
   if (!values.every(Number.isSafeInteger) || input.standstillQuarters < 0 || input.standstillQuarters > 4 ||
       input.maturityExtensionQuarters < 0 || input.maturityExtensionQuarters > 12 ||
       !validBps(input.interestReductionBps) || input.interestReductionBps > 500 ||
       !validBps(input.principalWriteDownBps) || input.principalWriteDownBps > 2_500 ||
       !validBps(input.tradePayableWriteDownBps) || input.tradePayableWriteDownBps > 1_500 ||
-      input.deadlineQuarters < 1 || input.deadlineQuarters > 12 ||
+      input.deadlineQuarters < 1 || input.deadlineQuarters > 12 || conversionBps < 0 || conversionBps > 5_000 ||
+      (conversionBps > 0 && (!Number.isSafeInteger(input.equityPreMoneyValuationCents) || (input.equityPreMoneyValuationCents ?? 0) <= 0)) ||
       input.maximumOperatingPayablesCents < 0 || input.maximumDebtArrearsCents < 0) {
     return fail('workout.terms_invalid', 'Workout terms or recovery milestones are outside supported limits.');
   }
@@ -102,11 +110,13 @@ export function proposeCreditorWorkout(state: GameState, input: CreditorWorkoutP
     standstillQuarters: input.standstillQuarters, maturityExtensionQuarters: input.maturityExtensionQuarters,
     interestReductionBps: input.interestReductionBps, principalWriteDownBps: input.principalWriteDownBps,
     tradePayableWriteDownBps: input.tradePayableWriteDownBps, covenantWaiver: input.covenantWaiver,
+    debtToEquityConversionBps: conversionBps,
+    ...(conversionBps > 0 ? { equityPreMoneyValuationCents: moneyFromCents(input.equityPreMoneyValuationCents!) } : {}),
   };
   const votes = creditors.map((creditor) => voteForCreditor(state, creditor, terms));
   const acceptedClaims = votes.filter((item) => item.vote === 'accepted').reduce((sum, item) => sum + item.claimCents, 0);
   const securedTermsAffected = terms.standstillQuarters > 0 || terms.maturityExtensionQuarters > 0 ||
-    terms.interestReductionBps > 0 || terms.covenantWaiver;
+    terms.interestReductionBps > 0 || terms.covenantWaiver || terms.debtToEquityConversionBps > 0;
   const securedConsent = !securedTermsAffected || votes.every((item) => item.securedClaimCents <= 0 || item.vote === 'accepted');
   const thresholdBps = 6_667;
   const approved = acceptedClaims * 10_000 >= totalClaims * thresholdBps && securedConsent;
@@ -117,7 +127,7 @@ export function proposeCreditorWorkout(state: GameState, input: CreditorWorkoutP
     { id: `${id}:payables`, metric: 'operating-payables', targetCents: input.maximumOperatingPayablesCents, dueQuarter, status: 'pending' },
     { id: `${id}:arrears`, metric: 'debt-arrears', targetCents: input.maximumDebtArrearsCents, dueQuarter, status: 'pending' },
   ];
-  const workout: CreditorWorkout = {
+  let workout: CreditorWorkout = {
     id, entityId: input.entityId, openedQuarter: state.quarter, status: approved ? 'active' : 'rejected',
     terms, totalClaimsCents: moneyFromCents(totalClaims), acceptedClaimsCents: moneyFromCents(acceptedClaims),
     approvalThresholdBps: thresholdBps, votes, milestones,
@@ -128,6 +138,7 @@ export function proposeCreditorWorkout(state: GameState, input: CreditorWorkoutP
   if (!approved) {
     return { ok: true, state: { ...state, creditorWorkouts: [...(state.creditorWorkouts ?? []), workout] }, workout };
   }
+  const conversionByLender = new Map<string, number>();
   const debts = state.debts.map((debt) => {
     if (debt.borrowerId !== input.entityId || !debt.lenderId) return debt;
     const vote = votes.find((item) => item.creditorId === debt.lenderId);
@@ -135,18 +146,44 @@ export function proposeCreditorWorkout(state: GameState, input: CreditorWorkoutP
     const secured = (state.assets ?? []).some((asset) => asset.ownerId === input.entityId &&
       asset.securedDebtId === debt.id && asset.disposedQuarter === undefined);
     const writeDown = secured ? 0 : Math.floor(debt.principalCents * terms.principalWriteDownBps / 10_000);
+    const principalAfterWriteDown = debt.principalCents - writeDown;
+    const conversion = Math.floor(principalAfterWriteDown * terms.debtToEquityConversionBps / 10_000);
+    if (conversion > 0) conversionByLender.set(debt.lenderId, (conversionByLender.get(debt.lenderId) ?? 0) + conversion);
+    const remainingPrincipal = principalAfterWriteDown - conversion;
     const maturityQuarter = terms.maturityExtensionQuarters > 0 && debt.maturityQuarter !== undefined
-      ? debt.maturityQuarter + terms.maturityExtensionQuarters
-      : debt.maturityQuarter;
+      ? debt.maturityQuarter + terms.maturityExtensionQuarters : debt.maturityQuarter;
     return {
-      ...debt, principalCents: moneyFromCents(debt.principalCents - writeDown),
-      arrearsPrincipalCents: moneyFromCents(Math.min(debt.arrearsPrincipalCents ?? 0, debt.principalCents - writeDown)),
+      ...debt, principalCents: moneyFromCents(remainingPrincipal),
+      arrearsPrincipalCents: moneyFromCents(Math.min(debt.arrearsPrincipalCents ?? 0, remainingPrincipal)),
       quarterlyInterestRate: Math.max(0, debt.quarterlyInterestRate - terms.interestReductionBps / 10_000),
       ...(maturityQuarter !== undefined ? { maturityQuarter } : {}),
       ...(terms.standstillQuarters > 0 ? { paymentStandstillThroughQuarter: state.quarter + terms.standstillQuarters - 1 } : {}),
       ...(terms.covenantWaiver ? { covenantTerms: undefined, covenantStatus: 'compliant' as const, covenantBreachStreak: 0 } : {}),
     };
   });
+  let totalConvertedCents = 0;
+  let totalNewShares = 0;
+  const newSharesByLender = new Map<string, number>();
+  if (terms.debtToEquityConversionBps > 0) {
+    if (conversionByLender.size === 0) return fail('workout.no_convertible_principal', 'No accepting lender has convertible principal outstanding.');
+    const company = state.operatingCompanies.find((item) => item.organizationId === input.entityId)!;
+    const valuation = terms.equityPreMoneyValuationCents!;
+    for (const [lenderId, amount] of [...conversionByLender.entries()].sort(([a], [b]) => a.localeCompare(b))) {
+      const numerator = BigInt(amount) * BigInt(company.issuedShares);
+      const shares = Number((numerator + BigInt(valuation) / 2n) / BigInt(valuation));
+      if (!Number.isSafeInteger(shares) || shares <= 0) {
+        return fail('workout.conversion_below_one_share', 'The proposed valuation produces less than one whole share for a converting lender; use a lower valuation or a larger conversion.');
+      }
+      newSharesByLender.set(lenderId, shares);
+      totalConvertedCents += amount;
+      totalNewShares += shares;
+    }
+    if (!Number.isSafeInteger(totalConvertedCents) || !Number.isSafeInteger(totalNewShares) ||
+        company.issuedShares + totalNewShares > Number.MAX_SAFE_INTEGER) {
+      return fail('workout.conversion_overflow', 'The proposed debt-to-equity conversion exceeds safe share or money limits.');
+    }
+    workout = { ...workout, debtConvertedCents: moneyFromCents(totalConvertedCents), newSharesIssued: totalNewShares };
+  }
   const operatingPayables = (state.operatingPayables ?? []).map((payable) => {
     if (payable.entityId !== input.entityId || terms.tradePayableWriteDownBps <= 0) return payable;
     const vote = votes.find((item) => item.creditorId === `trade:${payable.creditorClass}`);
@@ -157,9 +194,34 @@ export function proposeCreditorWorkout(state: GameState, input: CreditorWorkoutP
   const organizations = state.organizations.map((organization) => organization.id === input.entityId
     ? { ...organization, debtCents: moneyFromCents(debts.filter((debt) => debt.borrowerId === input.entityId).reduce((sum, debt) => sum + debt.principalCents, 0)) }
     : organization);
+  let ownership = state.ownership;
+  let operatingCompanies = state.operatingCompanies;
+  if (newSharesByLender.size > 0) {
+    operatingCompanies = state.operatingCompanies.map((item) => item.organizationId === input.entityId
+      ? { ...item, issuedShares: item.issuedShares + totalNewShares } : item);
+    ownership = [...state.ownership];
+    for (const [lenderId, shares] of newSharesByLender) {
+      const index = ownership.findIndex((item) => item.ownerId === lenderId && item.companyId === input.entityId);
+      if (index >= 0) ownership[index] = {
+        ...ownership[index], shares: ownership[index].shares + shares,
+        votingShares: ownership[index].votingShares + shares,
+      };
+      else ownership.push({ ownerId: lenderId, companyId: input.entityId, shares, votingShares: shares });
+    }
+  }
+  const assets = (state.assets ?? []).map((asset) => {
+    const securedDebt = debts.find((item) => item.id === asset.securedDebtId);
+    return securedDebt && securedDebt.principalCents === 0 &&
+      (securedDebt.arrearsInterestCents ?? 0) === 0 && (securedDebt.arrearsPrincipalCents ?? 0) === 0
+      ? { ...asset, securedDebtId: undefined } : asset;
+  });
   return {
     ok: true,
-    state: { ...state, debts, operatingPayables, organizations, creditorWorkouts: [...(state.creditorWorkouts ?? []), workout] },
+    state: {
+      ...state, debts, operatingPayables, organizations, ownership, operatingCompanies,
+      ...(state.assets !== undefined ? { assets } : {}),
+      creditorWorkouts: [...(state.creditorWorkouts ?? []), workout],
+    },
     workout,
   };
 }

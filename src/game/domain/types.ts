@@ -200,6 +200,8 @@ export interface CreditorWorkoutCounterTerms {
   maturityExtensionQuarters: number;
   standstillQuarters: number;
   tradePayableWriteDownBps?: number;
+  debtToEquityConversionBps?: number;
+  equityPreMoneyValuationCents?: MoneyCents;
 }
 export interface CreditorWorkoutVote {
   creditorId: EntityId;
@@ -224,7 +226,9 @@ export interface CreditorWorkout {
   entityId: EntityId;
   openedQuarter: number;
   status: CreditorWorkoutStatus;
-  terms: CreditorWorkoutCounterTerms & { covenantWaiver: boolean; tradePayableWriteDownBps: number };
+  terms: CreditorWorkoutCounterTerms & { covenantWaiver: boolean; tradePayableWriteDownBps: number; debtToEquityConversionBps: number; equityPreMoneyValuationCents?: MoneyCents };
+  debtConvertedCents?: MoneyCents;
+  newSharesIssued?: number;
   totalClaimsCents: MoneyCents;
   acceptedClaimsCents: MoneyCents;
   approvalThresholdBps: number;
