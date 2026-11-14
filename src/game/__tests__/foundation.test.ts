@@ -1039,6 +1039,10 @@ describe('autonomous world simulation', () => {
     expect(nextQuarterReport.companies[0]!.operations.deliveredWorkloadMW)
       .toBeCloseTo(result.state.operatingCompanies[0]!.deliveredWorkloadMW, 8);
     expect(nextQuarterReport.companies[0]!.operations.revenueCents).toBeLessThan(816_500_000);
+    const openingContribution = buildQuarterReport(initializeGame(2035))
+      .companies[0]!.operations.operatingCashContributionCents;
+    expect(nextQuarterReport.companies[0]!.operations.operatingCashContributionCents)
+      .toBeLessThan(openingContribution);
   });
 
 
