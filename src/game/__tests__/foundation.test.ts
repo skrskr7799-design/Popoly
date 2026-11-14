@@ -303,7 +303,7 @@ describe('managed long-horizon economic stability', () => {
       const result = advanceQuarter(state, turn === 0 ? {
         turnaroundActions: actions.map((actionId) => ({ companyId: 'nodeworks', actionId })),
       } : {});
-      expect(result.ok, result.ok ? undefined : JSON.stringify(result.issues)).toBe(true);
+      expect(result.ok, result.ok ? undefined : `turn ${turn + 1}: ${JSON.stringify(result.issues)}`).toBe(true);
       if (!result.ok) return;
       state = result.state;
       expect(state.quarter).toBe(turn + 2);
