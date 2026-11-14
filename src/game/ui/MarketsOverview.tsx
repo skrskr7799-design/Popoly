@@ -123,7 +123,7 @@ export function MarketsOverview({ state, report, activityReport }: Props) {
           <span><Signal size={13} /> {state.playerIntelligence.length} INTELLIGENCE SIGNALS</span>
         </div>
       </div>
-      <div className="pop-markets-hero-visual" aria-label="Regional compute market supply network">
+      <div className="pop-markets-hero-visual" aria-label={gameText("Regional compute market supply network")}>
         <div className="pop-market-network-ring ring-a" /><div className="pop-market-network-ring ring-b" />
         <svg viewBox="0 0 360 230" aria-hidden="true">
           <path d="M180 44 L180 104 M180 104 L72 164 M180 104 L180 164 M180 104 L288 164" />
