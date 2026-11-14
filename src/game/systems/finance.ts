@@ -17,6 +17,9 @@ export interface CreditAssessment {
   debtServiceCoverage: number;
   cashToDebtRatio: number;
   quarterlyOperatingCashFlowCents: MoneyCents;
+  operatingPayablesCents: MoneyCents;
+  overdueOperatingPayablesCents: MoneyCents;
+  cashFlowAfterOperatingPayablesCents: MoneyCents;
 }
 
 export function calculateDebtServiceObligation(debt: DebtInstrument, quarter: number): number {
@@ -41,18 +44,30 @@ export function calculateCreditAssessment(
   const borrowerDebts = state.debts.filter((debt) => debt.borrowerId === borrowerId);
   const debtService = borrowerDebts.reduce((sum, debt) =>
     sum + calculateDebtServiceObligation(debt, state.quarter), 0);
+  const operatingPayables = (state.operatingPayables ?? []).filter((payable) =>
+    payable.entityId === borrowerId && payable.outstandingAmountCents > 0);
+  const operatingPayablesCents = operatingPayables.reduce((sum, payable) => sum + payable.outstandingAmountCents, 0);
+  const overdueOperatingPayablesCents = operatingPayables
+    .filter((payable) => payable.dueQuarter < state.quarter)
+    .reduce((sum, payable) => sum + payable.outstandingAmountCents, 0);
+  const cashFlowAfterOperatingPayablesCents = moneyFromCents(quarterlyOperatingCashFlowCents - operatingPayablesCents);
   const debtServiceCoverage = debtService > 0
-    ? quarterlyOperatingCashFlowCents / debtService
-    : quarterlyOperatingCashFlowCents > 0 ? 10 : 0;
-  const cashToDebtRatio = borrower.debtCents > 0 ? borrower.cashCents / borrower.debtCents : 5;
-  const annualCashFlow = Math.max(quarterlyOperatingCashFlowCents * 4, borrower.cashCents, 1);
+    ? cashFlowAfterOperatingPayablesCents / debtService
+    : cashFlowAfterOperatingPayablesCents > 0 ? 10 : 0;
+  const cashAvailableAfterPayables = Math.max(0, borrower.cashCents - operatingPayablesCents);
+  const cashToDebtRatio = borrower.debtCents > 0 ? cashAvailableAfterPayables / borrower.debtCents : 5;
+  const annualCashFlow = Math.max(cashFlowAfterOperatingPayablesCents * 4, cashAvailableAfterPayables, 1);
   const debtToAnnualCashFlow = borrower.debtCents / annualCashFlow;
   const coveragePoints = Math.min(150, debtServiceCoverage * 18);
   const liquidityPoints = Math.min(100, cashToDebtRatio * 25);
   const leveragePenalty = Math.min(120, Math.max(0, debtToAnnualCashFlow - 2) * 25);
+  const payablePenalty = Math.min(100, operatingPayablesCents /
+    Math.max(Math.abs(quarterlyOperatingCashFlowCents), borrower.cashCents, 1) * 100);
+  const overduePenalty = overdueOperatingPayablesCents > 0 ? 35 : 0;
   const score = Math.max(300, Math.min(850, Math.round(
-    500 + coveragePoints + liquidityPoints + (borrower.reputation - 50) * 1.5 - leveragePenalty -
-    (quarterlyOperatingCashFlowCents <= 0 ? 90 : 0),
+    500 + coveragePoints + liquidityPoints + (borrower.reputation - 50) * 1.5 -
+    leveragePenalty - payablePenalty - overduePenalty -
+    (cashFlowAfterOperatingPayablesCents <= 0 ? 90 : 0),
   )));
   const rating: CreditAssessment['rating'] = score >= 800 ? 'AAA'
     : score >= 750 ? 'AA' : score >= 700 ? 'A' : score >= 650 ? 'BBB'
@@ -63,6 +78,9 @@ export function calculateCreditAssessment(
     debtServiceCoverage: Number.isFinite(debtServiceCoverage) ? debtServiceCoverage : 0,
     cashToDebtRatio: Number.isFinite(cashToDebtRatio) ? cashToDebtRatio : 0,
     quarterlyOperatingCashFlowCents,
+    operatingPayablesCents: moneyFromCents(operatingPayablesCents),
+    overdueOperatingPayablesCents: moneyFromCents(overdueOperatingPayablesCents),
+    cashFlowAfterOperatingPayablesCents,
   };
 }
 
