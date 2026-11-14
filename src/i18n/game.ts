@@ -611,6 +611,40 @@ Object.assign(ru, {
   "available for new allocation": "доступно для нового распределения"
 });
 
+
+Object.assign(ru, {
+  "confidence": "достоверность",
+  "current": "актуально",
+  "recent": "недавно",
+  "stale": "устарело",
+  "active": "активно",
+  "breached": "нарушено",
+  "accepted": "принято",
+  "rejected": "отклонено",
+  "countered": "встречное предложение",
+  "declined": "отклонено",
+  "pending": "ожидает решения",
+  "approved": "одобрено",
+  "implemented": "внедрено",
+  "selected": "выбрано",
+  "available": "доступно",
+  "settled": "погашено",
+  "defaulted": "дефолт",
+  "resolved": "урегулировано",
+  "known": "известно",
+  "reported": "сообщается",
+  "estimated": "оценка",
+  "unknown": "неизвестно",
+  "trade-creditor-arrears": "просрочка перед торговыми кредиторами",
+  "debt-default": "дефолт по долгу",
+  "voluntary": "добровольно",
+  "creditor-workout-breach": "нарушение соглашения с кредиторами",
+  "capital expansion phase i": "расширение мощностей — этап I",
+  "equipment allocation": "распределение оборудования",
+  "firm power": "гарантированная мощность",
+  "market study": "исследование рынка"
+});
+
 export function gameText(source: string, locale?: Locale): string {
   const activeLocale = locale ?? useI18n.getState().locale;
   if (activeLocale === 'en') return source;
