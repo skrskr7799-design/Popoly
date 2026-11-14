@@ -30,7 +30,7 @@ const strategies: Array<{ id: string; initiativesByQuarter: string[][] }> = [
 
 describe('Compute Bottleneck vertical slice', () => {
   it('completes eight quarters under distinct strategic approaches and deterministic seeds', () => {
-    for (const seed of [2035, 2042]) {
+    for (const seed of [1, 7, 42, 100, 2035, 2042, 9001, 65535]) {
       const outcomes = new Map<string, { installedITMW: number; gridAllocationMW: number; reliability: number }>();
       for (const strategy of strategies) {
         const session = CampaignSession.start({
