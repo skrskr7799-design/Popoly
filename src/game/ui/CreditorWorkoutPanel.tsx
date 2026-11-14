@@ -47,7 +47,17 @@ export function CreditorWorkoutPanel({ state, onPropose }: {
       {workout.votes.map((vote) => <div className="pop-operating-payable" key={vote.creditorId}>
         <span>{vote.creditorId.replace('trade:', '').replaceAll('-', ' ')} · {formatMoney(vote.claimCents, true)}</span>
         <strong>{vote.vote}</strong><small>{vote.reason}</small>
-        {vote.counterTerms && <small>Counter: {vote.counterTerms.principalWriteDownBps} bps debt haircut · {vote.counterTerms.standstillQuarters} quarter standstill</small>}
+        {vote.counterTerms && <>
+          <small>Counter: {vote.counterTerms.principalWriteDownBps} bps debt haircut · {vote.counterTerms.standstillQuarters} quarter standstill</small>
+          <button type="button" className="pop-secondary-button" onClick={() => setDraft((current) => ({
+            ...current,
+            standstill: String(vote.counterTerms!.standstillQuarters),
+            extension: String(vote.counterTerms!.maturityExtensionQuarters),
+            rate: String(vote.counterTerms!.interestReductionBps),
+            debtHaircut: String(vote.counterTerms!.principalWriteDownBps),
+            tradeHaircut: String(vote.counterTerms!.tradePayableWriteDownBps ?? current.tradeHaircut),
+          }))}>Use this counter</button>
+        </>}
       </div>)}
       {workout.milestones.map((milestone) => <div className="pop-operating-payable" key={milestone.id}>
         <span>{milestone.metric.replaceAll('-', ' ')}</span><strong>{milestone.status}</strong>
