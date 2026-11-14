@@ -151,6 +151,14 @@ export function validateGameState(state: GameState): ValidationIssue[] {
     }
   }
 
+  const turnaroundIds = new Set(['workforce-reset', 'maintenance-deferral', 'vendor-renegotiation', 'facility-consolidation']);
+  for (const company of state.operatingCompanies) {
+    const actions = company.turnaroundActions ?? [];
+    if (new Set(actions).size !== actions.length || actions.some((action) => !turnaroundIds.has(action))) {
+      issues.push({ code: 'company.turnaround_actions_invalid', message: 'Turnaround actions must be unique and scenario-supported.', entityId: company.organizationId });
+    }
+  }
+
   for (const company of state.operatingCompanies) {
     if (!organizationIds.has(company.organizationId)) {
       issues.push({ code: 'company.organization_missing', message: 'Operating company references a missing organization.', entityId: company.organizationId });
