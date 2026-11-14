@@ -48,6 +48,7 @@ export function FinancePanel({
   const availableOffers = state.loanOffers.filter((offer) =>
     offer.status === 'available' && state.quarter <= offer.expiresAfterQuarter);
   const operatingHealth = operatingCompany ? assessFinancialHealth(state, report, operatingCompany.organizationId) : undefined;
+  const creditorPressure = report.companies.find((item) => item.companyId === operatingCompany?.organizationId)?.creditorPressure;
   const totalCash = borrowerIds.reduce((sum, id) =>
     sum + (organizations.find((item) => item.id === id)?.cashCents ?? 0), 0);
   const lenderResources = new Map(state.lenders.map((lender) => [
@@ -104,6 +105,11 @@ export function FinancePanel({
         <div><span>Operating creditors outstanding</span><strong>{formatMoney(operatingHealth.operatingPayablesCents, true)}</strong></div>
         <div><span>Overdue trade payables</span><strong>{formatMoney(operatingHealth.overdueOperatingPayablesCents, true)}</strong></div>
       </div>
+      {(creditorPressure?.affectedClasses.length ?? 0) > 0 && <p className="pop-finance-alert">
+        Supplier restrictions active: {creditorPressure!.affectedClasses.map((item) => item.replaceAll('-', ' ')).join(', ')}
+        {creditorPressure!.gridAllocationReductionMW > 0 ? ` · grid allocation −${creditorPressure!.gridAllocationReductionMW.toFixed(1)} MW` : ''}
+        {creditorPressure!.reliabilityPenalty > 0 ? ` · service reliability −${(creditorPressure!.reliabilityPenalty * 100).toFixed(1)}%` : ''}
+      </p>}
       {(state.operatingPayables ?? []).filter((payable) =>
         payable.entityId === operatingCompany?.organizationId && payable.outstandingAmountCents > 0).length > 0 &&
         <div className="pop-operating-payables">
