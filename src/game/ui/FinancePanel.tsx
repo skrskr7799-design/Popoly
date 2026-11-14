@@ -1,6 +1,7 @@
 import type { GameState } from '../domain/types';
 import type { QuarterReport } from '../systems/quarterReport';
 import { calculateDebtServiceObligation } from '../systems/finance';
+import { assessFinancialHealth } from '../systems/financialHealth';
 import { formatMoney, formatPercent, formatQuarter } from './format';
 
 const statusLabel = (status: string | undefined) => {
@@ -43,6 +44,7 @@ export function FinancePanel({
     Number(creditRequest.termQuarters) >= 2 && Number(creditRequest.termQuarters) <= 12;
   const availableOffers = state.loanOffers.filter((offer) =>
     offer.status === 'available' && state.quarter <= offer.expiresAfterQuarter);
+  const operatingHealth = operatingCompany ? assessFinancialHealth(state, report, operatingCompany.organizationId) : undefined;
   const totalCash = borrowerIds.reduce((sum, id) =>
     sum + (organizations.find((item) => item.id === id)?.cashCents ?? 0), 0);
   const lenderResources = new Map(state.lenders.map((lender) => [
@@ -82,6 +84,23 @@ export function FinancePanel({
       <div><span>Contractual debt service due</span><strong>{formatMoney(scheduledService, true)}</strong></div>
       <div><span>Undrawn revolving capacity</span><strong>{formatMoney(drawableCapacity, true)}</strong></div>
     </div>
+
+    {operatingHealth && <div className="pop-finance-subsection pop-financial-health">
+      <div className="pop-finance-subtitle"><strong>NodeWorks financial health</strong>
+        <span className={`pop-pill ${operatingHealth.status === 'distressed' ? 'pop-pill-warn' : ''}`}>
+          {operatingHealth.status === 'stable' ? 'Stable' : operatingHealth.status === 'watch' ? 'Watch' : 'Distressed'}
+        </span>
+      </div>
+      <div className="pop-finance-summary">
+        <div><span>Operating cash contribution</span><strong>{formatMoney(operatingHealth.operatingCashContributionCents, true)}</strong></div>
+        <div><span>Projected closing cash</span><strong>{formatMoney(operatingHealth.closingCashCents, true)}</strong></div>
+        <div><span>Cash runway</span><strong>{operatingHealth.cashRunwayQuarters === null ? 'Cash-positive' : `${operatingHealth.cashRunwayQuarters.toFixed(1)} qtrs`}</strong></div>
+        <div><span>Debt arrears</span><strong>{formatMoney(operatingHealth.debtArrearsCents, true)}</strong></div>
+      </div>
+      {operatingHealth.reasons.length > 0
+        ? <ul className="pop-financial-health-reasons">{operatingHealth.reasons.map((reason) => <li key={reason}>{reason}</li>)}</ul>
+        : <p className="pop-muted">No material liquidity or creditor warning signals are currently detected.</p>}
+    </div>}
 
     <div className="pop-finance-subsection">
       <div className="pop-finance-subtitle"><strong>Liquidity by legal entity</strong><small>Opening cash · current quarter</small></div>
