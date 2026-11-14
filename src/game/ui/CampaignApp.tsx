@@ -355,6 +355,31 @@ export default function CampaignApp() {
       ...(creditRequest.collateral.trim() ? { collateralDescription: creditRequest.collateral.trim() } : {}),
     }]
     : [];
+  const fileNodeWorksAdministration = () => {
+    const hasDebtDefault = state.debts.some((debt) => debt.borrowerId === 'nodeworks' && debt.paymentStatus === 'defaulted');
+    const hasOverdueTrade = (state.operatingPayables ?? []).some((payable) =>
+      payable.entityId === 'nodeworks' && payable.outstandingAmountCents > 0 && payable.dueQuarter < state.quarter);
+    const result = session.openAdministration('nodeworks',
+      hasDebtDefault ? 'debt-default' : hasOverdueTrade ? 'trade-creditor-arrears' : 'voluntary');
+    if (!result.ok) {
+      setIssues([{ code: result.code, message: result.message, entityId: 'nodeworks' }]);
+      return;
+    }
+    setReport(null);
+    setIssues([]);
+    setRevision((value) => value + 1);
+  };
+  const completeNodeWorksReorganization = (caseId: string) => {
+    const result = session.reorganizeAdministration(caseId);
+    if (!result.ok) {
+      setIssues([{ code: result.code, message: result.message, entityId: 'nodeworks' }]);
+      return;
+    }
+    setReport(null);
+    setIssues([]);
+    setRevision((value) => value + 1);
+  };
+
   const resolveQuarter = () => {
     const result = session.advance({
       launchInitiatives: selected,
@@ -504,6 +529,8 @@ export default function CampaignApp() {
             selectedTurnaroundActionIds={selectedTurnaroundActions}
             onToggleTurnaroundAction={(actionId) => setSelectedTurnaroundActions((current) =>
               current.includes(actionId) ? current.filter((id) => id !== actionId) : [...current, actionId])}
+            onFileAdministration={fileNodeWorksAdministration}
+            onReorganizeAdministration={completeNodeWorksReorganization}
           />
         </div>
 
