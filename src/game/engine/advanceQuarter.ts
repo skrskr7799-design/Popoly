@@ -167,6 +167,9 @@ function applyProjectEffect(state: GameState, project: StrategicProjectState): G
 function validateCommands(state: GameState, commands: QuarterCommands): ValidationIssue[] {
   const issues: ValidationIssue[] = [];
   for (const company of state.operatingCompanies.filter((item) => item.status === 'administration')) {
+    if ((commands.launchInitiatives ?? []).length > 0) {
+      issues.push(issue('administration.investment_restricted', 'New discretionary investment is suspended while the operating company is in administration.', company.organizationId));
+    }
     if ((commands.workloadDecisions ?? []).some((item) => item.companyId === company.organizationId)) {
       issues.push(issue('administration.workload_restricted', 'Workload changes are suspended while the company is in administration.', company.organizationId));
     }
