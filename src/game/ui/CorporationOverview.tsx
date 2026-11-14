@@ -5,6 +5,7 @@ import {
 import type { GameState, TurnaroundActionId } from '../domain/types';
 import type { QuarterReport } from '../systems/quarterReport';
 import type { CreditorWorkoutProposal } from '../systems/creditorWorkout';
+import type { AdministrationTrigger } from '../systems/administration';
 import type { ContractRenewalDraft } from './ContractPortfolioPanel';
 import { ContractPortfolioPanel } from './ContractPortfolioPanel';
 import { FinancePanel } from './FinancePanel';
@@ -28,7 +29,7 @@ type Props = {
   onCreditRequestChange: (next: CreditRequest) => void;
   selectedTurnaroundActionIds: TurnaroundActionId[];
   onToggleTurnaroundAction: (actionId: TurnaroundActionId) => void;
-  onFileAdministration: () => void;
+  onFileAdministration: (trigger?: AdministrationTrigger) => void;
   onReorganizeAdministration: (caseId: string) => void;
   onLiquidateAdministration: (caseId: string) => void;
   onProposeWorkout: (proposal: CreditorWorkoutProposal) => void;

@@ -8,6 +8,7 @@ import { CampaignSession, GUIDED_CAMPAIGN_QUARTERS } from '../campaign/session';
 import { COMPUTE_BOTTLENECK_INITIATIVES, type StrategicInitiativeDefinition } from '../scenario/initiatives';
 import type { GameState, TurnaroundActionId, ValidationIssue } from '../domain/types';
 import type { CreditorWorkoutProposal } from '../systems/creditorWorkout';
+import type { AdministrationTrigger } from '../systems/administration';
 import type { QuarterReport } from '../systems/quarterReport';
 import { formatMillions, formatMoney, formatPercent, formatQuarter } from './format';
 import { IndexedDbCampaignSaveRepository } from '../persistence/indexedDbRepository';
@@ -356,12 +357,12 @@ export default function CampaignApp() {
       ...(creditRequest.collateral.trim() ? { collateralDescription: creditRequest.collateral.trim() } : {}),
     }]
     : [];
-  const fileNodeWorksAdministration = () => {
+  const fileNodeWorksAdministration = (requestedTrigger?: AdministrationTrigger) => {
     const hasDebtDefault = state.debts.some((debt) => debt.borrowerId === 'nodeworks' && debt.paymentStatus === 'defaulted');
     const hasOverdueTrade = (state.operatingPayables ?? []).some((payable) =>
       payable.entityId === 'nodeworks' && payable.outstandingAmountCents > 0 && payable.dueQuarter < state.quarter);
-    const result = session.openAdministration('nodeworks',
-      hasDebtDefault ? 'debt-default' : hasOverdueTrade ? 'trade-creditor-arrears' : 'voluntary');
+    const result = session.openAdministration('nodeworks', requestedTrigger ??
+      (hasDebtDefault ? 'debt-default' : hasOverdueTrade ? 'trade-creditor-arrears' : 'voluntary'));
     if (!result.ok) {
       setIssues([{ code: result.code, message: result.message, entityId: 'nodeworks' }]);
       return;

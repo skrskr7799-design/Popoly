@@ -1,11 +1,13 @@
 import { useState } from 'react';
 import type { GameState } from '../domain/types';
 import type { CreditorWorkoutProposal } from '../systems/creditorWorkout';
+import type { AdministrationTrigger } from '../systems/administration';
 import { formatMoney, formatQuarter } from './format';
 
-export function CreditorWorkoutPanel({ state, onPropose }: {
+export function CreditorWorkoutPanel({ state, onPropose, onFileAdministration }: {
   state: GameState;
   onPropose: (proposal: CreditorWorkoutProposal) => void;
+  onFileAdministration: (trigger?: AdministrationTrigger) => void;
 }) {
   const company = state.operatingCompanies.find((item) => item.organizationId === 'nodeworks');
   const workouts = (state.creditorWorkouts ?? []).filter((item) => item.entityId === company?.organizationId)
@@ -71,6 +73,7 @@ export function CreditorWorkoutPanel({ state, onPropose }: {
         <small>{milestone.measuredCents === undefined ? 'Awaiting review' : formatMoney(milestone.measuredCents, true)}</small>
       </div>)}
       {workout.resolutionNote && <p className="pop-muted">{workout.resolutionNote}</p>}
+      {workout.status === 'breached' && company?.status !== 'administration' && company?.status !== 'liquidated' && <button type="button" className="pop-primary" onClick={() => onFileAdministration('creditor-workout-breach')}>Escalate to administration</button>}
     </article>)}
     {!active && company?.status !== 'liquidated' && <div className="pop-credit-request">
       <label><span>Payment standstill</span><select value={draft.standstill} onChange={(e) => update('standstill', e.target.value)}>{[0,1,2,3,4].map((n) => <option key={n} value={n}>{n} quarters</option>)}</select></label>

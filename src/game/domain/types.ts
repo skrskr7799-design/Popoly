@@ -187,7 +187,7 @@ export interface AdministrationCase {
   id: EntityId;
   entityId: EntityId;
   openedQuarter: number;
-  trigger: 'voluntary' | 'debt-default' | 'trade-creditor-arrears';
+  trigger: 'voluntary' | 'debt-default' | 'trade-creditor-arrears' | 'creditor-workout-breach';
   status: 'active' | 'liquidated' | 'reorganized';
   resolvedQuarter?: number;
   resolution?: AdministrationResolution;

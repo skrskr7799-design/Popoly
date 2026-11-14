@@ -1,5 +1,6 @@
 import type { GameState, TurnaroundActionId } from '../domain/types';
 import type { CreditorWorkoutProposal } from '../systems/creditorWorkout';
+import type { AdministrationTrigger } from '../systems/administration';
 import { CreditorWorkoutPanel } from './CreditorWorkoutPanel';
 import type { QuarterReport } from '../systems/quarterReport';
 import { calculateDebtServiceObligation } from '../systems/finance';
@@ -30,7 +31,7 @@ export function FinancePanel({
   onCreditRequestChange: (next: { borrowerId: string; amountDollars: string; termQuarters: string; collateral: string }) => void;
   selectedTurnaroundActionIds: TurnaroundActionId[];
   onToggleTurnaroundAction: (actionId: TurnaroundActionId) => void;
-  onFileAdministration: () => void;
+  onFileAdministration: (trigger?: AdministrationTrigger) => void;
   onReorganizeAdministration: (caseId: string) => void;
   onLiquidateAdministration: (caseId: string) => void;
   onProposeWorkout?: (proposal: CreditorWorkoutProposal) => void;
@@ -100,7 +101,7 @@ export function FinancePanel({
       <span className="pop-pill">Legal-entity cash kept separate</span>
     </div>
     <p className="pop-panel-intro">Debt belongs to the named borrower. Meridian's cash is not automatically available to NodeWorks, and subsidiary cash is not pooled at holding level.</p>
-    {onProposeWorkout && <CreditorWorkoutPanel state={state} onPropose={onProposeWorkout} />}
+    {onProposeWorkout && <CreditorWorkoutPanel state={state} onPropose={onProposeWorkout} onFileAdministration={onFileAdministration} />}
 
     <div className="pop-finance-summary">
       <div><span>Outstanding principal</span><strong>{formatMoney(totalDebt, true)}</strong></div>

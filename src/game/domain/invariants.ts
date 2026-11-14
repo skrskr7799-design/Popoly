@@ -232,7 +232,7 @@ export function validateGameState(state: GameState): ValidationIssue[] {
     if (!administrationCase.id.trim() || !company ||
         !Number.isInteger(administrationCase.openedQuarter) || administrationCase.openedQuarter < 1 ||
         administrationCase.openedQuarter > state.quarter ||
-        !['voluntary', 'debt-default', 'trade-creditor-arrears'].includes(administrationCase.trigger) ||
+        !['voluntary', 'debt-default', 'trade-creditor-arrears', 'creditor-workout-breach'].includes(administrationCase.trigger) ||
         !['active', 'liquidated', 'reorganized'].includes(administrationCase.status) ||
         (administrationCase.status === 'active' && (administrationCase.resolvedQuarter !== undefined || resolution !== undefined)) ||
         invalidResolvedState) {
