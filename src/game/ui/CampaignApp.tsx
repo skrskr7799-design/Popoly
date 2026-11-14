@@ -19,6 +19,7 @@ import { ContractPortfolioPanel } from './ContractPortfolioPanel';
 import type { ContractRenewalDraft } from './ContractPortfolioPanel';
 import { FinancePanel } from './FinancePanel';
 import { RegionalCommandMap } from './RegionalCommandMap';
+import { CommandCenterBriefing } from './CommandCenterBriefing';
 
 const money = (cents: number) => formatMillions(cents);
 const campaignRepository = new IndexedDbCampaignSaveRepository();
@@ -404,6 +405,9 @@ export default function CampaignApp() {
 
       {storageMessage && <div className="pop-storage-message">{storageMessage}<button onClick={() => setStorageMessage(null)}>Dismiss</button></div>}
       {showStorage && storagePanel}
+
+      <CommandCenterBriefing state={state} report={currentReport} completedQuarters={session.completedQuarters}
+        onOpenStrategy={() => setActiveView('strategy')} onOpenMarkets={() => setActiveView('markets')} />
 
       <section id="group-overview" className="pop-stat-grid">
         <StatCard label="MERIDIAN · CASH" value={money(holdingCash)} note={`Debt ${money(holdingDebt)}`} icon={Banknote} tone="good" />
