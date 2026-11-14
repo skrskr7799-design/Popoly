@@ -1,3 +1,4 @@
+import { gameText } from '../../i18n/game';
 import type { GameState, TurnaroundActionId } from '../domain/types';
 import type { CreditorWorkoutProposal } from '../systems/creditorWorkout';
 import type { AdministrationTrigger } from '../systems/administration';
@@ -59,7 +60,7 @@ export function FinancePanel({
   const requestAmount = Number(creditRequest.amountDollars);
   const validRequest = Number.isFinite(requestAmount) && Number.isSafeInteger(Math.round(requestAmount * 100)) &&
     requestAmount > 0 && Number.isInteger(Number(creditRequest.termQuarters)) &&
-    Number(creditRequest.termQuarters) >= 2 && Number(creditRequest.termQuarters) <= 12;
+    Number(creditRequest.termQuarters) >{gameText("= 2 && Number(creditRequest.termQuarters)")} <= 12;
   const availableOffers = state.loanOffers.filter((offer) =>
     offer.status === 'available' && state.quarter <= offer.expiresAfterQuarter);
   const operatingHealth = operatingCompany ? assessFinancialHealth(state, report, operatingCompany.organizationId) : undefined;
@@ -97,34 +98,34 @@ export function FinancePanel({
 
   return <section id="finance" className="pop-panel pop-finance-panel">
     <div className="pop-section-title">
-      <div><span className="pop-eyebrow">GROUP TREASURY & CREDIT</span><h2>Financial position</h2></div>
-      <span className="pop-pill">Legal-entity cash kept separate</span>
+      <div><span className="pop-eyebrow">{gameText("GROUP TREASURY & CREDIT")}</span><h2>{gameText("Financial position")}</h2></div>
+      <span className="pop-pill">{gameText("Legal-entity cash kept separate")}</span>
     </div>
-    <p className="pop-panel-intro">Debt belongs to the named borrower. Meridian's cash is not automatically available to NodeWorks, and subsidiary cash is not pooled at holding level.</p>
+    <p className="pop-panel-intro">{gameText("Debt belongs to the named borrower. Meridian's cash is not automatically available to NodeWorks, and subsidiary cash is not pooled at holding level.")}</p>
     {onProposeWorkout && <CreditorWorkoutPanel state={state} onPropose={onProposeWorkout} onFileAdministration={onFileAdministration} />}
 
     <div className="pop-finance-summary">
-      <div><span>Outstanding principal</span><strong>{formatMoney(totalDebt, true)}</strong></div>
-      <div><span>Quarterly interest expense</span><strong>{formatMoney(totalInterest, true)}</strong></div>
-      <div><span>Contractual debt service due</span><strong>{formatMoney(scheduledService, true)}</strong></div>
-      <div><span>Undrawn revolving capacity</span><strong>{formatMoney(drawableCapacity, true)}</strong></div>
+      <div><span>{gameText("Outstanding principal")}</span><strong>{formatMoney(totalDebt, true)}</strong></div>
+      <div><span>{gameText("Quarterly interest expense")}</span><strong>{formatMoney(totalInterest, true)}</strong></div>
+      <div><span>{gameText("Contractual debt service due")}</span><strong>{formatMoney(scheduledService, true)}</strong></div>
+      <div><span>{gameText("Undrawn revolving capacity")}</span><strong>{formatMoney(drawableCapacity, true)}</strong></div>
     </div>
 
     {operatingHealth && <div className="pop-finance-subsection pop-financial-health">
-      <div className="pop-finance-subtitle"><strong>NodeWorks financial health</strong>
+      <div className="pop-finance-subtitle"><strong>{gameText("NodeWorks financial health")}</strong>
         <span className={`pop-pill ${operatingHealth.status === 'distressed' ? 'pop-pill-warn' : ''}`}>
           {operatingHealth.status === 'stable' ? 'Stable' : operatingHealth.status === 'watch' ? 'Watch' : 'Distressed'}
         </span>
       </div>
       <div className="pop-finance-summary">
-        <div><span>Operating cash contribution</span><strong>{formatMoney(operatingHealth.operatingCashContributionCents, true)}</strong></div>
-        <div><span>Projected closing cash</span><strong>{formatMoney(operatingHealth.closingCashCents, true)}</strong></div>
-        <div><span>Cash runway</span><strong>{operatingHealth.cashRunwayQuarters === null ? 'Cash-positive' : `${operatingHealth.cashRunwayQuarters.toFixed(1)} qtrs`}</strong></div>
-        <div><span>Debt arrears</span><strong>{formatMoney(operatingHealth.debtArrearsCents, true)}</strong></div>
+        <div><span>{gameText("Operating cash contribution")}</span><strong>{formatMoney(operatingHealth.operatingCashContributionCents, true)}</strong></div>
+        <div><span>{gameText("Projected closing cash")}</span><strong>{formatMoney(operatingHealth.closingCashCents, true)}</strong></div>
+        <div><span>{gameText("Cash runway")}</span><strong>{operatingHealth.cashRunwayQuarters === null ? 'Cash-positive' : `${operatingHealth.cashRunwayQuarters.toFixed(1)} qtrs`}</strong></div>
+        <div><span>{gameText("Debt arrears")}</span><strong>{formatMoney(operatingHealth.debtArrearsCents, true)}</strong></div>
       </div>
       <div className="pop-finance-summary">
-        <div><span>Operating creditors outstanding</span><strong>{formatMoney(operatingHealth.operatingPayablesCents, true)}</strong></div>
-        <div><span>Overdue trade payables</span><strong>{formatMoney(operatingHealth.overdueOperatingPayablesCents, true)}</strong></div>
+        <div><span>{gameText("Operating creditors outstanding")}</span><strong>{formatMoney(operatingHealth.operatingPayablesCents, true)}</strong></div>
+        <div><span>{gameText("Overdue trade payables")}</span><strong>{formatMoney(operatingHealth.overdueOperatingPayablesCents, true)}</strong></div>
       </div>
       {(creditorPressure?.affectedClasses.length ?? 0) > 0 && <p className="pop-finance-alert">
         Supplier restrictions active: {creditorPressure!.affectedClasses.map((item) => item.replaceAll('-', ' ')).join(', ')}
@@ -145,25 +146,25 @@ export function FinancePanel({
         </div>}
       {operatingHealth.reasons.length > 0
         ? <ul className="pop-financial-health-reasons">{operatingHealth.reasons.map((reason) => <li key={reason}>{reason}</li>)}</ul>
-        : <p className="pop-muted">No material liquidity or creditor warning signals are currently detected.</p>}
+        : <p className="pop-muted">{gameText("No material liquidity or creditor warning signals are currently detected.")}</p>}
     </div>}
 
 
     {operatingCompany?.status === 'administration' && administrationCase && <div className="pop-finance-subsection pop-administration">
-      <div className="pop-finance-subtitle"><strong>Formal administration</strong><span className="pop-pill pop-pill-warn">Active · {formatQuarter(administrationCase.openedQuarter)}</span></div>
-      <p>The company is under administrator control. New borrowing and discretionary workload changes are suspended; essential operations and approved turnaround work continue.</p>
-      <div className="pop-administration-meta"><span>Filing basis</span><strong>{administrationCase.trigger.replaceAll('-', ' ')}</strong></div>
+      <div className="pop-finance-subtitle"><strong>{gameText("Formal administration")}</strong><span className="pop-pill pop-pill-warn">Active · {formatQuarter(administrationCase.openedQuarter)}</span></div>
+      <p>{gameText("The company is under administrator control. New borrowing and discretionary workload changes are suspended; essential operations and approved turnaround work continue.")}</p>
+      <div className="pop-administration-meta"><span>{gameText("Filing basis")}</span><strong>{administrationCase.trigger.replaceAll('-', ' ')}</strong></div>
       {reorganizationReady
-        ? <button type="button" className="pop-primary" onClick={() => onReorganizeAdministration(administrationCase.id)}>Complete creditor reorganization</button>
-        : <p className="pop-muted">Reorganization is not yet viable. Clear operating payables and debt arrears, restore operating cash flow, and resolve defaults or covenant breaches.</p>}
+        ? <button type="button" className="pop-primary" onClick={() => onReorganizeAdministration(administrationCase.id)}>{gameText("Complete creditor reorganization")}</button>
+        : <p className="pop-muted">{gameText("Reorganization is not yet viable. Clear operating payables and debt arrears, restore operating cash flow, and resolve defaults or covenant breaches.")}</p>}
       {liquidationPreview && <div className="pop-liquidation-preview">
-        <strong>Liquidation estimate</strong>
-        <div><span>Asset proceeds</span><b>{formatMoney(liquidationPreview.grossAssetProceedsCents, true)}</b></div>
-        <div><span>Company cash added to estate</span><b>{formatMoney(liquidationPreview.cashRealizedCents, true)}</b></div>
-        <div><span>Administration costs</span><b>−{formatMoney(liquidationPreview.administrationCostsCents, true)}</b></div>
-        <div><span>Creditor recovery</span><b>{formatMoney(liquidationPreview.totalCreditorRecoveryCents, true)}</b></div>
-        <div><span>Unpaid creditor claims</span><b>{formatMoney(liquidationPreview.totalCreditorClaimsCents - liquidationPreview.totalCreditorRecoveryCents, true)}</b></div>
-        <div><span>Shareholder residual</span><b>{formatMoney(liquidationPreview.shareholderResidualCents, true)}</b></div>
+        <strong>{gameText("Liquidation estimate")}</strong>
+        <div><span>{gameText("Asset proceeds")}</span><b>{formatMoney(liquidationPreview.grossAssetProceedsCents, true)}</b></div>
+        <div><span>{gameText("Company cash added to estate")}</span><b>{formatMoney(liquidationPreview.cashRealizedCents, true)}</b></div>
+        <div><span>{gameText("Administration costs")}</span><b>−{formatMoney(liquidationPreview.administrationCostsCents, true)}</b></div>
+        <div><span>{gameText("Creditor recovery")}</span><b>{formatMoney(liquidationPreview.totalCreditorRecoveryCents, true)}</b></div>
+        <div><span>{gameText("Unpaid creditor claims")}</span><b>{formatMoney(liquidationPreview.totalCreditorClaimsCents - liquidationPreview.totalCreditorRecoveryCents, true)}</b></div>
+        <div><span>{gameText("Shareholder residual")}</span><b>{formatMoney(liquidationPreview.shareholderResidualCents, true)}</b></div>
       <div className="pop-liquidation-claims">
         {liquidationPreview.distributions.map((item) => <div key={`${item.claimId}:${item.claimClass}`}>
           <span>{item.claimClass.replaceAll('-', ' ')} · {item.creditorId.replace('operating-creditor:', '')}</span>
@@ -171,37 +172,37 @@ export function FinancePanel({
           {item.shortfallCents > 0 && <small>{formatMoney(item.shortfallCents, true)} unpaid</small>}
         </div>)}
       </div></div>}
-      <p className="pop-administration-warning-copy">Liquidation is irreversible. Assets are sold, the company stops operating, and any unpaid creditor claims remain recorded against the failed entity.</p>
-      <button type="button" className="pop-secondary-button pop-admin-danger" onClick={() => onLiquidateAdministration(administrationCase.id)}>Liquidate NodeWorks</button>
+      <p className="pop-administration-warning-copy">{gameText("Liquidation is irreversible. Assets are sold, the company stops operating, and any unpaid creditor claims remain recorded against the failed entity.")}</p>
+      <button type="button" className="pop-secondary-button pop-admin-danger" onClick={() => onLiquidateAdministration(administrationCase.id)}>{gameText("Liquidate NodeWorks")}</button>
     </div>}
     {operatingCompany?.status !== 'administration' && operatingCompany?.status !== 'liquidated' && operatingHealth?.status === 'distressed' && !administrationCase && <div className="pop-finance-subsection pop-administration pop-administration-warning">
-      <div className="pop-finance-subtitle"><strong>Creditor protection may be required</strong><span className="pop-pill pop-pill-warn">Distressed</span></div>
-      <p>NodeWorks is in financial distress. Filing opens a formal administration case; it does not erase debt or transfer Meridian Group's cash to the subsidiary.</p>
-      <button type="button" className="pop-secondary-button pop-admin-danger" onClick={() => onFileAdministration()}>File for administration</button>
+      <div className="pop-finance-subtitle"><strong>{gameText("Creditor protection may be required")}</strong><span className="pop-pill pop-pill-warn">{gameText("Distressed")}</span></div>
+      <p>{gameText("NodeWorks is in financial distress. Filing opens a formal administration case; it does not erase debt or transfer Meridian Group's cash to the subsidiary.")}</p>
+      <button type="button" className="pop-secondary-button pop-admin-danger" onClick={() => onFileAdministration()}>{gameText("File for administration")}</button>
     </div>}
     {resolvedAdministrationCase?.status === 'liquidated' && resolvedAdministrationCase.resolution && <div className="pop-finance-subsection pop-administration pop-administration-closed">
-      <div className="pop-finance-subtitle"><strong>NodeWorks liquidation completed</strong><span className="pop-pill pop-pill-warn">Closed · {formatQuarter(resolvedAdministrationCase.resolvedQuarter ?? state.quarter)}</span></div>
+      <div className="pop-finance-subtitle"><strong>{gameText("NodeWorks liquidation completed")}</strong><span className="pop-pill pop-pill-warn">Closed · {formatQuarter(resolvedAdministrationCase.resolvedQuarter ?? state.quarter)}</span></div>
       <div className="pop-finance-summary">
-        <div><span>Asset proceeds</span><strong>{formatMoney(resolvedAdministrationCase.resolution.grossAssetProceedsCents, true)}</strong></div>
-        <div><span>Cash realized</span><strong>{formatMoney(resolvedAdministrationCase.resolution.cashRealizedCents, true)}</strong></div>
-        <div><span>Creditor recovery</span><strong>{formatMoney(resolvedAdministrationCase.resolution.totalCreditorRecoveryCents, true)}</strong></div>
-        <div><span>Shareholder residual</span><strong>{formatMoney(resolvedAdministrationCase.resolution.shareholderResidualCents, true)}</strong></div>
+        <div><span>{gameText("Asset proceeds")}</span><strong>{formatMoney(resolvedAdministrationCase.resolution.grossAssetProceedsCents, true)}</strong></div>
+        <div><span>{gameText("Cash realized")}</span><strong>{formatMoney(resolvedAdministrationCase.resolution.cashRealizedCents, true)}</strong></div>
+        <div><span>{gameText("Creditor recovery")}</span><strong>{formatMoney(resolvedAdministrationCase.resolution.totalCreditorRecoveryCents, true)}</strong></div>
+        <div><span>{gameText("Shareholder residual")}</span><strong>{formatMoney(resolvedAdministrationCase.resolution.shareholderResidualCents, true)}</strong></div>
       </div>
-      <p>All remaining assets have been disposed. Creditor shortfalls remain recorded; the subsidiary is no longer operating.</p>
+      <p>{gameText("All remaining assets have been disposed. Creditor shortfalls remain recorded; the subsidiary is no longer operating.")}</p>
     </div>}
     {ownedAssets.length > 0 && <div className="pop-finance-subsection pop-asset-position">
-      <div className="pop-finance-subtitle"><strong>NodeWorks asset base</strong><small>Indicative scenario valuations</small></div>
+      <div className="pop-finance-subtitle"><strong>{gameText("NodeWorks asset base")}</strong><small>{gameText("Indicative scenario valuations")}</small></div>
       <div className="pop-finance-summary">
-        <div><span>Book value</span><strong>{formatMoney(assetBookValueCents, true)}</strong></div>
-        <div><span>Estimated realizable value</span><strong>{formatMoney(assetRealizableValueCents, true)}</strong></div>
-        <div><span>Secured collateral value</span><strong>{formatMoney(securedCollateralValueCents, true)}</strong></div>
+        <div><span>{gameText("Book value")}</span><strong>{formatMoney(assetBookValueCents, true)}</strong></div>
+        <div><span>{gameText("Estimated realizable value")}</span><strong>{formatMoney(assetRealizableValueCents, true)}</strong></div>
+        <div><span>{gameText("Secured collateral value")}</span><strong>{formatMoney(securedCollateralValueCents, true)}</strong></div>
       </div>
-      <p className="pop-muted">Realizable values are liquidation estimates, not cash or borrowing capacity. Secured lenders can claim only the assets pledged to their instruments.</p>
+      <p className="pop-muted">{gameText("Realizable values are liquidation estimates, not cash or borrowing capacity. Secured lenders can claim only the assets pledged to their instruments.")}</p>
     </div>}
 
     <div className="pop-finance-subsection pop-turnaround">
-      <div className="pop-finance-subtitle"><strong>Operating turnaround</strong><small>Costs and trade-offs apply from this quarter</small></div>
-      <p className="pop-muted">Each program is a one-time structural change. Savings are permanent; operational trade-offs are shown before you commit.</p>
+      <div className="pop-finance-subtitle"><strong>{gameText("Operating turnaround")}</strong><small>{gameText("Costs and trade-offs apply from this quarter")}</small></div>
+      <p className="pop-muted">{gameText("Each program is a one-time structural change. Savings are permanent; operational trade-offs are shown before you commit.")}</p>
       <div className="pop-turnaround-list">
         {COMPUTE_BOTTLENECK_TURNAROUND_ACTIONS.map((action) => {
           const applied = (operatingCompany?.turnaroundActions ?? []).includes(action.id);
@@ -234,7 +235,7 @@ export function FinancePanel({
     </div>
 
     <div className="pop-finance-subsection">
-      <div className="pop-finance-subtitle"><strong>Liquidity by legal entity</strong><small>Opening cash · current quarter</small></div>
+      <div className="pop-finance-subtitle"><strong>{gameText("Liquidity by legal entity")}</strong><small>{gameText("Opening cash · current quarter")}</small></div>
       {[state.holding.organizationId, ...(operatingCompany ? [operatingCompany.organizationId] : [])].map((id) => {
         const organization = organizations.find((item) => item.id === id);
         if (!organization) return null;
@@ -248,7 +249,7 @@ export function FinancePanel({
     </div>
 
     <div className="pop-finance-subsection">
-      <div className="pop-finance-subtitle"><strong>Debt portfolio</strong><small>{activeDebts.length} outstanding instrument(s)</small></div>
+      <div className="pop-finance-subtitle"><strong>{gameText("Debt portfolio")}</strong><small>{activeDebts.length} outstanding instrument(s)</small></div>
       {activeDebts.map((debt) => {
         const arrears = (debt.arrearsPrincipalCents ?? 0) + (debt.arrearsInterestCents ?? 0);
         const service = calculateDebtServiceObligation(debt, state.quarter);
@@ -261,12 +262,12 @@ export function FinancePanel({
             <span className={debt.paymentStatus === 'defaulted' || covenant === 'breached' ? 'pop-pill pop-pill-warn' : 'pop-pill'}>{statusLabel(debt.paymentStatus === 'defaulted' ? 'defaulted' : covenant)}</span>
           </div>
           <div className="pop-debt-metrics">
-            <span><small>Principal</small><strong>{formatMoney(debt.principalCents, true)}</strong></span>
-            <span><small>Creditor</small><strong>{debt.lenderId ? organizationName(debt.lenderId) : 'Unassigned'}</strong></span>
-            <span><small>Quarterly rate</small><strong>{formatPercent(debt.quarterlyInterestRate, 2)}</strong></span>
-            <span><small>Maturity</small><strong>{debt.maturityQuarter === undefined ? (debt.facilityLimitCents ? 'Revolving' : 'Open') : formatQuarter(debt.maturityQuarter)}</strong></span>
-            <span><small>Debt service due</small><strong>{formatMoney(service, true)}</strong></span>
-            <span><small>Scheduled principal</small><strong>{formatMoney(debt.scheduledPrincipalCentsPerQuarter ?? 0, true)}</strong></span>
+            <span><small>{gameText("Principal")}</small><strong>{formatMoney(debt.principalCents, true)}</strong></span>
+            <span><small>{gameText("Creditor")}</small><strong>{debt.lenderId ? organizationName(debt.lenderId) : 'Unassigned'}</strong></span>
+            <span><small>{gameText("Quarterly rate")}</small><strong>{formatPercent(debt.quarterlyInterestRate, 2)}</strong></span>
+            <span><small>{gameText("Maturity")}</small><strong>{debt.maturityQuarter === undefined ? (debt.facilityLimitCents ? 'Revolving' : 'Open') : formatQuarter(debt.maturityQuarter)}</strong></span>
+            <span><small>{gameText("Debt service due")}</small><strong>{formatMoney(service, true)}</strong></span>
+            <span><small>{gameText("Scheduled principal")}</small><strong>{formatMoney(debt.scheduledPrincipalCentsPerQuarter ?? 0, true)}</strong></span>
           </div>
           {debt.facilityLimitCents !== undefined && <div className="pop-facility-line"><span>Facility limit {formatMoney(debt.facilityLimitCents, true)}</span><strong>Undrawn {formatMoney(Math.max(0, debt.facilityLimitCents - debt.principalCents), true)}</strong></div>}
           {debt.covenantTerms && <div className="pop-covenant-line">
@@ -274,27 +275,27 @@ export function FinancePanel({
             <span>Leverage maximum {debt.covenantTerms.maximumDebtToAnnualCashFlow?.toFixed(2) ?? '—'}×</span>
             <span>{debt.covenantTerms.restrictAdditionalBorrowing ? 'Borrowing restriction applies' : 'No borrowing restriction'}</span>
           </div>}
-          {(arrears > 0 || dueNow || debt.crossDefaultedByDebtId) && <div className="pop-debt-warning">
+          {(arrears > {gameText("0 || dueNow || debt.crossDefaultedByDebtId) &&")} <div className="pop-debt-warning">
             {arrears > 0 ? `Arrears ${formatMoney(arrears, true)} · ${debt.overdueQuarters ?? 0} overdue quarter(s)` : dueNow ? 'Principal maturity / acceleration is due this quarter.' : `Cross-default linked to ${debt.crossDefaultedByDebtId}`}
           </div>}
         </article>;
       })}
-      {activeDebts.length === 0 && <p className="pop-muted">No outstanding debt instruments.</p>}
+      {activeDebts.length === 0 && <p className="pop-muted">{gameText("No outstanding debt instruments.")}</p>}
     </div>
 
     <div className="pop-finance-subsection">
-      <div className="pop-finance-subtitle"><strong>Lender capacity</strong><small>Liquidity and underwriting policy</small></div>
+      <div className="pop-finance-subtitle"><strong>{gameText("Lender capacity")}</strong><small>{gameText("Liquidity and underwriting policy")}</small></div>
       {state.lenders.map((lender) => {
         const organization = organizations.find((item) => item.id === lender.organizationId);
         return <div className="pop-lender-row" key={lender.organizationId}>
           <div><strong>{organization?.name ?? lender.organizationId}</strong><small>{lender.riskAppetite} · minimum score {lender.minimumCreditScore} · max leverage {lender.maxLoanToAnnualCashFlow.toFixed(1)}×</small></div>
-          <div><strong>{formatMoney(lender.availableCapacityCents, true)}</strong><small>capacity available</small></div>
+          <div><strong>{formatMoney(lender.availableCapacityCents, true)}</strong><small>{gameText("capacity available")}</small></div>
         </div>;
       })}
     </div>
 
     <div className="pop-finance-subsection">
-      <div className="pop-finance-subtitle"><strong>Available loan offers</strong><small>Acceptance is a binding financing decision</small></div>
+      <div className="pop-finance-subtitle"><strong>{gameText("Available loan offers")}</strong><small>{gameText("Acceptance is a binding financing decision")}</small></div>
       {availableOffers.map((offer) => {
         const blocked = state.debts.some((debt) => debt.borrowerId === offer.borrowerId && (
           (debt.covenantTerms?.restrictAdditionalBorrowing === true && debt.covenantStatus === 'breached') ||
@@ -307,10 +308,10 @@ export function FinancePanel({
             <span className="pop-pill">{offer.creditRating} · {offer.creditScore}</span>
           </div>
           <div className="pop-debt-metrics">
-            <span><small>Principal offered</small><strong>{formatMoney(offer.principalCents, true)}</strong></span>
-            <span><small>Quarterly interest</small><strong>{formatPercent(offer.quarterlyInterestRate, 2)}</strong></span>
-            <span><small>Maturity</small><strong>{formatQuarter(offer.maturityQuarter)}</strong></span>
-            <span><small>Expires after</small><strong>{formatQuarter(offer.expiresAfterQuarter)}</strong></span>
+            <span><small>{gameText("Principal offered")}</small><strong>{formatMoney(offer.principalCents, true)}</strong></span>
+            <span><small>{gameText("Quarterly interest")}</small><strong>{formatPercent(offer.quarterlyInterestRate, 2)}</strong></span>
+            <span><small>{gameText("Maturity")}</small><strong>{formatQuarter(offer.maturityQuarter)}</strong></span>
+            <span><small>{gameText("Expires after")}</small><strong>{formatQuarter(offer.expiresAfterQuarter)}</strong></span>
           </div>
           <div className="pop-offer-terms">
             <span>DSCR ≥ {offer.covenantTerms?.minimumDebtServiceCoverage?.toFixed(2) ?? '—'}×</span>
@@ -324,36 +325,36 @@ export function FinancePanel({
           </label>
         </article>;
       })}
-      {availableOffers.length === 0 && <p className="pop-muted">No unexpired loan offers are currently available.</p>}
+      {availableOffers.length === 0 && <p className="pop-muted">{gameText("No unexpired loan offers are currently available.")}</p>}
     </div>
 
     <div className="pop-finance-subsection">
-      <div className="pop-finance-subtitle"><strong>Request new credit</strong><small>Lenders underwrite independently at quarter close</small></div>
+      <div className="pop-finance-subtitle"><strong>{gameText("Request new credit")}</strong><small>{gameText("Lenders underwrite independently at quarter close")}</small></div>
       <div className="pop-credit-request">
-        <label><span>Borrowing entity</span>
+        <label><span>{gameText("Borrowing entity")}</span>
           <select value={creditRequest.borrowerId} onChange={(event) => onCreditRequestChange({ ...creditRequest, borrowerId: event.target.value })}>
             {borrowerIds.map((id) => <option key={id} value={id}>{organizationName(id)}</option>)}
           </select>
         </label>
-        <label><span>Requested principal · USD</span>
+        <label><span>{gameText("Requested principal · USD")}</span>
           <input type="number" min="1" step="100000" disabled={!requestAllowed} value={creditRequest.amountDollars}
             onChange={(event) => onCreditRequestChange({ ...creditRequest, amountDollars: event.target.value })} placeholder="e.g. 1500000" />
         </label>
-        <label><span>Term</span>
+        <label><span>{gameText("Term")}</span>
           <select disabled={!requestAllowed} value={creditRequest.termQuarters} onChange={(event) => onCreditRequestChange({ ...creditRequest, termQuarters: event.target.value })}>
             {Array.from({ length: 11 }, (_, index) => index + 2).map((term) => <option key={term} value={term}>{term} quarters</option>)}
           </select>
         </label>
-        <label className="pop-credit-collateral"><span>Collateral description · optional</span>
+        <label className="pop-credit-collateral"><span>{gameText("Collateral description · optional")}</span>
           <input type="text" maxLength={160} disabled={!requestAllowed} value={creditRequest.collateral}
             onChange={(event) => onCreditRequestChange({ ...creditRequest, collateral: event.target.value })} placeholder="Equipment, receivables…" />
         </label>
       </div>
-      {!requestAllowed && <p className="pop-finance-alert">This borrower is currently restricted from requesting additional credit by an uncured default or covenant breach.</p>}
-      {requestAllowed && creditRequest.amountDollars && !validRequest && <p className="pop-finance-alert">Enter a positive amount and a term from 2 to 12 quarters.</p>}
-      <p className="pop-muted">A request does not create cash or debt immediately. Each lender returns its own offer or rejection after the quarter resolves. An accepted offer can be taken up in a later quarter.</p>
+      {!requestAllowed && <p className="pop-finance-alert">{gameText("This borrower is currently restricted from requesting additional credit by an uncured default or covenant breach.")}</p>}
+      {requestAllowed && creditRequest.amountDollars && !validRequest && <p className="pop-finance-alert">{gameText("Enter a positive amount and a term from 2 to 12 quarters.")}</p>}
+      <p className="pop-muted">{gameText("A request does not create cash or debt immediately. Each lender returns its own offer or rejection after the quarter resolves. An accepted offer can be taken up in a later quarter.")}</p>
       <div className="pop-finance-request-state">
-        <span>Cash held by selected group entities</span><strong>{formatMoney(totalCash, true)}</strong>
+        <span>{gameText("Cash held by selected group entities")}</span><strong>{formatMoney(totalCash, true)}</strong>
       </div>
     </div>
   </section>;
