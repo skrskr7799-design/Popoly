@@ -241,3 +241,12 @@ This is a user-reported exploratory check, not a claim that every BS-01–BS-25 
 - **Steps:** Visit Command Center, Corporation, Markets & Intelligence, and Quarter Strategy at desktop and compact widths. Compare page headings, quarter context, navigation active state, panel surfaces, badges, primary/secondary actions, and keyboard focus. Enable the operating system's reduced-motion preference and revisit the screens.
 - **Expected:** All destinations read as one game interface while retaining their own hero illustration and information layout. The active navigation item is unambiguous visually and exposed as the current page to assistive technology. Shared controls and panels use consistent treatment. Focus remains visible for keyboard users. Reduced-motion preference suppresses nonessential transitions. No horizontal overflow at 390 px, 768 px, and 1280 px.
 - **Actual result / evidence:**
+
+
+## 14. Administration and reorganization
+
+### BS-29 — Distress response and administration controls
+- [ ] Pass  [ ] Fail  [ ] Blocked
+- **Steps:** Use a disposable campaign state with NodeWorks in financial distress. Open Corporation and Command Center treasury views. File for administration, advance a quarter, attempt a workload change and new credit request, then resolve a viable reorganization after clearing arrears.
+- **Expected:** The administration event is visually distinct and clearly explains its consequences. Filing creates one persistent case without changing cash, debt principal, or trade-payable balances. New borrowing and discretionary workload changes are rejected while essential operations and turnaround actions remain available. Reorganization is offered only after operating health is no longer distressed and trade payables, debt arrears, defaults, and covenant breaches are cleared. Save/restore preserves the case and status. Both Corporation and Command Center show the same state.
+- **Actual result / evidence:**
