@@ -78,7 +78,9 @@ export interface ContractRenewalCommand {
 }
 
 export interface QuarterCommands {
-  workloadDecisions?: WorkloadDecision[];\n  /** One-time operating-cost and capacity restructuring actions. */\n  turnaroundActions?: TurnaroundActionCommand[];
+  workloadDecisions?: WorkloadDecision[];
+  /** One-time operating-cost and capacity restructuring actions. */
+  turnaroundActions?: TurnaroundActionCommand[];
   /** Initiatives to sponsor this quarter. Costs and effects come from scenario data. */
   launchInitiatives?: string[];
   /** Price proposal for an existing flexible customer contract; accepted terms begin next quarter. */
