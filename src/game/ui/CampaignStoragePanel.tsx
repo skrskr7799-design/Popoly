@@ -38,7 +38,7 @@ export function CampaignStoragePanel({
         <div className="pop-storage-row" key={campaign.campaignId}>
           <div className="pop-storage-info">
             <strong>{campaign.campaignId.slice(0, 18)}</strong>
-            <span>{formatQuarter(campaign.quarter)} · Updated {new Date(campaign.updatedAt).toLocaleString()}</span>
+            <span>{formatQuarter(campaign.quarter)} · {gameText('Updated')} {new Date(campaign.updatedAt).toLocaleString()}</span>
             {campaign.campaignId === activeCampaignId && <small>{gameText("Current session")}</small>}
           </div>
           <div className="pop-storage-actions">
