@@ -380,6 +380,20 @@ export default function CampaignApp() {
     setRevision((value) => value + 1);
   };
 
+  const liquidateNodeWorks = (caseId: string) => {
+    if (!window.confirm('Liquidate NodeWorks? This is irreversible. All subsidiary assets will be realized, creditor claims distributed, and the campaign will end.')) return;
+    const result = session.liquidateAdministration(caseId);
+    if (!result.ok) {
+      setIssues([{ code: result.code, message: result.message, entityId: 'nodeworks' }]);
+      return;
+    }
+    setReport(null);
+    setSelected([]);
+    setSelectedTurnaroundActions([]);
+    setIssues([]);
+    setRevision((value) => value + 1);
+  };
+
   const resolveQuarter = () => {
     const result = session.advance({
       launchInitiatives: selected,
@@ -442,6 +456,7 @@ export default function CampaignApp() {
           current.includes(actionId) ? current.filter((id) => id !== actionId) : [...current, actionId])}
         onFileAdministration={fileNodeWorksAdministration}
         onReorganizeAdministration={completeNodeWorksReorganization}
+        onLiquidateAdministration={liquidateNodeWorks}
       /> : activeView === 'markets' ? <>
       <MarketsOverview state={state} report={currentReport} activityReport={report ?? undefined} />
       {storageMessage && <div className="pop-storage-message">{storageMessage}<button onClick={() => setStorageMessage(null)}>Dismiss</button></div>}
@@ -533,6 +548,7 @@ export default function CampaignApp() {
               current.includes(actionId) ? current.filter((id) => id !== actionId) : [...current, actionId])}
             onFileAdministration={fileNodeWorksAdministration}
             onReorganizeAdministration={completeNodeWorksReorganization}
+            onLiquidateAdministration={liquidateNodeWorks}
           />
         </div>
 
