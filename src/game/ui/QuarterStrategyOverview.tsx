@@ -95,7 +95,7 @@ export function QuarterStrategyOverview({
             return <button type="button" key={initiative.id} className={`pop-strategy-card ${isSelected ? 'is-selected' : ''} ${isActive ? 'is-active' : ''}`}
               onClick={() => onToggle(initiative)} disabled={isActive || !canAfford} aria-pressed={isSelected}>
               <div className="pop-strategy-card-top"><span className="pop-strategy-index">0{index + 1}</span><span className="pop-strategy-glyph"><InitiativeGlyph type={initiative.effect.type} /></span>{isActive ? <span className="pop-strategy-status">{gameText("IN PROGRESS")}</span> : isSelected ? <span className="pop-strategy-status selected"><Check size={11} /> {gameText("SELECTED")}</span> : <span className="pop-strategy-add">＋</span>}</div>
-              <h4>{initiative.name}</h4><p>{initiative.description}</p>
+              <h4>{gameText(initiative.name)}</h4><p>{gameText(initiative.description)}</p>
               <div className="pop-strategy-effect"><span>{gameText("PROJECTED EFFECT")}</span><strong>{effectLabel(initiative)}</strong></div>
               <div className="pop-strategy-card-foot"><span>{initiative.leadershipCost} leadership</span><span>{formatMillions(initiative.upfrontCostCents)}</span><span>{initiative.durationQuarters} qtrs</span></div>
             </button>;
@@ -106,7 +106,7 @@ export function QuarterStrategyOverview({
       <aside className="pop-strategy-plan">
         <div className="pop-strategy-section-head"><div><span className="pop-eyebrow">{gameText("COMMITMENT PREVIEW")}</span><h3>{gameText("Quarter plan")}</h3><p>{gameText("Review the portfolio before resolution.")}</p></div></div>
         {definitions.length === 0 ? <div className="pop-strategy-empty"><Radar size={22} /><strong>{gameText("No initiatives selected")}</strong><p>{gameText("Your capital and leadership capacity remain uncommitted. Choose a strategic move to build the plan.")}</p></div>
-          : <div className="pop-strategy-plan-list">{definitions.map((item) => <div className="pop-strategy-plan-item" key={item.id}><span><Check size={13} /></span><div><strong>{item.name}</strong><small>{item.leadershipCost} leadership · {item.durationQuarters} quarters</small></div><b>{formatMillions(item.upfrontCostCents)}</b></div>)}</div>}
+          : <div className="pop-strategy-plan-list">{definitions.map((item) => <div className="pop-strategy-plan-item" key={item.id}><span><Check size={13} /></span><div><strong>{gameText(item.name)}</strong><small>{item.leadershipCost} leadership · {item.durationQuarters} quarters</small></div><b>{formatMillions(item.upfrontCostCents)}</b></div>)}</div>}
         <div className="pop-strategy-total"><span>{gameText("TOTAL CAPITAL")}</span><strong>{formatMillions(capitalUsed)}</strong></div>
         <div className="pop-strategy-total"><span>{gameText("LEADERSHIP USED")}</span><strong>{leadershipUsed} / {leadershipCapacity}</strong></div>
         <div className="pop-strategy-total remaining"><span>{gameText("REMAINING CAPITAL")}</span><strong>{formatMillions(Math.max(0, cashAvailable - capitalUsed))}</strong></div>
