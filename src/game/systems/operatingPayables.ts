@@ -30,10 +30,12 @@ export interface OperatingPayableSettlement {
  */
 export function settleOperatingPayables(
   existing: OperatingPayable[],
+  entityId: string,
   obligations: OperatingPayableObligation[],
   availableCashCents: number,
   quarter: number,
 ): OperatingPayableSettlement {
+  if (!entityId.trim()) throw new Error('Operating payable settlement requires a legal entity ID.');
   if (!Number.isSafeInteger(availableCashCents) || availableCashCents < 0) {
     throw new Error('Operating payable settlement requires non-negative integer cash.');
   }
@@ -41,9 +43,11 @@ export function settleOperatingPayables(
     throw new Error('Operating payable settlement requires a positive quarter.');
   }
 
+  const otherEntities = existing.filter((payable) => payable.entityId !== entityId);
+  const entityPayables = existing.filter((payable) => payable.entityId === entityId);
   const ids = new Set(existing.map((payable) => payable.id));
   const accrued: OperatingPayable[] = obligations.map((obligation) => {
-    if (!obligation.id.trim() || !obligation.entityId.trim() || ids.has(obligation.id) ||
+    if (!obligation.id.trim() || obligation.entityId !== entityId || ids.has(obligation.id) ||
         !Number.isSafeInteger(obligation.amountCents) || obligation.amountCents <= 0 ||
         !Number.isInteger(obligation.dueQuarter) || obligation.dueQuarter < quarter ||
         !Number.isSafeInteger(obligation.priority) || obligation.priority < 1) {
@@ -62,7 +66,7 @@ export function settleOperatingPayables(
     };
   });
 
-  const ledger = [...existing.map((payable) => ({ ...payable })), ...accrued];
+  const ledger = [...entityPayables.map((payable) => ({ ...payable })), ...accrued];
   const ordered = ledger
     .map((payable, index) => ({ payable, index }))
     .filter(({ payable }) => payable.outstandingAmountCents > 0)
@@ -90,7 +94,7 @@ export function settleOperatingPayables(
   }
 
   return {
-    payables: ledger,
+    payables: [...otherEntities, ...ledger],
     payments,
     cashRemainingCents: moneyFromCents(cashRemainingCents),
     outstandingCents: moneyFromCents(ledger.reduce((sum, payable) => sum + payable.outstandingAmountCents, 0)),
