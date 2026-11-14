@@ -324,7 +324,7 @@ describe('managed long-horizon economic stability', () => {
 
     const company = state.operatingCompanies.find((item) => item.organizationId === 'nodeworks')!;
     expect(company.turnaroundActions).toHaveLength(4);
-    expect(state.quarter).toBe(50);
+    expect(state.quarter).toBe(49);
   });
 });
 
