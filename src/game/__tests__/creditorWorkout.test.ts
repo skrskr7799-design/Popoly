@@ -179,6 +179,27 @@ describe('coordinated creditor workouts', () => {
     });
   });
 
+  it('supersedes a breached workout when creditors approve a replacement', () => {
+    const opening = initializeGame(2035);
+    const first = proposeCreditorWorkout(opening, {
+      ...plan, minimumOperatingCashContributionCents: moneyFromDollars(1_000_000_000),
+      maximumOperatingPayablesCents: 0, maximumDebtArrearsCents: 0,
+    });
+    expect(first.ok).toBe(true);
+    if (!first.ok || first.workout.status !== 'active') return;
+    const failed = advanceCreditorWorkouts(
+      { ...first.state, quarter: 3 },
+      { ...buildQuarterReport(first.state), quarter: 3 },
+    );
+    expect(failed.creditorWorkouts?.find((item) => item.id === first.workout.id)?.status).toBe('breached');
+    const replacement = proposeCreditorWorkout(failed, plan);
+    expect(replacement.ok).toBe(true);
+    if (!replacement.ok) return;
+    expect(replacement.state.creditorWorkouts?.find((item) => item.id === first.workout.id)?.status).toBe('withdrawn');
+    expect(replacement.workout.status).toBe('active');
+    expect(validateGameState(replacement.state)).toEqual([]);
+  });
+
   it('tracks milestones to completion', () => {
     const opening = initializeGame(2035);
     const proposed = proposeCreditorWorkout(opening, plan);

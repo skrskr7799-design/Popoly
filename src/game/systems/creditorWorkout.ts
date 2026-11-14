@@ -220,7 +220,12 @@ export function proposeCreditorWorkout(state: GameState, input: CreditorWorkoutP
     state: {
       ...state, debts, operatingPayables, organizations, ownership, operatingCompanies,
       ...(state.assets !== undefined ? { assets } : {}),
-      creditorWorkouts: [...(state.creditorWorkouts ?? []), workout],
+      creditorWorkouts: [
+        ...(state.creditorWorkouts ?? []).map((previous) => previous.entityId === input.entityId && previous.status === 'breached'
+          ? { ...previous, status: 'withdrawn' as const, resolutionNote: `Superseded by replacement workout ${workout.id}.` }
+          : previous),
+        workout,
+      ],
     },
     workout,
   };
