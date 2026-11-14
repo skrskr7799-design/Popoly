@@ -52,6 +52,10 @@ describe('formal administration transitions', () => {
     const credit = advanceQuarter(filed.state, {
       requestCredit: [{ borrowerId: 'nodeworks', requestedPrincipalCents: 100_000, termQuarters: 4 }],
     });
+    const investment = advanceQuarter(filed.state, { launchInitiatives: ['capacity-expansion-phase-i'] });
+    expect(investment.ok).toBe(false);
+    if (!investment.ok) expect(investment.issues.some((item) => item.code === 'administration.investment_restricted')).toBe(true);
+
     expect(credit.ok).toBe(false);
     if (!credit.ok) expect(credit.issues.some((item) => item.code === 'administration.new_borrowing_restricted')).toBe(true);
   });
