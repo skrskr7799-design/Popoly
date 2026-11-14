@@ -79,9 +79,9 @@ The core strategy-game interface, onboarding, and main destinations are implemen
 - [x] Add campaign-session restore tests for active creditor workout, active administration restrictions, and completed liquidation.
 - [x] Record the owner's exploratory browser check without overstating the unrecorded checklist results.
 - [x] Prepare a non-destructive migration rehearsal documenting branch ancestry, runtime entry, legacy preservation, Docker/CI, and cutover gates.
-- [ ] Complete production Docker build and container HTTP smoke test in CI.
+- [x] Complete production Docker build and container HTTP smoke test in CI (run 43588680792).
 - [ ] Complete and record the full browser checklist on desktop, tablet, and mobile.
-- [ ] Archive the exact pre-cutover `main` prototype under `legacy/prototype/` and verify it before moving any legacy source.
+- [x] Archive the exact pre-cutover `main` prototype under `legacy/prototype/` (27 tracked files from commit `3c8c118`).
 - [ ] Review the full source-to-main PR diff and merge only after all release gates pass.
 
 **Current release posture:** `docs/game-foundation` is the candidate release branch. `main` remains unchanged. See [MIGRATION_REHEARSAL.md](MIGRATION_REHEARSAL.md) for the current comparison and exact cutover sequence.
