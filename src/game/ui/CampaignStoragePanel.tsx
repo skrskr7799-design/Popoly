@@ -43,7 +43,7 @@ export function CampaignStoragePanel({
           </div>
           <div className="pop-storage-actions">
             <button className="pop-quiet-button" onClick={() => onExport(campaign.campaignId)} disabled={busy}><Download size={14} /> {gameText("Export")}</button>
-            <button className="pop-secondary-button" onClick={() => onLoad(campaign.campaignId)} disabled={busy}>{campaign.campaignId === activeCampaignId ? 'Reload' : 'Load'}</button>
+            <button className="pop-secondary-button" onClick={() => onLoad(campaign.campaignId)} disabled={busy}>{gameText(campaign.campaignId === activeCampaignId ? 'Reload' : 'Load')}</button>
           </div>
         </div>)}</div>}
   </section>;
