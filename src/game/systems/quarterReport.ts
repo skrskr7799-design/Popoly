@@ -1,4 +1,4 @@
-import type { GameState, MoneyCents } from '../domain/types';
+import type { GameState, MoneyCents, OperatingPayable } from '../domain/types';
 import { calculateOperatingQuarter, type OperatingQuarterResult } from './economy';
 import { calculateScenarioDebtService, calculateEntityCashBridge, type EntityCashBridge } from './finance';
 import { moneyFromCents } from '../domain/money';
@@ -149,6 +149,8 @@ export interface QuarterReport {
   debtRefinancings?: DebtRefinancingReportLine[];
   debtRestructurings?: DebtRestructuringReportLine[];
   contractsInRenewalWindow?: string[];
+  operatingPayables?: OperatingPayable[];
+  operatingPayablesOutstandingCents?: MoneyCents;
 }
 
 /**
@@ -190,5 +192,7 @@ export function buildQuarterReport(state: GameState): QuarterReport {
     .filter((contract) => contract.flexibility === 'contracted' && contract.termEndQuarter !== undefined &&
       contract.termEndQuarter - state.quarter <= (contract.renewalNoticeQuarters ?? 0))
     .map((contract) => contract.id));
-  return { quarter: state.quarter, companies, entityCashBridges, totalInterestExpenseCents, contractsInRenewalWindow };
+  const operatingPayables = (state.operatingPayables ?? []).map((payable) => ({ ...payable }));
+  const operatingPayablesOutstandingCents = moneyFromCents(operatingPayables.reduce((sum, payable) => sum + payable.outstandingAmountCents, 0));
+  return { quarter: state.quarter, companies, entityCashBridges, totalInterestExpenseCents, contractsInRenewalWindow, operatingPayables, operatingPayablesOutstandingCents };
 }
