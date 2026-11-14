@@ -44,6 +44,8 @@ describe('CampaignSession', () => {
 
     const accepted = session.advance({ launchInitiatives: ['commission-market-study'] });
     expect(accepted.ok).toBe(true);
+    if (!accepted.ok) return;
+    expect(accepted.report.quarter).toBe(1);
     expect(session.state.quarter).toBe(2);
     expect(session.currentReport.quarter).toBe(session.state.quarter);
     expect(session.currentReport.contractsInRenewalWindow).toEqual(
