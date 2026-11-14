@@ -266,7 +266,13 @@ function allocateAsterionFlexibleDemand(state: GameState, demandMW: number): Fle
   const kestrelFixedMW = customer.hiddenMetrics.kestrelContractMW ?? 0;
   const flexibleMW = Math.max(0, demandMW - nodeworksFixedMW - kestrelFixedMW);
   const nodeworksCapacityMW = Math.max(0, calculateEffectiveCapacityMW(nodeworks) - nodeworksFixedMW);
-  const kestrelCapacityMW = Math.max(0, (kestrel.hiddenMetrics.effectiveCapacityMW ?? kestrel.hiddenMetrics.effectiveCapacityMinMW ?? 0) - (kestrel.hiddenMetrics.currentWorkloadMW ?? kestrel.hiddenMetrics.deliveredWorkloadMaxMW ?? 0));
+  const kestrelCurrentWorkloadMW = kestrel.hiddenMetrics.currentWorkloadMW ?? kestrel.hiddenMetrics.deliveredWorkloadMaxMW ?? 0;
+  const previousKestrelFlexibleMW = customer.hiddenMetrics.kestrelFlexibleMW ?? 0;
+  // Reallocate from the previous quarter's baseline: its flexible workload is
+  // being replaced below, so it must not consume capacity a second time here.
+  const kestrelFixedWorkloadMW = Math.max(0, kestrelCurrentWorkloadMW - previousKestrelFlexibleMW);
+  const kestrelCapacityMW = Math.max(0,
+    (kestrel.hiddenMetrics.effectiveCapacityMW ?? kestrel.hiddenMetrics.effectiveCapacityMinMW ?? 0) - kestrelFixedWorkloadMW);
   const otherCapacityMW = Math.max(0, customer.hiddenMetrics.otherProviderCapacityMW ?? 0);
   const suppliers = [
     { id: 'nodeworks', capacity: nodeworksCapacityMW, reliability: nodeworks.capacity.reliability, price: nodeworks.contracts.find((contract) => contract.flexibility === 'flexible')?.priceCentsPerMWQuarter ?? 41_500_000, fixed: nodeworksFixedMW },
