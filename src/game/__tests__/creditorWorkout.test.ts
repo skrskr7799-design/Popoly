@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { initializeGame } from '../engine/initialize';
+import { CampaignSession } from '../campaign/session';
 import { validateGameState } from '../domain/invariants';
 import { buildQuarterReport } from '../systems/quarterReport';
 import { advanceQuarter } from '../engine/advanceQuarter';
@@ -98,6 +99,33 @@ describe('coordinated creditor workouts', () => {
       expect(next.report.debtRepayments?.some((item) => item.debtId === debtId)).not.toBe(true);
     }
     expect(validateGameState(next.state)).toEqual([]);
+  });
+
+  it('advances the workout lifecycle through the authoritative campaign session', () => {
+    const session = CampaignSession.start({ seed: 2035 });
+    const proposed = session.proposeCreditorWorkout(plan);
+    expect(proposed.ok).toBe(true);
+    if (!proposed.ok) return;
+    const turn = session.advance();
+    expect(turn.ok).toBe(true);
+    if (!turn.ok) return;
+    expect(session.state.creditorWorkouts?.find((item) => item.id === proposed.workout.id)?.status).toBe('completed');
+    expect(validateGameState(session.state)).toEqual([]);
+  });
+
+  it('keeps an administration review window open while a workout is unresolved', () => {
+    const session = CampaignSession.start({ seed: 2035 });
+    const filed = session.openAdministration('nodeworks', 'voluntary');
+    expect(filed.ok).toBe(true);
+    if (!filed.ok) return;
+    const proposed = session.proposeCreditorWorkout({
+      ...plan, standstillQuarters: 0, maturityExtensionQuarters: 0,
+    });
+    expect(proposed.ok).toBe(true);
+    if (!proposed.ok) return;
+    expect(session.reorganizeAdministration(filed.administrationCase.id)).toMatchObject({
+      ok: false, code: 'administration.workout_unresolved',
+    });
   });
 
   it('tracks milestones to completion', () => {
