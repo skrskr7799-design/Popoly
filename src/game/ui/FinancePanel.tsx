@@ -64,7 +64,7 @@ export function FinancePanel({
   const reorganizationReady = !!operatingHealth && operatingHealth.status === 'stable' && operatingHealth.operatingPayablesCents === 0 && operatingHealth.debtArrearsCents === 0 && operatingHealth.defaultedDebtCount === 0 && operatingHealth.covenantBreachCount === 0;
   const liquidationPreview = administrationCase && operatingCompany
     ? calculateLiquidationWaterfall(state, operatingCompany.organizationId) : undefined;
-  const resolvedAdministrationCase = (state.administrationCases ?? []).find((item) => item.entityId === operatingCompany?.organizationId && item.status !== 'active');
+  const resolvedAdministrationCase = (state.administrationCases ?? []).find((item) => item.entityId === operatingCompany?.organizationId && item.status === 'liquidated');
   const totalCash = borrowerIds.reduce((sum, id) =>
     sum + (organizations.find((item) => item.id === id)?.cashCents ?? 0), 0);
   const lenderResources = new Map(state.lenders.map((lender) => [
