@@ -198,37 +198,44 @@ export function validateGameState(state: GameState): ValidationIssue[] {
     administrationCaseIds.add(administrationCase.id);
     const company = state.operatingCompanies.find((item) => item.organizationId === administrationCase.entityId);
     const resolution = administrationCase.resolution;
+    const resolutionInvalid = resolution !== undefined && (
+      resolution.resolvedQuarter !== administrationCase.resolvedQuarter ||
+      !Number.isSafeInteger(resolution.grossAssetProceedsCents) || resolution.grossAssetProceedsCents < 0 ||
+      !Number.isSafeInteger(resolution.cashRealizedCents) || resolution.cashRealizedCents < 0 ||
+      !Number.isSafeInteger(resolution.administrationCostsCents) || resolution.administrationCostsCents < 0 ||
+      !Number.isSafeInteger(resolution.totalCreditorClaimsCents) || resolution.totalCreditorClaimsCents < 0 ||
+      !Number.isSafeInteger(resolution.totalCreditorRecoveryCents) || resolution.totalCreditorRecoveryCents < 0 ||
+      !Number.isSafeInteger(resolution.shareholderResidualCents) || resolution.shareholderResidualCents < 0 ||
+      !Array.isArray(resolution.distributions) ||
+      !resolution.distributions.every((item) => typeof item.claimId === 'string' &&
+        typeof item.creditorId === 'string' &&
+        ['secured-debt', 'operating-payable', 'unsecured-debt'].includes(item.claimClass) &&
+        Number.isSafeInteger(item.claimAmountCents) && item.claimAmountCents >= 0 &&
+        Number.isSafeInteger(item.recoveryCents) && item.recoveryCents >= 0 &&
+        Number.isSafeInteger(item.shortfallCents) && item.shortfallCents >= 0 &&
+        item.recoveryCents + item.shortfallCents === item.claimAmountCents) ||
+      (Array.isArray(resolution.distributions) && (
+        resolution.totalCreditorClaimsCents !== resolution.distributions.reduce((sum, item) => sum + item.claimAmountCents, 0) ||
+        resolution.totalCreditorRecoveryCents !== resolution.distributions.reduce((sum, item) => sum + item.recoveryCents, 0)
+      )) ||
+      resolution.grossAssetProceedsCents + resolution.cashRealizedCents - resolution.administrationCostsCents !==
+        resolution.totalCreditorRecoveryCents + resolution.shareholderResidualCents
+    );
+    const invalidResolvedState = administrationCase.status !== 'active' && (
+      !Number.isInteger(administrationCase.resolvedQuarter) ||
+      administrationCase.resolvedQuarter! < administrationCase.openedQuarter ||
+      administrationCase.resolvedQuarter! > state.quarter ||
+      (administrationCase.status === 'liquidated' && !resolution) ||
+      (administrationCase.status === 'reorganized' && resolution !== undefined) ||
+      resolutionInvalid
+    );
     if (!administrationCase.id.trim() || !company ||
         !Number.isInteger(administrationCase.openedQuarter) || administrationCase.openedQuarter < 1 ||
         administrationCase.openedQuarter > state.quarter ||
         !['voluntary', 'debt-default', 'trade-creditor-arrears'].includes(administrationCase.trigger) ||
         !['active', 'liquidated', 'reorganized'].includes(administrationCase.status) ||
         (administrationCase.status === 'active' && (administrationCase.resolvedQuarter !== undefined || resolution !== undefined)) ||
-        (administrationCase.status !== 'active' && (!Number.isInteger(administrationCase.resolvedQuarter) ||
-          administrationCase.resolvedQuarter! < administrationCase.openedQuarter ||
-          administrationCase.resolvedQuarter! > state.quarter ||
-          (administrationCase.status === 'liquidated' && !resolution) ||
-          (administrationCase.status === 'reorganized' && resolution !== undefined) ||
-          (resolution !== undefined && (
-          resolution.resolvedQuarter !== administrationCase.resolvedQuarter ||
-          !Number.isSafeInteger(resolution.grossAssetProceedsCents) || resolution.grossAssetProceedsCents < 0 ||
-          !Number.isSafeInteger(resolution.cashRealizedCents) || resolution.cashRealizedCents < 0 ||
-          !Number.isSafeInteger(resolution.administrationCostsCents) || resolution.administrationCostsCents < 0 ||
-          !Number.isSafeInteger(resolution.totalCreditorClaimsCents) || resolution.totalCreditorClaimsCents < 0 ||
-          !Number.isSafeInteger(resolution.totalCreditorRecoveryCents) || resolution.totalCreditorRecoveryCents < 0 ||
-          !Number.isSafeInteger(resolution.shareholderResidualCents) || resolution.shareholderResidualCents < 0 ||
-          !Array.isArray(resolution.distributions) ||
-          !resolution.distributions.every((item) => typeof item.claimId === 'string' &&
-            typeof item.creditorId === 'string' &&
-            ['secured-debt', 'operating-payable', 'unsecured-debt'].includes(item.claimClass) &&
-            Number.isSafeInteger(item.claimAmountCents) && item.claimAmountCents >= 0 &&
-            Number.isSafeInteger(item.recoveryCents) && item.recoveryCents >= 0 &&
-            Number.isSafeInteger(item.shortfallCents) && item.shortfallCents >= 0 &&
-            item.recoveryCents + item.shortfallCents === item.claimAmountCents) ||
-          resolution.totalCreditorClaimsCents !== resolution.distributions.reduce((sum, item) => sum + item.claimAmountCents, 0) ||
-          resolution.totalCreditorRecoveryCents !== resolution.distributions.reduce((sum, item) => sum + item.recoveryCents, 0) ||
-          resolution.grossAssetProceedsCents + resolution.cashRealizedCents - resolution.administrationCostsCents !==
-            resolution.totalCreditorRecoveryCents + resolution.shareholderResidualCents)))) {
+        invalidResolvedState) {
       issues.push({ code: 'administration.case_invalid', message: 'Administration case, status, dates, or resolution ledger is invalid.', entityId: administrationCase.id });
     }
     if ((administrationCase.status === 'active' && company?.status !== 'administration') ||
