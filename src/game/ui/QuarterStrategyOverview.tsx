@@ -9,11 +9,11 @@ const cashOf = (state: GameState, id: string) =>
 
 function effectLabel(initiative: StrategicInitiativeDefinition): string {
   const effect = initiative.effect;
-  if (effect.type === 'capacity-expansion') return `+${effect.installedITMW} MW installed capacity · +${effect.operationalLimitMW} MW operating limit`;
-  if (effect.type === 'equipment-reservation') return `+${effect.commissionedEquipmentMW} MW-equivalent equipment allocation`;
-  if (effect.type === 'firm-power') return `Up to +${effect.gridAllocationMW} MW firm grid capacity`;
-  if (effect.type === 'resilience') return `+${(effect.reliabilityGain * 100).toFixed(2)} pp service reliability`;
-  return `+${Math.round(effect.confidenceGain * 100)} points intelligence confidence`;
+  if (effect.type === 'capacity-expansion') return `+${effect.installedITMW} MW ${gameText('installed capacity')} · +${effect.operationalLimitMW} MW ${gameText('operational limit')}`;
+  if (effect.type === 'equipment-reservation') return `+${effect.commissionedEquipmentMW} MW-eq ${gameText('equipment allocation')}`;
+  if (effect.type === 'firm-power') return `+${effect.gridAllocationMW} MW ${gameText('firm grid capacity')}`;
+  if (effect.type === 'resilience') return `+${(effect.reliabilityGain * 100).toFixed(2)} ${gameText('pp service reliability')}`;
+  return `+${Math.round(effect.confidenceGain * 100)} ${gameText('intelligence confidence points')}`;
 }
 
 function InitiativeGlyph({ type }: { type: StrategicInitiativeDefinition['effect']['type'] }) {
