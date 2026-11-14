@@ -60,6 +60,12 @@ export function assessFinancialHealth(
   if (debtArrearsCents > 0) reasons.push('Contractual debt service is already in arrears.');
   if (operatingPayablesCents > 0) reasons.push('Some operating obligations remain unpaid.');
   if (overdueOperatingPayablesCents > 0) reasons.push('Trade creditors are overdue and may restrict or interrupt essential services.');
+  if ((companyReport?.creditorPressure.gridAllocationReductionMW ?? 0) > 0) {
+    reasons.push('Energy suppliers have restricted grid allocation because of overdue invoices.');
+  }
+  if ((companyReport?.creditorPressure.reliabilityPenalty ?? 0) > 0) {
+    reasons.push('Overdue payroll or service suppliers are reducing operating reliability.');
+  }
   if (defaultedDebtCount > 0) reasons.push('At least one debt instrument is in default.');
   if (covenantBreachCount > 0) reasons.push('At least one lender covenant is breached.');
   else if (covenantGraceCount > 0) reasons.push('At least one lender covenant is in its grace period.');
