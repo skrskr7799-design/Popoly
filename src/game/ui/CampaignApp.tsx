@@ -134,15 +134,15 @@ function QuarterReportPanel({ report, state }: { report: QuarterReport; state: G
     {launched.length > 0 && <div className="pop-report-line"><Check size={15} /> Initiatives launched: {launched.map(initiativeName).join(', ')}</div>}
     {completed.length > 0 && <div className="pop-report-line"><Sparkles size={15} /> Projects completed: {completed.map(initiativeName).join(', ')}</div>}
     {(report.projectCashCommitmentCents ?? 0) > 0 && <div className="pop-report-line"><Banknote size={15} /> Project capital committed: {money(report.projectCashCommitmentCents ?? 0)}</div>}
-    {report.contractRenewals?.map((item) => <div className="pop-report-line" key={item.contractId}><Activity size={15} /> Contract {item.contractId}: {item.status} — {item.message}</div>)}
-    {report.contractNegotiations?.map((item) => <div className="pop-report-line" key={item.contractId}><Activity size={15} /> Contract offer {item.contractId}: {item.status} — {item.message}</div>)}
-    {report.creditDecisions?.map((item, index) => <div className="pop-report-line" key={`${item.lenderId}-${index}`}><Banknote size={15} /> Credit decision: {item.status} — {item.reason}</div>)}
+    {report.contractRenewals?.map((item) => <div className="pop-report-line" key={item.contractId}><Activity size={15} /> Contract {item.contractId}: {gameText(item.status)} — {gameText(item.message)}</div>)}
+    {report.contractNegotiations?.map((item) => <div className="pop-report-line" key={item.contractId}><Activity size={15} /> Contract offer {item.contractId}: {gameText(item.status)} — {gameText(item.message)}</div>)}
+    {report.creditDecisions?.map((item, index) => <div className="pop-report-line" key={`${item.lenderId}-${index}`}><Banknote size={15} /> Credit decision: {gameText(item.status)} — {gameText(item.reason)}</div>)}
     {report.debtArrears?.map((item) => <div className="pop-report-line" key={item.debtId}><CircleAlert size={15} /> Debt arrears {item.debtId}: {money(item.totalArrearsCents)} · {item.status}</div>)}
-    {report.covenantUpdates?.map((item) => <div className="pop-report-line" key={item.debtId}><ShieldCheck size={15} /> Covenant {item.debtId}: {item.status} · DSCR {item.debtServiceCoverage.toFixed(2)}×{item.reasons.length ? ` · ${item.reasons.join('; ')}` : ''}</div>)}
-    {report.debtRestructurings?.map((item, index) => <div className="pop-report-line" key={`${item.debtId}-restructure-${index}`}><Banknote size={15} /> Restructuring {item.debtId}: {item.status} — {item.reason}</div>)}
+    {report.covenantUpdates?.map((item) => <div className="pop-report-line" key={item.debtId}><ShieldCheck size={15} /> Covenant {item.debtId}: {gameText(item.status)} · DSCR {item.debtServiceCoverage.toFixed(2)}×{item.reasons.length ? ` · ${gameText(item.reasons.join('; '))}` : ''}</div>)}
+    {report.debtRestructurings?.map((item, index) => <div className="pop-report-line" key={`${item.debtId}-restructure-${index}`}><Banknote size={15} /> Restructuring {item.debtId}: {gameText(item.status)} — {gameText(item.reason)}</div>)}
     {report.debtRefinancings?.map((item) => <div className="pop-report-line" key={item.oldDebtId}><Banknote size={15} /> Refinanced {item.oldDebtId}: {money(item.refinancedPrincipalCents)} · fee {money(item.feeCents)}</div>)}
     {actions.length > 0 ? <div className="pop-event-list"><span className="pop-eyebrow">{gameText("WORLD ACTIVITY")}</span>{actions.map((action, index) =>
-      <div className="pop-event" key={`${action.actorId}-${index}`}><span>{action.actorId.replaceAll('-', ' ')}</span><p>{action.summary}</p></div>)}</div>
+      <div className="pop-event" key={`${action.actorId}-${index}`}><span>{action.actorId.replaceAll('-', ' ')}</span><p>{gameText(action.summary)}</p></div>)}</div>
       : <p className="pop-muted pop-report-empty">{gameText("No major external events were recorded this quarter.")}</p>}
   </section>;
 }
@@ -477,12 +477,12 @@ export default function CampaignApp() {
         onProposeWorkout={proposeNodeWorksWorkout}
       /> : activeView === 'markets' ? <>
       <MarketsOverview state={state} report={currentReport} activityReport={report ?? undefined} />
-      {storageMessage && <div className="pop-storage-message">{storageMessage}<button onClick={() => setStorageMessage(null)}>{gameText("Dismiss")}</button></div>}
+      {storageMessage && <div className="pop-storage-message">{gameText(storageMessage)}<button onClick={() => setStorageMessage(null)}>{gameText("Dismiss")}</button></div>}
       {showStorage && storagePanel}
       <footer className="pop-footer"><span>{gameText("POPOLY / THE COMPUTE BOTTLENECK")}</span><span>{gameText("MARKET INTELLIGENCE")} · {formatQuarter(state.quarter)}</span><button onClick={restartCampaign}>{gameText("Restart campaign")}</button></footer>
       </> : activeView === 'strategy' ? <>
       {company?.status === 'liquidated' ? <section className="pop-panel pop-administration pop-administration-closed"><div className="pop-finance-subtitle"><strong>{gameText("Campaign concluded")}</strong><span className="pop-pill pop-pill-warn">{gameText("Liquidation")}</span></div><p>{gameText("NodeWorks has been liquidated. The subsidiary's assets and remaining creditor claims have been resolved through the administration waterfall. Post-insolvency group operations are not yet part of this campaign.")}</p><button className="pop-primary" onClick={restartCampaign}>{gameText("Start a new campaign")}</button></section> : <QuarterStrategyOverview state={state} selected={selected} active={active} issues={issues} onToggle={toggle} onResolve={resolveQuarter} />}
-      {storageMessage && <div className="pop-storage-message">{storageMessage}<button onClick={() => setStorageMessage(null)}>{gameText("Dismiss")}</button></div>}
+      {storageMessage && <div className="pop-storage-message">{gameText(storageMessage)}<button onClick={() => setStorageMessage(null)}>{gameText("Dismiss")}</button></div>}
       {showStorage && storagePanel}
       <footer className="pop-footer"><span>{gameText("POPOLY / THE COMPUTE BOTTLENECK")}</span><span>{gameText("STRATEGIC PLANNING")} · {formatQuarter(state.quarter)}</span><button onClick={restartCampaign}>{gameText("Restart campaign")}</button></footer>
       </> : <>
@@ -495,7 +495,7 @@ export default function CampaignApp() {
         <div className="pop-hero-progress"><span>{gameText("CAMPAIGN PROGRESS")}</span><strong>{Math.min(session.completedQuarters, GUIDED_CAMPAIGN_QUARTERS)} <small>/ {GUIDED_CAMPAIGN_QUARTERS}</small></strong><div className="pop-progress"><i style={{ width: `${Math.min(100, session.completedQuarters / GUIDED_CAMPAIGN_QUARTERS * 100)}%` }} /></div><small>{session.stage === 'sandbox' ? gameText('Opening complete · Continue freely') : `${GUIDED_CAMPAIGN_QUARTERS - session.completedQuarters} ${gameText('quarters remaining')}`}</small></div>
       </section>
 
-      {storageMessage && <div className="pop-storage-message">{storageMessage}<button onClick={() => setStorageMessage(null)}>{gameText("Dismiss")}</button></div>}
+      {storageMessage && <div className="pop-storage-message">{gameText(storageMessage)}<button onClick={() => setStorageMessage(null)}>{gameText("Dismiss")}</button></div>}
       {showStorage && storagePanel}
 
       <CommandCenterBriefing state={state} report={currentReport} completedQuarters={session.completedQuarters}
@@ -531,7 +531,7 @@ export default function CampaignApp() {
             <div className="pop-agenda-footer"><span>{selected.length ? `${selected.length} ${gameText('initiative(s) queued for resolution')}` : gameText('No strategic commitments selected')}</span>
               <button className="pop-primary" onClick={resolveQuarter} disabled={company?.status === 'liquidated'}>{gameText(company?.status === 'liquidated' ? 'Campaign concluded' : 'Resolve quarter')} <ArrowUpRight size={16} /></button>
             </div>
-            {issues.length > 0 && <div className="pop-issues"><div><CircleAlert size={16} /> {gameText("Engine validation")}</div>{issues.map((item, index) => <p key={`${item.code}-${index}`}><strong>{item.code}</strong> — {item.message}</p>)}</div>}
+            {issues.length > 0 && <div className="pop-issues"><div><CircleAlert size={16} /> {gameText("Engine validation")}</div>{issues.map((item, index) => <p key={`${item.code}-${index}`}><strong>{item.code}</strong> — {gameText(item.message)}</p>)}</div>}
           </section>
 
           {report && <QuarterReportPanel report={report} state={state} />}
@@ -589,8 +589,8 @@ export default function CampaignApp() {
               const age = Math.max(0, state.quarter - estimate.observedQuarter);
               const freshness = age === 0 ? 'current' : age <= 1 ? 'recent' : 'stale';
               return <div className="pop-intel" key={`${estimate.subjectId}-${estimate.metric}-${index}`}>
-                <div><strong>{estimate.subjectId.replaceAll('-', ' ')}</strong><span>{estimate.metric.replaceAll(/([A-Z])/g, ' $1').toLowerCase()}</span><small>{estimate.source}</small></div>
-                <div className="pop-intel-value"><strong>{estimate.metric.toLowerCase().includes('reliability') ? `${(estimate.min * 100).toFixed(0)}–${(estimate.max * 100).toFixed(0)}%` : `${estimate.min.toFixed(estimate.max % 1 ? 1 : 0)}–${estimate.max.toFixed(estimate.max % 1 ? 1 : 0)}`}</strong><small>{estimate.knowledge} · {Math.round(estimate.confidence * 100)}% confidence · {freshness}</small></div>
+                <div><strong>{estimate.subjectId.replaceAll('-', ' ')}</strong><span>{gameText(estimate.metric.replaceAll(/([A-Z])/g, ' $1').toLowerCase())}</span><small>{estimate.source}</small></div>
+                <div className="pop-intel-value"><strong>{estimate.metric.toLowerCase().includes('reliability') ? `${(estimate.min * 100).toFixed(0)}–${(estimate.max * 100).toFixed(0)}%` : `${estimate.min.toFixed(estimate.max % 1 ? 1 : 0)}–${estimate.max.toFixed(estimate.max % 1 ? 1 : 0)}`}</strong><small>{gameText(estimate.knowledge)} · {Math.round(estimate.confidence * 100)}% {gameText('confidence')} · {gameText(freshness)}</small></div>
               </div>;
             })}
           </section>
