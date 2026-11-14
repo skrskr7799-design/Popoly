@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { initializeGame } from '../engine/initialize';
 import { advanceQuarter } from '../engine/advanceQuarter';
 import { buildQuarterReport } from '../systems/quarterReport';
+import { calculateOperatingQuarter } from '../systems/economy';
 import { assessFinancialHealth } from '../systems/financialHealth';
 import { moneyFromCents } from '../domain/money';
 
@@ -95,6 +96,32 @@ describe('operating payables in the quarter engine', () => {
     expect(interest?.interestPaidCents).toBe(0);
     expect(interest?.closingInterestArrearsCents).toBeGreaterThan(0);
     expect(paidOldClaim?.outstandingAmountCents).toBe(0);
+  });
+
+  it('reflects overdue energy restrictions in the operating forecast without mutating base capacity', () => {
+    const opening = initializeGame(2035);
+    const baseCapacity = opening.operatingCompanies[0]!.capacity;
+    const state = {
+      ...opening,
+      quarter: 3,
+      operatingPayables: [{
+        id: 'nodeworks-energy-q1',
+        entityId: 'nodeworks',
+        creditorClass: 'energy' as const,
+        originalAmountCents: moneyFromCents(100_000_000),
+        outstandingAmountCents: moneyFromCents(100_000_000),
+        incurredQuarter: 1,
+        dueQuarter: 1,
+        priority: 2,
+      }],
+    };
+    const report = buildQuarterReport(state);
+    const companyReport = report.companies.find((item) => item.companyId === 'nodeworks')!;
+    expect(companyReport.creditorPressure.gridAllocationReductionMW).toBe(1);
+    expect(companyReport.operations.effectiveCapacityMW).toBeLessThan(
+      calculateOperatingQuarter(opening.operatingCompanies[0]!, opening.regionalMarkets[0]!).effectiveCapacityMW,
+    );
+    expect(opening.operatingCompanies[0]!.capacity).toEqual(baseCapacity);
   });
 
 });
