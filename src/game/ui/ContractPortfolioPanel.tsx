@@ -46,7 +46,7 @@ export function ContractPortfolioPanel({
       <span className="pop-pill">{company.contracts.length} {gameText('active agreements')}</span>
     </div>
     <p className="pop-panel-intro">
-      Contracted demand is fulfilled before flexible workload when capacity is scarce. Renewal windows are calculated from each agreement's notice period.
+      {gameText("Contracted demand is fulfilled before flexible workload when capacity is scarce. Renewal windows are calculated from each agreement's notice period.")}
     </p>
     <div className="pop-contract-summary">
       <div><span>{gameText("Contracted demand")}</span><strong>{contractedMW.toFixed(1)} MW</strong></div>
@@ -66,7 +66,7 @@ export function ContractPortfolioPanel({
           <div className="pop-contract-heading">
             <div><strong>{customer?.name ?? contract.customerId}</strong><small>{contract.id}</small></div>
             <div className="pop-contract-tags">
-              <span className="pop-pill">{contract.flexibility === 'contracted' ? 'Contracted' : 'Flexible'}</span>
+              <span className="pop-pill">{gameText(contract.flexibility === 'contracted' ? 'Contracted' : 'Flexible')}</span>
               {renewalDue && <span className="pop-pill pop-pill-warn">{gameText("Renewal window")}</span>}
             </div>
           </div>
@@ -74,17 +74,17 @@ export function ContractPortfolioPanel({
             <span><small>{gameText("Workload")}</small><strong>{contract.workloadMW.toFixed(1)} MW</strong></span>
             <span><small>{gameText("Delivered")}</small><strong>{deliveredMW.toFixed(1)} MW</strong></span>
             <span><small>{gameText("Price / MW-quarter")}</small><strong>{formatMoney(contract.priceCentsPerMWQuarter)}</strong></span>
-            <span><small>{gameText("Term end")}</small><strong>{contract.termEndQuarter === undefined ? 'Rolling' : formatQuarter(contract.termEndQuarter)}</strong></span>
+            <span><small>{gameText("Term end")}</small><strong>{contract.termEndQuarter === undefined ? gameText('Rolling') : formatQuarter(contract.termEndQuarter)}</strong></span>
           </div>
           <div className="pop-contract-track"><i style={{ width: `${fill}%` }} /></div>
-          {delivery && delivery.serviceCreditCents > 0 && <small className="pop-contract-credit">Service credits: {formatMoney(delivery.serviceCreditCents)}</small>}
+          {delivery && delivery.serviceCreditCents > 0 && <small className="pop-contract-credit">{gameText('Service credits')}: {formatMoney(delivery.serviceCreditCents)}</small>}
           {renewalDue && (() => {
             const draft = drafts[contract.id] ?? createRenewalDraft(contract);
             return <div className="pop-renewal-editor">
               <label className="pop-renewal-enable">
                 <input type="checkbox" checked={draft.enabled}
                   onChange={(event) => onDraftChange(contract.id, { ...draft, enabled: event.currentTarget.checked })} />
-                Prepare renewal proposal
+                {gameText('Prepare renewal proposal')}
               </label>
               <div className="pop-renewal-fields">
                 <label><span>{gameText("Offered price · USD / MW-quarter")}</span>
