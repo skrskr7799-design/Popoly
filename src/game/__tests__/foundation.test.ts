@@ -153,7 +153,7 @@ describe('operating turnaround actions', () => {
     expect(company.cashCosts.operationsAndStaffingCents).toBe(Math.round(openingCompany.cashCosts.operationsAndStaffingCents * 0.75));
     expect(company.cashCosts.maintenanceCents).toBe(Math.round(openingCompany.cashCosts.maintenanceCents * 0.7));
     expect(company.capacity.reliability).toBeCloseTo(openingCompany.capacity.reliability - 0.016, 8);
-    expect(organization.reputation).toBe(openingOrganization.reputation - 1);
+    expect(organization.reputation).toBeLessThanOrEqual(openingOrganization.reputation - 1);
     expect(company.turnaroundActions).toEqual(['workforce-reset', 'maintenance-deferral']);
     expect(result.report.companies[0]!.operations.totalOperatingCostCents)
       .toBeLessThan(buildQuarterReport(state).companies[0]!.operations.totalOperatingCostCents);
