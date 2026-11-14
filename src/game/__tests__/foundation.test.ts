@@ -124,8 +124,11 @@ describe('autonomous customer allocation', () => {
     const assigned = (customer.hiddenMetrics.nodeworksFlexibleMW ?? 0) +
       (customer.hiddenMetrics.kestrelFlexibleMW ?? 0) +
       (customer.hiddenMetrics.otherFlexibleMW ?? 0);
+    const expectedFlexibleDemand = Math.max(0,
+      customer.hiddenMetrics.demandMW - (customer.hiddenMetrics.nodeworksContractMW ?? 0) -
+      (customer.hiddenMetrics.kestrelContractMW ?? 0));
 
-    expect(assigned).toBeCloseTo(10, 8);
+    expect(assigned).toBeCloseTo(expectedFlexibleDemand, 8);
     expect(customer.hiddenMetrics.kestrelFlexibleMW).toBeGreaterThan(1);
   });
 });
