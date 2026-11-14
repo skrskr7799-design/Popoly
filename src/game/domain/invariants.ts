@@ -477,7 +477,12 @@ export function validateGameState(state: GameState): ValidationIssue[] {
           !Number.isSafeInteger(vote.counterTerms.interestReductionBps) ||
           !Number.isSafeInteger(vote.counterTerms.maturityExtensionQuarters) ||
           !Number.isSafeInteger(vote.counterTerms.standstillQuarters) ||
-          (vote.counterTerms.tradePayableWriteDownBps !== undefined && !Number.isSafeInteger(vote.counterTerms.tradePayableWriteDownBps))));
+          (vote.counterTerms.tradePayableWriteDownBps !== undefined && (!Number.isSafeInteger(vote.counterTerms.tradePayableWriteDownBps) ||
+            vote.counterTerms.tradePayableWriteDownBps < 0 || vote.counterTerms.tradePayableWriteDownBps > 1500)) ||
+          (vote.counterTerms.debtToEquityConversionBps !== undefined && (!Number.isSafeInteger(vote.counterTerms.debtToEquityConversionBps) ||
+            vote.counterTerms.debtToEquityConversionBps < 0 || vote.counterTerms.debtToEquityConversionBps > 5000)) ||
+          (vote.counterTerms.equityPreMoneyValuationCents !== undefined && (!Number.isSafeInteger(vote.counterTerms.equityPreMoneyValuationCents) ||
+            vote.counterTerms.equityPreMoneyValuationCents <= 0))));
     });
     const invalidMilestones = workout.milestones.some((milestone) => {
       const duplicate = milestoneIds.has(milestone.id); milestoneIds.add(milestone.id);

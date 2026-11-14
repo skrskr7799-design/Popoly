@@ -123,7 +123,7 @@ export function proposeCreditorWorkout(state: GameState, input: CreditorWorkoutP
     terms.interestReductionBps > 0 || terms.covenantWaiver || terms.debtToEquityConversionBps > 0;
   const securedConsent = !securedTermsAffected || votes.every((item) => item.securedClaimCents <= 0 || item.vote === 'accepted');
   const thresholdBps = 6_667;
-  const approved = acceptedClaims * 10_000 >= totalClaims * thresholdBps && securedConsent;
+  const approved = acceptedClaims / totalClaims >= thresholdBps / 10_000 && securedConsent;
   const id = `workout:${input.entityId}:q${state.quarter}:${(state.creditorWorkouts ?? []).filter((item) => item.entityId === input.entityId).length + 1}`;
   const dueQuarter = state.quarter + input.deadlineQuarters;
   const milestones: CreditorWorkoutMilestone[] = [
