@@ -140,7 +140,7 @@ export function calculateLiquidationWaterfall(
       creditorId: debt.lenderId ?? `lender-claim:${debt.id}`,
       claimClass: 'unsecured-debt',
       amountCents: residual,
-      priority: 6,
+      priority: 600,
       incurredQuarter: 0,
     });
   }
