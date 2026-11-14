@@ -773,33 +773,38 @@ export function advanceQuarter(state: GameState, commands: QuarterCommands = {})
 
     if ((commands.turnaroundActions ?? []).length > 0) {
       const actionCommands = commands.turnaroundActions ?? [];
+      const reputationPenaltyByCompany = new Map<string, number>();
+      const operatingCompanies = candidate.operatingCompanies.map((company) => {
+        const selected = actionCommands.filter((command) => command.companyId === company.organizationId);
+        if (selected.length === 0) return company;
+        let cashCosts = { ...company.cashCosts };
+        let capacity = { ...company.capacity };
+        let reputationPenalty = 0;
+        const applied = [...(company.turnaroundActions ?? [])];
+        for (const command of selected) {
+          const definition = getTurnaroundAction(command.actionId)!;
+          for (const [costKey, reductionBps] of Object.entries(definition.costReductionBps) as Array<[keyof typeof cashCosts, number]>) {
+            cashCosts[costKey] = moneyFromCents(Math.round(cashCosts[costKey] * (10_000 - reductionBps) / 10_000));
+          }
+          capacity = {
+            ...capacity,
+            reliability: Math.max(0.85, capacity.reliability - (definition.reliabilityPenalty ?? 0)),
+            operationalLimitMW: Math.max(0, capacity.operationalLimitMW - (definition.operationalLimitReductionMW ?? 0)),
+          };
+          reputationPenalty += definition.reputationPenalty ?? 0;
+          applied.push(command.actionId);
+        }
+        if (reputationPenalty > 0) reputationPenaltyByCompany.set(company.organizationId, reputationPenalty);
+        return { ...company, cashCosts, capacity, turnaroundActions: applied };
+      });
       candidate = {
         ...candidate,
-        operatingCompanies: candidate.operatingCompanies.map((company) => {
-          const selected = actionCommands.filter((command) => command.companyId === company.organizationId);
-          if (selected.length === 0) return company;
-          let cashCosts = { ...company.cashCosts };
-          let capacity = { ...company.capacity };
-          let reputationPenalty = 0;
-          const applied = [...(company.turnaroundActions ?? [])];
-          for (const command of selected) {
-            const definition = getTurnaroundAction(command.actionId)!;
-            for (const [costKey, reductionBps] of Object.entries(definition.costReductionBps) as Array<[keyof typeof cashCosts, number]>) {
-              cashCosts[costKey] = moneyFromCents(Math.round(cashCosts[costKey] * (10_000 - reductionBps) / 10_000));
-            }
-            capacity = {
-              ...capacity,
-              reliability: Math.max(0.85, capacity.reliability - (definition.reliabilityPenalty ?? 0)),
-              operationalLimitMW: Math.max(0, capacity.operationalLimitMW - (definition.operationalLimitReductionMW ?? 0)),
-            };
-            reputationPenalty += definition.reputationPenalty ?? 0;
-            applied.push(command.actionId);
-          }
-          candidate.organizations = candidate.organizations.map((organization) =>
-            organization.id === company.organizationId && reputationPenalty > 0
-              ? { ...organization, reputation: Math.max(0, organization.reputation - reputationPenalty) }
-              : organization);
-          return { ...company, cashCosts, capacity, turnaroundActions: applied };
+        operatingCompanies,
+        organizations: candidate.organizations.map((organization) => {
+          const penalty = reputationPenaltyByCompany.get(organization.id) ?? 0;
+          return penalty > 0
+            ? { ...organization, reputation: Math.max(0, organization.reputation - penalty) }
+            : organization;
         }),
       };
     }
