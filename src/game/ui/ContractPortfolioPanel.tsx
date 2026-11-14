@@ -1,3 +1,4 @@
+import { gameText } from '../../i18n/game';
 import type { OperatingCompanyState, Organization } from '../domain/types';
 import type { QuarterReport } from '../systems/quarterReport';
 import { formatMoney, formatQuarter } from './format';
@@ -41,16 +42,16 @@ export function ContractPortfolioPanel({
 
   return <section className="pop-panel pop-contract-panel">
     <div className="pop-section-title">
-      <div><span className="pop-eyebrow">COMMERCIAL PORTFOLIO</span><h2>Customer contracts</h2></div>
-      <span className="pop-pill">{company.contracts.length} active agreements</span>
+      <div><span className="pop-eyebrow">{gameText("COMMERCIAL PORTFOLIO")}</span><h2>{gameText("Customer contracts")}</h2></div>
+      <span className="pop-pill">{company.contracts.length} {gameText('active agreements')}</span>
     </div>
     <p className="pop-panel-intro">
       Contracted demand is fulfilled before flexible workload when capacity is scarce. Renewal windows are calculated from each agreement's notice period.
     </p>
     <div className="pop-contract-summary">
-      <div><span>Contracted demand</span><strong>{contractedMW.toFixed(1)} MW</strong></div>
-      <div><span>Flexible workload</span><strong>{flexibleMW.toFixed(1)} MW</strong></div>
-      <div><span>Delivered this quarter</span><strong>{report.companies.find((item) => item.companyId === company.organizationId)?.operations.deliveredWorkloadMW.toFixed(1) ?? '0.0'} MW</strong></div>
+      <div><span>{gameText("Contracted demand")}</span><strong>{contractedMW.toFixed(1)} MW</strong></div>
+      <div><span>{gameText("Flexible workload")}</span><strong>{flexibleMW.toFixed(1)} MW</strong></div>
+      <div><span>{gameText("Delivered this quarter")}</span><strong>{report.companies.find((item) => item.companyId === company.organizationId)?.operations.deliveredWorkloadMW.toFixed(1) ?? '0.0'} MW</strong></div>
     </div>
     <div className="pop-contract-list">
       {company.contracts.map((contract) => {
@@ -66,14 +67,14 @@ export function ContractPortfolioPanel({
             <div><strong>{customer?.name ?? contract.customerId}</strong><small>{contract.id}</small></div>
             <div className="pop-contract-tags">
               <span className="pop-pill">{contract.flexibility === 'contracted' ? 'Contracted' : 'Flexible'}</span>
-              {renewalDue && <span className="pop-pill pop-pill-warn">Renewal window</span>}
+              {renewalDue && <span className="pop-pill pop-pill-warn">{gameText("Renewal window")}</span>}
             </div>
           </div>
           <div className="pop-contract-metrics">
-            <span><small>Workload</small><strong>{contract.workloadMW.toFixed(1)} MW</strong></span>
-            <span><small>Delivered</small><strong>{deliveredMW.toFixed(1)} MW</strong></span>
-            <span><small>Price / MW-quarter</small><strong>{formatMoney(contract.priceCentsPerMWQuarter)}</strong></span>
-            <span><small>Term end</small><strong>{contract.termEndQuarter === undefined ? 'Rolling' : formatQuarter(contract.termEndQuarter)}</strong></span>
+            <span><small>{gameText("Workload")}</small><strong>{contract.workloadMW.toFixed(1)} MW</strong></span>
+            <span><small>{gameText("Delivered")}</small><strong>{deliveredMW.toFixed(1)} MW</strong></span>
+            <span><small>{gameText("Price / MW-quarter")}</small><strong>{formatMoney(contract.priceCentsPerMWQuarter)}</strong></span>
+            <span><small>{gameText("Term end")}</small><strong>{contract.termEndQuarter === undefined ? 'Rolling' : formatQuarter(contract.termEndQuarter)}</strong></span>
           </div>
           <div className="pop-contract-track"><i style={{ width: `${fill}%` }} /></div>
           {delivery && delivery.serviceCreditCents > 0 && <small className="pop-contract-credit">Service credits: {formatMoney(delivery.serviceCreditCents)}</small>}
@@ -86,28 +87,28 @@ export function ContractPortfolioPanel({
                 Prepare renewal proposal
               </label>
               <div className="pop-renewal-fields">
-                <label><span>Offered price · USD / MW-quarter</span>
+                <label><span>{gameText("Offered price · USD / MW-quarter")}</span>
                   <input type="number" min="1" step="1000" value={draft.priceDollars} disabled={!draft.enabled}
                     onChange={(event) => onDraftChange(contract.id, { ...draft, priceDollars: event.currentTarget.value })} />
                 </label>
-                <label><span>Guaranteed workload · MW</span>
+                <label><span>{gameText("Guaranteed workload · MW")}</span>
                   <input type="number" min="0.1" max={contract.workloadMW} step="0.1" value={draft.workloadMW} disabled={!draft.enabled}
                     onChange={(event) => onDraftChange(contract.id, { ...draft, workloadMW: event.currentTarget.value })} />
                 </label>
-                <label><span>New term</span>
+                <label><span>{gameText("New term")}</span>
                   <select value={draft.termQuarters} disabled={!draft.enabled}
                     onChange={(event) => onDraftChange(contract.id, { ...draft, termQuarters: event.currentTarget.value })}>
                     {Array.from({ length: 7 }, (_, index) => index + 2).map((term) =>
-                      <option key={term} value={term}>{term} quarters</option>)}
+                      <option key={term} value={term}>{term} {gameText('quarters')}</option>)}
                   </select>
                 </label>
               </div>
-              <small className="pop-renewal-note">The customer may accept, counter, or reject the offer. A competing provider may win the renewal.</small>
+              <small className="pop-renewal-note">{gameText("The customer may accept, counter, or reject the offer. A competing provider may win the renewal.")}</small>
             </div>;
           })()}
         </article>;
       })}
-      {company.contracts.length === 0 && <p className="pop-muted">No active customer contracts.</p>}
+      {company.contracts.length === 0 && <p className="pop-muted">{gameText("No active customer contracts.")}</p>}
     </div>
   </section>;
 }

@@ -1,3 +1,4 @@
+import { gameText } from '../../i18n/game';
 import {
   Activity, AlertTriangle, ArrowRight, Banknote, CalendarDays,
   Cpu, Gauge, RadioTower, ShieldCheck, Zap,
@@ -43,11 +44,11 @@ export function CommandCenterBriefing({
   const operations = report.companies.find((item) => item.companyId === 'nodeworks')?.operations;
   const capacity = company?.capacity;
   const ceilings = capacity ? [
-    { label: 'Installed IT', value: capacity.installedITMW },
-    { label: 'Grid allocation', value: capacity.gridAllocationMW },
-    { label: 'Equipment', value: capacity.commissionedEquipmentMW },
-    { label: 'Operational limit', value: capacity.operationalLimitMW },
-  ].concat(operations ? [{ label: 'Reliability-adjusted capacity', value: operations.effectiveCapacityMW }] : [])
+    { label: gameText('Installed IT'), value: capacity.installedITMW },
+    { label: gameText('Grid allocation'), value: capacity.gridAllocationMW },
+    { label: gameText('Equipment'), value: capacity.commissionedEquipmentMW },
+    { label: gameText('Operational limit'), value: capacity.operationalLimitMW },
+  ].concat(operations ? [{ label: gameText('Reliability-adjusted capacity'), value: operations.effectiveCapacityMW }] : [])
     .sort((a, b) => a.value - b.value) : [];
   const bottleneck = ceilings[0];
   const utilization = operations && operations.effectiveCapacityMW > 0
@@ -80,11 +81,11 @@ export function CommandCenterBriefing({
         : 'Review the regional signals and choose where Meridian should commit its limited leadership bandwidth.';
 
   return (
-    <section className="pop-command-briefing" aria-label="Executive situation briefing">
+    <section className="pop-command-briefing" aria-label={gameText("Executive situation briefing")}>
       <div className="pop-command-briefing-heading">
         <div>
-          <span className="pop-eyebrow"><i className="pop-eyebrow-pulse" /> EXECUTIVE SITUATION ROOM</span>
-          <h2>What matters this quarter</h2>
+          <span className="pop-eyebrow"><i className="pop-eyebrow-pulse" /> {gameText("EXECUTIVE SITUATION ROOM")}</span>
+          <h2>{gameText("What matters this quarter")}</h2>
         </div>
         <span className="pop-command-quarter"><CalendarDays size={14} /> {formatQuarter(state.quarter)}</span>
       </div>
@@ -92,48 +93,48 @@ export function CommandCenterBriefing({
       <div className="pop-command-briefing-grid">
         <article className={`pop-command-situation ${defaultedDebts > 0 ? 'is-critical' : arrears > 0 ? 'is-warning' : ''}`}>
           <div className="pop-command-situation-top">
-            <span className="pop-command-kicker">STRATEGIC READOUT</span>
-            <span className="pop-command-live"><i /> LIVE POSITION</span>
+            <span className="pop-command-kicker">{gameText("STRATEGIC READOUT")}</span>
+            <span className="pop-command-live"><i /> {gameText("LIVE POSITION")}</span>
           </div>
           <div className="pop-command-situation-body">
             <div className="pop-command-situation-mark"><RadioTower size={22} /></div>
             <div>
-              <h3>{situationTitle}</h3>
-              <p>{situationDetail}</p>
+              <h3>{gameText(situationTitle)}</h3>
+              <p>{gameText(situationDetail)}</p>
             </div>
           </div>
           <div className="pop-command-situation-footer">
-            <span>{activeProjects} strategic project(s) in progress</span>
-            <button type="button" onClick={onOpenStrategy}>Review priorities <ArrowRight size={14} /></button>
+            <span>{activeProjects} {gameText('strategic project(s) in progress')}</span>
+            <button type="button" onClick={onOpenStrategy}>{gameText("Review priorities")} <ArrowRight size={14} /></button>
           </div>
         </article>
 
         <div className="pop-command-signals">
           <Signal
             icon={Zap}
-            label="Firm power headroom"
+            label={gameText("Firm power headroom")}
             value={market ? `${market.immediateFirmPowerHeadroomMW.toFixed(1)} MW` : '—'}
-            detail={market ? `${market.name} · available for new allocation` : 'Regional data unavailable'}
+            detail={market ? `${gameText(market.name)} · ${gameText('available for new allocation')}` : gameText('Regional data unavailable')}
             tone={market && market.immediateFirmPowerHeadroomMW <= 1 ? 'warn' : 'neutral'}
           />
           <Signal
             icon={Gauge}
-            label="NodeWorks utilization"
+            label={gameText("NodeWorks utilization")}
             value={operations ? `${Math.round(utilization * 100)}%` : '—'}
-            detail={operations ? `${operations.deliveredWorkloadMW.toFixed(1)} of ${operations.effectiveCapacityMW.toFixed(1)} MW effective capacity` : 'Operating report unavailable'}
+            detail={operations ? `${operations.deliveredWorkloadMW.toFixed(1)} of ${operations.effectiveCapacityMW.toFixed(1)} MW ${gameText('effective capacity')}` : gameText('Operating report unavailable')}
             tone={!operations ? 'neutral' : utilization >= 0.9 ? 'warn' : 'good'}
           />
           <Signal
             icon={Cpu}
-            label="Equipment pipeline"
-            value={reservedOrders.length ? `${reservedMW.toFixed(1)} MW-eq` : 'No reservations'}
-            detail={reservedOrders.length ? `${reservedOrders.length} reserved order(s) awaiting delivery` : 'No reserved deliveries in the pipeline'}
+            label={gameText("Equipment pipeline")}
+            value={reservedOrders.length ? `${reservedMW.toFixed(1)} MW-eq` : gameText('No reservations')}
+            detail={reservedOrders.length ? `${reservedOrders.length} reserved order(s) awaiting delivery`  : gameText('No reserved deliveries in the pipeline')}
           />
           <Signal
             icon={arrears > 0 ? AlertTriangle : Banknote}
-            label="Financial pressure"
-            value={arrears > 0 ? formatMoney(arrears) : 'No arrears'}
-            detail={defaultedDebts > 0 ? `${defaultedDebts} defaulted instrument(s)` : arrears > 0 ? 'Recorded principal and interest arrears' : 'No overdue principal or interest'}
+            label={gameText("Financial pressure")}
+            value={arrears > 0 ? formatMoney(arrears) : gameText('No arrears')}
+            detail={defaultedDebts > 0 ? `${defaultedDebts} ${gameText('defaulted instrument(s)')}` : arrears > 0 ? 'Recorded principal and interest arrears' : gameText('No overdue principal or interest')}
             tone={defaultedDebts > 0 ? 'critical' : arrears > 0 ? 'warn' : 'good'}
           />
         </div>
@@ -142,8 +143,8 @@ export function CommandCenterBriefing({
       <div className="pop-command-lower">
         <div className="pop-command-timeline">
           <div className="pop-command-lower-heading">
-            <div><span className="pop-command-kicker">CAMPAIGN ARC</span><strong>The first eight quarters</strong></div>
-            <span>{Math.min(completedQuarters, OPENING_QUARTERS)} / {OPENING_QUARTERS} complete</span>
+            <div><span className="pop-command-kicker">{gameText("CAMPAIGN ARC")}</span><strong>{gameText("The first eight quarters")}</strong></div>
+            <span>{Math.min(completedQuarters, OPENING_QUARTERS)} / {OPENING_QUARTERS} {gameText('complete')}</span>
           </div>
           <div className="pop-quarter-track" aria-label={`${Math.min(completedQuarters, OPENING_QUARTERS)} of eight opening quarters complete`}>
             {Array.from({ length: OPENING_QUARTERS }, (_, index) => {
@@ -158,24 +159,24 @@ export function CommandCenterBriefing({
             })}
           </div>
           <div className="pop-command-timeline-foot">
-            <span>{completedQuarters >= OPENING_QUARTERS ? 'Opening scenario complete · sandbox continues' : `${OPENING_QUARTERS - completedQuarters} quarter(s) until the opening scenario concludes`}</span>
-            <span><ShieldCheck size={13} /> Simulation state preserved</span>
+            <span>{completedQuarters >= OPENING_QUARTERS ? gameText('Opening scenario complete · sandbox continues') : `${OPENING_QUARTERS - completedQuarters} ${gameText('quarter(s) until the opening scenario concludes')}`}</span>
+            <span><ShieldCheck size={13} /> {gameText("Simulation state preserved")}</span>
           </div>
         </div>
 
         <div className="pop-command-world">
           <div className="pop-command-lower-heading">
-            <div><span className="pop-command-kicker">WORLD INTELLIGENCE</span><strong>Signals beyond the group</strong></div>
-            <button type="button" onClick={onOpenMarkets}>Open intelligence <ArrowRight size={13} /></button>
+            <div><span className="pop-command-kicker">{gameText("WORLD INTELLIGENCE")}</span><strong>{gameText("Signals beyond the group")}</strong></div>
+            <button type="button" onClick={onOpenMarkets}>{gameText("Open intelligence")} <ArrowRight size={13} /></button>
           </div>
           <div className="pop-command-world-stats">
-            <div><strong>{state.playerIntelligence.length}</strong><span>known estimates</span></div>
-            <div><strong>{staleIntel}</strong><span>stale signals</span></div>
-            <div><strong>{actorActions.length}</strong><span>reported actor actions</span></div>
+            <div><strong>{state.playerIntelligence.length}</strong><span>{gameText("known estimates")}</span></div>
+            <div><strong>{staleIntel}</strong><span>{gameText("stale signals")}</span></div>
+            <div><strong>{actorActions.length}</strong><span>{gameText("reported actor actions")}</span></div>
           </div>
           <div className="pop-command-world-note">
             <Activity size={14} />
-            <span>{actorActions.length ? actorActions[0].summary : 'No new external actor activity is recorded in this quarter’s report.'}</span>
+            <span>{actorActions.length ? gameText(actorActions[0].summary) : gameText('No new external actor activity is recorded in this quarter’s report.')}</span>
           </div>
         </div>
       </div>
