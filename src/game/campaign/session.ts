@@ -5,7 +5,7 @@ import { COMPUTE_BOTTLENECK_SCENARIO_ID, COMPUTE_BOTTLENECK_SCENARIO_VERSION } f
 import { buildQuarterReport, type QuarterReport } from '../systems/quarterReport';
 import { validateGameState } from '../domain/invariants';
 import { assessFinancialHealth } from '../systems/financialHealth';
-import { openAdministration as fileAdministration, reorganizeAdministration as completeReorganization, type AdministrationTrigger, type AdministrationTransitionResult } from '../systems/administration';
+import { openAdministration as fileAdministration, reorganizeAdministration as completeReorganization, liquidateAdministration as executeLiquidation, type AdministrationTrigger, type AdministrationTransitionResult } from '../systems/administration';
 import { createCampaignSave } from '../persistence/save';
 import { restoreCampaign } from '../persistence/restore';
 import type { CampaignSaveRepository } from '../persistence/repository';
@@ -185,6 +185,20 @@ export class CampaignSession {
       };
     }
     const result = completeReorganization(this.stateValue, caseId);
+    if (!result.ok) return result;
+    const issues = validateGameState(result.state);
+    if (issues.length > 0) return {
+      ok: false, code: 'administration.state_invalid',
+      message: issues.map((item) => item.message).join(' '),
+    };
+    this.stateValue = clone(result.state);
+    this.reportValue = buildQuarterReport(this.stateValue);
+    return { ...result, state: clone(result.state) };
+  }
+
+  /** Execute the final creditor waterfall and close an active administration case. */
+  liquidateAdministration(caseId: string): AdministrationTransitionResult {
+    const result = executeLiquidation(this.stateValue, caseId);
     if (!result.ok) return result;
     const issues = validateGameState(result.state);
     if (issues.length > 0) return {
