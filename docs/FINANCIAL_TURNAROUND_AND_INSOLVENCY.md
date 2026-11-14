@@ -168,14 +168,16 @@ Avoid changing the game-state schema version until the exact migration/defaultin
 - [x] Add explicit enforcement escalation after a missed recovery milestone, with a recorded creditor-workout-breach administration trigger and the existing liquidation alternative.
 - [x] Preserve lender-by-lender consent; apply debt terms only to accepting lenders and trade-payable compromises only to accepting creditor classes.
 - [x] Add deterministic workout transitions and focused domain tests.
-- [ ] Add managed multi-seed turnaround campaigns and browser-level workout walkthroughs.
+- [x] Add a managed multi-seed turnaround campaign audit: four independent seeds, 48 quarters each, active turnaround measures, contract renewals, and per-quarter invariant / balance checks (CI run 43588105438, 2026-11-14).
+- [ ] Complete browser-level workout walkthroughs and record the browser/device/viewport plus individual case outcomes.
 
 **Workout implementation note:** Trade creditors are represented by existing payable classes, not invented legal entities. Debt-to-equity conversion requires an explicit player-proposed pre-money equity valuation; accepted lenders receive newly issued voting shares at that price, the company’s issued-share count and ownership ledger update together, and the converted principal is removed from debt. Secured liens remain attached to any residual secured principal.
 
 ### Phase D — Validation
-- Keep the unattended seed-2035 distress boundary as a regression case: unpaid trade creditors must appear before quarter 29, with no negative cash or invalid state.
-- Add a managed 48-quarter scenario in which the player responds to warnings.
-- Run multiple seeds, save/restore at distress boundaries, and validate every quarter.
+- [x] Keep the unattended seed-2035 distress boundary as a regression case: unpaid trade creditors appear before quarter 29, with no negative cash or invalid state.
+- [x] Add a managed 48-quarter scenario in which the player responds to warnings.
+- [x] Run four managed seeds for 48 quarters each and validate every quarter (lint, TypeScript build, and game-engine tests passed in CI run 43588105438).
+- [ ] Extend save/restore coverage across distress, active workout, administration, and post-resolution boundaries.
 - Confirm the economy can recover, remain distressed, restructure or fail for explainable reasons.
 - Perform browser smoke tests and tablet/phone visual checks after the UI lands.
 
