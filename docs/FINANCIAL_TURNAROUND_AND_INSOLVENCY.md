@@ -5,7 +5,7 @@ Scope: the Compute Bottleneck operating company and reusable legal-entity financ
 
 ## Why this system is needed
 
-The 48-quarter unattended stress run found a deterministic boundary: seed 2035 reaches quarter 25 with NodeWorks unable to complete the quarter because its closing cash would become negative. The failure is economically meaningful, not numeric corruption: revenue has fallen below operating costs after customer allocation and energy-price changes, while the cost base remains too rigid.
+The 48-quarter unattended stress run originally found a deterministic cash boundary at quarter 25. Phase B now allows the quarter to complete without negative cash by recording unpaid operating costs as trade payables. The economic failure is still visible: revenue has fallen below operating costs after customer allocation and energy-price changes, while the cost base remains too rigid. The new regression boundary is the first overdue NodeWorks trade payable before quarter 29.
 
 The game already models contractual interest and principal service, arrears, overdue/default status, covenant grace and breach, cross-default, acceleration notices, refinancing, lender underwriting and creditor-approved debt restructuring. These systems should be extended, not duplicated.
 
@@ -62,7 +62,7 @@ The current finance.cash_negative invariant correctly rejects negative cash. Kee
 
 When an entity's cash bridge would close below zero, the engine should calculate the shortfall and identify which expense/payment category could not be met. The shortfall must be posted to a separate operating-payables ledger with:
 - legal borrower/entity ID;
-- creditor or payable class (energy, payroll, network/vendor, tax/overhead);
+- creditor or payable class (payroll, energy, maintenance, network/vendor, tax/overhead);
 - original and outstanding amount;
 - due quarter and age;
 - contractual or statutory priority;
@@ -70,7 +70,9 @@ When an entity's cash bridge would close below zero, the engine should calculate
 
 Do not represent trade payables as a bank loan unless the creditor and terms are actually modeled. Do not double-count unpaid debt service: the existing debt arrears fields remain authoritative for interest/principal.
 
-The cash bridge must show cash actually paid, unpaid operating obligations, financing movements and closing cash separately. Cash remains non-negative. The quarter can complete into a distressed state only if all unpaid obligations have been represented and the resulting state passes invariants.
+The cash bridge shows cash remitted to operating creditors, newly accrued obligations, closing unpaid balances and final cash separately. Cash remains non-negative. Previously incurred trade creditors are reserved ahead of new bank debt service. Within the operating ledger, scenario-defined priority and age determine payment order; partial payments reduce the outstanding claim without erasing its history. The quarter can complete into a distressed state only if all unpaid obligations have been represented and the resulting state passes invariants.
+
+Implemented in the active branch: legal-entity operating payable state, defensive save decoding, domain invariants, deterministic priority settlement, per-entity cash isolation, cash-bridge reconciliation, financial-health warnings, and a finance-panel creditor ledger. Save/restore round-trip coverage is being added. Creditor service curtailment, company-wide workouts and formal administration remain future work.
 
 ## Distress escalation and creditor workout
 
@@ -140,7 +142,7 @@ Avoid changing the game-state schema version until the exact migration/defaultin
 - Test solvency recovery, successful restructuring, failed workout and liquidation.
 
 ### Phase D — Validation
-- Keep the original unattended seed-2035 quarter-25 boundary as a regression case until the new system changes its expected outcome explicitly.
+- Keep the unattended seed-2035 distress boundary as a regression case: unpaid trade creditors must appear before quarter 29, with no negative cash or invalid state.
 - Add a managed 48-quarter scenario in which the player responds to warnings.
 - Run multiple seeds, save/restore at distress boundaries, and validate every quarter.
 - Confirm the economy can recover, remain distressed, restructure or fail for explainable reasons.
@@ -151,7 +153,7 @@ Avoid changing the game-state schema version until the exact migration/defaultin
 - No unexplained negative cash, silent debt forgiveness or unbacked rescue money.
 - A player can see why the company is deteriorating and which decisions can help.
 - Turnaround actions create measurable savings and meaningful side effects.
-- Operating payables and bank-debt arrears are separate and never double-counted.
+- Operating payables and bank-debt arrears are separate, reported independently and never double-counted.
 - Restructuring changes future debt service only after creditor approval.
 - Administration and liquidation are persistent, auditable and deterministic.
 - Managed long-horizon runs complete with valid state, or reach a documented and explainable insolvency outcome.
