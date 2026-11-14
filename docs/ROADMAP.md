@@ -82,7 +82,7 @@ The core strategy-game interface, onboarding, and main destinations are implemen
 - [x] Complete production Docker build and container HTTP smoke test in CI (run 43588680792).
 - [ ] Complete and record the full browser checklist on desktop, tablet, and mobile.
 - [x] Archive the exact pre-cutover `main` prototype under `legacy/prototype/` (27 tracked files from commit `3c8c118`).
-- [ ] Review the full source-to-main PR diff and merge only after all release gates pass.
+- [x] Open a draft migration PR to `main` and verify it is mergeable without modifying `main` ([PR #1](https://github.com/skrskr7799-design/Popoly/pull/1)).\n- [ ] Review the full 645-commit PR history and select the final merge strategy.\n- [ ] Complete the full browser checklist before merging.
 
 **Current release posture:** `docs/game-foundation` is the candidate release branch. `main` remains unchanged. See [MIGRATION_REHEARSAL.md](MIGRATION_REHEARSAL.md) for the current comparison and exact cutover sequence.
 
