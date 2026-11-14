@@ -73,6 +73,18 @@ export interface OperatingCostProfile {
   overheadComplianceInsuranceCents: MoneyCents;
 }
 export type TurnaroundActionId = 'workforce-reset' | 'maintenance-deferral' | 'vendor-renegotiation' | 'facility-consolidation';
+export type OperatingPayableClass = 'energy' | 'payroll' | 'network-vendor' | 'tax-overhead';
+export interface OperatingPayable {
+  id: EntityId;
+  entityId: EntityId;
+  creditorClass: OperatingPayableClass;
+  originalAmountCents: MoneyCents;
+  outstandingAmountCents: MoneyCents;
+  incurredQuarter: number;
+  dueQuarter: number;
+  /** Lower values are paid first; priority is scenario-defined, not player-editable. */
+  priority: number;
+}
 export interface OperatingCompanyState {
   organizationId: EntityId; issuedShares: number; capacity: InfrastructureCapacity;
   deliveredWorkloadMW: number; cashCosts: OperatingCostProfile; contracts: ServiceContract[];
@@ -142,6 +154,6 @@ export interface GameState {
   schemaVersion: 1; scenarioId: string; scenarioVersion: string; seed: number; quarter: number;
   organizations: Organization[]; ownership: OwnershipStake[]; debts: DebtInstrument[];
   holding: HoldingState; operatingCompanies: OperatingCompanyState[];
-  regionalMarkets: RegionalMarketState[]; actors: ActorState[]; playerIntelligence: IntelligenceEstimate[]; projects: StrategicProjectState[]; equipmentOrders: EquipmentOrderState[]; lenders: LenderState[]; loanOffers: LoanOfferState[];
+  regionalMarkets: RegionalMarketState[]; operatingPayables?: OperatingPayable[]; actors: ActorState[]; playerIntelligence: IntelligenceEstimate[]; projects: StrategicProjectState[]; equipmentOrders: EquipmentOrderState[]; lenders: LenderState[]; loanOffers: LoanOfferState[];
 }
 export interface ValidationIssue { code: string; message: string; entityId?: EntityId; }
