@@ -174,6 +174,7 @@ export interface AdministrationDistribution {
 export interface AdministrationResolution {
   resolvedQuarter: number;
   grossAssetProceedsCents: MoneyCents;
+  cashRealizedCents: MoneyCents;
   administrationCostsCents: MoneyCents;
   totalCreditorClaimsCents: MoneyCents;
   totalCreditorRecoveryCents: MoneyCents;
