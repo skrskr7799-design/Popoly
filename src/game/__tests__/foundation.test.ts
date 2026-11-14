@@ -300,9 +300,20 @@ describe('managed long-horizon economic stability', () => {
     ] as const;
 
     for (let turn = 0; turn < 48; turn += 1) {
-      const result = advanceQuarter(state, turn === 0 ? {
-        turnaroundActions: actions.map((actionId) => ({ companyId: 'nodeworks', actionId })),
-      } : {});
+      const renewalWindow = new Set(buildQuarterReport(state).contractsInRenewalWindow ?? []);
+      const contractRenewals = state.operatingCompanies[0]!.contracts
+        .filter((contract) => renewalWindow.has(contract.id))
+        .map((contract) => ({
+          contractId: contract.id,
+          offeredPriceCentsPerMWQuarter: contract.id === 'asterion-contract-a' ? 53_000_000 : 50_000_000,
+          offeredWorkloadMW: contract.id === 'asterion-contract-a' ? 8 : 5,
+          termQuarters: 4,
+        }));
+      const commands = {
+        ...(turn === 0 ? { turnaroundActions: actions.map((actionId) => ({ companyId: 'nodeworks', actionId })) } : {}),
+        contractRenewals,
+      };
+      const result = advanceQuarter(state, commands);
       expect(result.ok, result.ok ? undefined : `turn ${turn + 1}, quarter ${state.quarter}: ${JSON.stringify(result.issues)}; ${JSON.stringify(buildQuarterReport(state).companies.find((item) => item.companyId === 'nodeworks')?.operations)}`).toBe(true);
       if (!result.ok) return;
       state = result.state;
