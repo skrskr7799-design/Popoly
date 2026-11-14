@@ -42,6 +42,8 @@ export interface DebtInstrument {
   crossDefaultClause?: boolean;
   /** Source instrument for a contractual cross-default; does not create arrears on this debt. */
   crossDefaultedByDebtId?: EntityId;
+  /** Last quarter covered by an approved creditor payment standstill. */
+  paymentStandstillThroughQuarter?: number;
   /** Quarter in which the creditor delivered an acceleration notice. */
   accelerationNoticeQuarter?: number;
   /** First quarter in which the full outstanding principal is contractually due. */
@@ -190,10 +192,53 @@ export interface AdministrationCase {
   resolvedQuarter?: number;
   resolution?: AdministrationResolution;
 }
+export type CreditorWorkoutStatus = 'active' | 'completed' | 'rejected' | 'breached' | 'withdrawn';
+export type CreditorWorkoutMilestoneMetric = 'operating-cash-contribution' | 'operating-payables' | 'debt-arrears';
+export interface CreditorWorkoutCounterTerms {
+  principalWriteDownBps: number;
+  interestReductionBps: number;
+  maturityExtensionQuarters: number;
+  standstillQuarters: number;
+}
+export interface CreditorWorkoutVote {
+  creditorId: EntityId;
+  creditorKind: 'lender' | 'trade-creditor-class';
+  claimCents: MoneyCents;
+  securedClaimCents: MoneyCents;
+  vote: 'accepted' | 'countered' | 'rejected';
+  reason: string;
+  counterTerms?: CreditorWorkoutCounterTerms;
+}
+export interface CreditorWorkoutMilestone {
+  id: EntityId;
+  metric: CreditorWorkoutMilestoneMetric;
+  targetCents: number;
+  dueQuarter: number;
+  status: 'pending' | 'met' | 'missed';
+  measuredCents?: number;
+  assessedQuarter?: number;
+}
+export interface CreditorWorkout {
+  id: EntityId;
+  entityId: EntityId;
+  openedQuarter: number;
+  status: CreditorWorkoutStatus;
+  terms: CreditorWorkoutCounterTerms & { covenantWaiver: boolean; tradePayableWriteDownBps: number };
+  totalClaimsCents: MoneyCents;
+  acceptedClaimsCents: MoneyCents;
+  approvalThresholdBps: number;
+  votes: CreditorWorkoutVote[];
+  milestones: CreditorWorkoutMilestone[];
+  effectiveQuarter?: number;
+  completedQuarter?: number;
+  breachedQuarter?: number;
+  resolutionNote?: string;
+}
+
 export interface GameState {
   schemaVersion: 1; scenarioId: string; scenarioVersion: string; seed: number; quarter: number;
   organizations: Organization[]; ownership: OwnershipStake[]; debts: DebtInstrument[];
   holding: HoldingState; operatingCompanies: OperatingCompanyState[];
-  regionalMarkets: RegionalMarketState[]; operatingPayables?: OperatingPayable[]; assets?: CorporateAsset[]; administrationCases?: AdministrationCase[]; actors: ActorState[]; playerIntelligence: IntelligenceEstimate[]; projects: StrategicProjectState[]; equipmentOrders: EquipmentOrderState[]; lenders: LenderState[]; loanOffers: LoanOfferState[];
+  regionalMarkets: RegionalMarketState[]; operatingPayables?: OperatingPayable[]; assets?: CorporateAsset[]; administrationCases?: AdministrationCase[]; creditorWorkouts?: CreditorWorkout[]; actors: ActorState[]; playerIntelligence: IntelligenceEstimate[]; projects: StrategicProjectState[]; equipmentOrders: EquipmentOrderState[]; lenders: LenderState[]; loanOffers: LoanOfferState[];
 }
 export interface ValidationIssue { code: string; message: string; entityId?: EntityId; }

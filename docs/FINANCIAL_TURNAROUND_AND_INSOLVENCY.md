@@ -163,8 +163,13 @@ Avoid changing the game-state schema version until the exact migration/defaultin
 - [x] Implement creditor claims, asset realization and priority waterfall.
 - [x] Define campaign conclusion after subsidiary liquidation.
 - [x] Test liquidation, creditor recovery, legal-entity isolation and save/restore.
-- [ ] Implement creditor voting/workout milestones and a recoverable administration review window.
-- [ ] Test a managed turnaround from administration back to ordinary operation.
+- [x] Implement creditor voting/workout milestones with claim-weighted approval, secured-creditor consent, counters and persisted outcomes.
+- [x] Add a recoverable administration review path: an approved workout can run during administration; completed milestones and restored financial health permit reorganization.
+- [x] Preserve lender-by-lender consent; apply debt terms only to accepting lenders and trade-payable compromises only to accepting creditor classes.
+- [x] Add deterministic workout transitions and focused domain tests.
+- [ ] Add managed multi-seed turnaround campaigns and browser-level workout walkthroughs.
+
+**Workout implementation note:** Trade creditors are represented by existing payable classes, not invented legal entities. Debt-to-equity conversion remains deferred until the scenario has a defensible enterprise/equity valuation model; no arbitrary share-conversion ratio is used.
 
 ### Phase D — Validation
 - Keep the unattended seed-2035 distress boundary as a regression case: unpaid trade creditors must appear before quarter 29, with no negative cash or invalid state.
