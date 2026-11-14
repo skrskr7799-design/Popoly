@@ -184,6 +184,26 @@ export function buildQuarterReport(state: GameState): QuarterReport {
     if (companyBridge) entityCashBridges[index] = companyBridge;
   }
 
+  const payableOutstandingByEntity = new Map<string, number>();
+  for (const payable of state.operatingPayables ?? []) {
+    payableOutstandingByEntity.set(
+      payable.entityId,
+      (payableOutstandingByEntity.get(payable.entityId) ?? 0) + payable.outstandingAmountCents,
+    );
+  }
+  const withPayableBalances = (bridge: EntityCashBridge): EntityCashBridge => ({
+    ...bridge,
+    operatingPayablesOutstandingCents: moneyFromCents(payableOutstandingByEntity.get(bridge.organizationId) ?? 0),
+  });
+  for (let index = 0; index < entityCashBridges.length; index += 1) {
+    const bridge = entityCashBridges[index];
+    if (bridge) entityCashBridges[index] = withPayableBalances(bridge);
+  }
+  for (let index = 0; index < companies.length; index += 1) {
+    const company = companies[index];
+    if (company) companies[index] = { ...company, cashBridge: withPayableBalances(company.cashBridge) };
+  }
+
   const totalInterestExpenseCents = moneyFromCents(
     debtService.reduce((sum, line) => sum + line.interestExpenseCents, 0),
   );
