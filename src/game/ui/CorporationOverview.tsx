@@ -1,6 +1,5 @@
 import {
-  Activity, ArrowDownRight, ArrowUpRight, Banknote, Building2, Cable,
-  CheckCircle2, CircleDot, Cpu, Factory, Gauge, HardDrive, Network,
+  Activity, Building2, Cable, CircleDot, Cpu, Factory, Gauge, HardDrive, Network,
   ShieldCheck, Zap,
 } from 'lucide-react';
 import type { GameState } from '../domain/types';
