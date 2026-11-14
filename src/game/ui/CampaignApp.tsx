@@ -408,7 +408,7 @@ export default function CampaignApp() {
         creditRequest={creditRequest}
         onCreditRequestChange={setCreditRequest}
       /> : activeView === 'markets' ? <>
-      <MarketsOverview state={state} report={currentReport} />
+      <MarketsOverview state={state} report={currentReport} activityReport={report ?? undefined} />
       {storageMessage && <div className="pop-storage-message">{storageMessage}<button onClick={() => setStorageMessage(null)}>Dismiss</button></div>}
       {showStorage && storagePanel}
       <footer className="pop-footer"><span>POPOLY / THE COMPUTE BOTTLENECK</span><span>MARKET INTELLIGENCE · {formatQuarter(state.quarter)}</span><button onClick={restartCampaign}>Restart campaign</button></footer>
