@@ -35,8 +35,15 @@ export function assessFinancialHealth(
   const bridge = report.entityCashBridges.find((item) => item.organizationId === entityId);
   const operatingCashContributionCents = companyReport?.operations.operatingCashContributionCents ?? 0;
   const closingCashCents = bridge?.closingCashCents ?? organization.cashCents;
+  const operatingPayables = (state.operatingPayables ?? []).filter((payable) =>
+    payable.entityId === entityId && payable.outstandingAmountCents > 0);
+  const operatingPayablesCents = operatingPayables.reduce((sum, payable) => sum + payable.outstandingAmountCents, 0);
+  const overdueOperatingPayablesCents = operatingPayables
+    .filter((payable) => payable.dueQuarter < state.quarter)
+    .reduce((sum, payable) => sum + payable.outstandingAmountCents, 0);
+  const cashAvailableAfterPayables = Math.max(0, organization.cashCents - operatingPayablesCents);
   const cashRunwayQuarters = operatingCashContributionCents < 0
-    ? organization.cashCents / Math.abs(operatingCashContributionCents)
+    ? cashAvailableAfterPayables / Math.abs(operatingCashContributionCents)
     : null;
   const debts = state.debts.filter((debt) => debt.borrowerId === entityId && debt.principalCents > 0);
   const debtArrearsCents = debts.reduce((sum, debt) =>
@@ -45,12 +52,6 @@ export function assessFinancialHealth(
   const defaultedDebtCount = debts.filter((debt) => debt.paymentStatus === 'defaulted').length;
   const covenantBreachCount = debts.filter((debt) => debt.covenantStatus === 'breached').length;
   const covenantGraceCount = debts.filter((debt) => debt.covenantStatus === 'grace').length;
-  const operatingPayables = (state.operatingPayables ?? []).filter((payable) =>
-    payable.entityId === entityId && payable.outstandingAmountCents > 0);
-  const operatingPayablesCents = operatingPayables.reduce((sum, payable) => sum + payable.outstandingAmountCents, 0);
-  const overdueOperatingPayablesCents = operatingPayables
-    .filter((payable) => payable.dueQuarter < state.quarter)
-    .reduce((sum, payable) => sum + payable.outstandingAmountCents, 0);
   const reasons: string[] = [];
 
   if (operatingCashContributionCents < 0) reasons.push('Core operations are consuming cash this quarter.');
