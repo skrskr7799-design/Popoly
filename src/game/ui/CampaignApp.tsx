@@ -18,6 +18,7 @@ import { CampaignStoragePanel } from './CampaignStoragePanel';
 import { ContractPortfolioPanel } from './ContractPortfolioPanel';
 import type { ContractRenewalDraft } from './ContractPortfolioPanel';
 import { FinancePanel } from './FinancePanel';
+import { RegionalCommandMap } from './RegionalCommandMap';
 
 const money = (cents: number) => formatMillions(cents);
 const campaignRepository = new IndexedDbCampaignSaveRepository();
@@ -140,6 +141,7 @@ function QuarterReportPanel({ report, state }: { report: QuarterReport; state: G
 
 export default function CampaignApp() {
   const [session, setSession] = useState<CampaignSession | null>(null);
+  const [activeView, setActiveView] = useState<'command' | 'corporation' | 'markets' | 'strategy'>('command');
   const [selected, setSelected] = useState<string[]>([]);
   const [renewalDrafts, setRenewalDrafts] = useState<Record<string, ContractRenewalDraft>>({});
   const [selectedLoanOffers, setSelectedLoanOffers] = useState<string[]>([]);
@@ -157,6 +159,7 @@ export default function CampaignApp() {
   const startCampaign = () => {
     const next = CampaignSession.start({ seed: 2035, repository: campaignRepository });
     setSession(next);
+    setActiveView('command');
     setSelected([]);
     setRenewalDrafts({});
     setSelectedLoanOffers([]);
@@ -366,32 +369,38 @@ export default function CampaignApp() {
     setRevision((value) => value + 1);
   };
 
-  return <div className="pop-app" data-revision={revision}>
+  return <div className="pop-app" data-revision={revision} data-view={activeView}>
     <aside className="pop-sidebar">
       <div className="pop-brand"><div className="pop-brand-mark">P</div><div><strong>POPOLY</strong><small>TECH DOMINION</small></div></div>
       <div className="pop-campaign-tag"><span className="pop-live-dot" /> LIVE CAMPAIGN</div>
       <div className="pop-side-nav">
-        <span className="pop-nav-label">CORPORATE GROUP</span>
-        <button type="button" className="pop-nav-item active" onClick={() => scrollToSection('group-overview')}><Building2 size={17} /> Meridian Group</button>
-        <button type="button" className="pop-nav-item" onClick={() => scrollToSection('nodeworks')}><Cpu size={17} /> NodeWorks</button>
-        <button type="button" className="pop-nav-item" onClick={() => scrollToSection('finance')}><Landmark size={17} /> Group finance</button>
-        <span className="pop-nav-label">WORLD</span>
-        <button type="button" className="pop-nav-item" onClick={() => scrollToSection('regional-market')}><Globe2 size={17} /> Regional market</button>
-        <button type="button" className="pop-nav-item" onClick={() => scrollToSection('intelligence')}><Radar size={17} /> Intelligence</button>
+        <span className="pop-nav-label">STRATEGIC OFFICE</span>
+        <button type="button" className={`pop-nav-item ${activeView === 'command' ? 'active' : ''}`} onClick={() => setActiveView('command')}><Activity size={17} /> Command center</button>
+        <button type="button" className={`pop-nav-item ${activeView === 'corporation' ? 'active' : ''}`} onClick={() => setActiveView('corporation')}><Building2 size={17} /> Corporation</button>
+        <button type="button" className={`pop-nav-item ${activeView === 'markets' ? 'active' : ''}`} onClick={() => setActiveView('markets')}><Globe2 size={17} /> Markets & intel</button>
+        <button type="button" className={`pop-nav-item ${activeView === 'strategy' ? 'active' : ''}`} onClick={() => setActiveView('strategy')}><Radar size={17} /> Quarter strategy</button>
       </div>
       <div className="pop-sidebar-bottom"><span>THE COMPUTE BOTTLENECK</span><small>Scenario v0.1.0</small><small>Campaign {session.campaignId.slice(0, 8)}</small></div>
     </aside>
 
     <main className="pop-main">
-      <header className="pop-topbar"><div><span className="pop-eyebrow">MERIDIAN GROUP / EXECUTIVE OFFICE</span><h1>Command overview</h1></div>
+      <header className="pop-topbar"><div><span className="pop-eyebrow">MERIDIAN GROUP / EXECUTIVE OFFICE</span><h1>{({ command: 'Command center', corporation: 'Corporate group', markets: 'Markets & intelligence', strategy: 'Quarter strategy' } as const)[activeView]}</h1></div>
         <div className="pop-topbar-right"><span className="pop-quarter-chip">{formatQuarter(state.quarter)}</span><span className="pop-status"><i /> {session.stage === 'guided' ? 'Guided campaign' : 'Sandbox mode'}</span><button className="pop-secondary-button" onClick={() => void saveCurrentCampaign()} disabled={storageBusy}><Banknote size={14} /> Save</button><button className="pop-quiet-button" onClick={() => showStorage ? setShowStorage(false) : openArchive()}><FolderOpen size={14} /> Archive</button></div>
       </header>
+      <nav className="pop-mobile-nav" aria-label="Game navigation">
+        <button className={activeView === 'command' ? 'active' : ''} onClick={() => setActiveView('command')}><Activity size={16} /><span>Command</span></button>
+        <button className={activeView === 'corporation' ? 'active' : ''} onClick={() => setActiveView('corporation')}><Building2 size={16} /><span>Group</span></button>
+        <button className={activeView === 'markets' ? 'active' : ''} onClick={() => setActiveView('markets')}><Globe2 size={16} /><span>Markets</span></button>
+        <button className={activeView === 'strategy' ? 'active' : ''} onClick={() => setActiveView('strategy')}><Radar size={16} /><span>Strategy</span></button>
+      </nav>
 
-      <section className="pop-hero">
-        <div><span className="pop-eyebrow">STRATEGIC POSITION · NORTH REGION</span><h2>Control the bottleneck.<br /><em>Shape the market.</em></h2>
-          <p>Meridian controls NodeWorks. Your task is to decide which constraints deserve capital and executive attention before the market moves.</p>
+      <section className="pop-hero pop-command-hero">
+        <div className="pop-hero-copy"><span className="pop-eyebrow"><i className="pop-eyebrow-pulse" /> STRATEGIC POSITION · NORTH REGION · 2035</span><h2>The future is<br /><em>under construction.</em></h2>
+          <p>Meridian Group is building the infrastructure behind the next compute economy. Power, equipment, capacity and demand are converging into one strategic contest.</p>
+          <div className="pop-hero-meta"><span><b className="pop-live-dot" /> LIVE CAMPAIGN</span><span>MERIDIAN GROUP</span><span>THE COMPUTE BOTTLENECK</span></div>
         </div>
-        <div className="pop-hero-progress"><span>CAMPAIGN PROGRESS</span><strong>{Math.min(session.completedQuarters, GUIDED_CAMPAIGN_QUARTERS)} <small>/ {GUIDED_CAMPAIGN_QUARTERS}</small></strong><div className="pop-progress"><i style={{ width: `${Math.min(100, session.completedQuarters / GUIDED_CAMPAIGN_QUARTERS * 100)}%` }} /></div><small>{session.stage === 'sandbox' ? 'Evaluation window complete · Continue freely' : `${GUIDED_CAMPAIGN_QUARTERS - session.completedQuarters} quarters remaining`}</small></div>
+        <div className="pop-hero-visual"><RegionalCommandMap market={market} company={company} /><div className="pop-map-caption"><span>NORTH REGION / INFRASTRUCTURE NETWORK</span><span>SCHEMATIC VIEW · NOT TO SCALE</span></div></div>
+        <div className="pop-hero-progress"><span>CAMPAIGN PROGRESS</span><strong>{Math.min(session.completedQuarters, GUIDED_CAMPAIGN_QUARTERS)} <small>/ {GUIDED_CAMPAIGN_QUARTERS}</small></strong><div className="pop-progress"><i style={{ width: `${Math.min(100, session.completedQuarters / GUIDED_CAMPAIGN_QUARTERS * 100)}%` }} /></div><small>{session.stage === 'sandbox' ? 'Opening complete · Continue freely' : `${GUIDED_CAMPAIGN_QUARTERS - session.completedQuarters} quarters remaining`}</small></div>
       </section>
 
       {storageMessage && <div className="pop-storage-message">{storageMessage}<button onClick={() => setStorageMessage(null)}>Dismiss</button></div>}
