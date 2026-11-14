@@ -1,6 +1,6 @@
 import type { RegionalMarketState, OperatingCompanyState } from '../domain/types';
 
-type Props = { market?: RegionalMarket; company?: OperatingCompany };
+type Props = { market?: RegionalMarketState; company?: OperatingCompanyState };
 
 export function RegionalCommandMap({ market, company }: Props) {
   const power = market?.availablePowerMW ?? 0;
