@@ -1,6 +1,6 @@
 # Development Roadmap
 
-**Status:** Initial plan; sequence may change when audits and prototypes reveal better options.
+**Status:** Active development plan. The simulation foundation, versioned campaign persistence, and playable vertical slice are implemented on `docs/game-foundation`; final validation and migration preparation remain.
 
 ## Guiding approach
 
@@ -19,7 +19,7 @@ Build a coherent, testable vertical slice before expanding the simulation. Do no
 
 Review the current codebase and module boundaries; game state and simulation rules; corporate and financial logic; AI / bot behavior; events and progression; UI, usability, and information hierarchy; persistence and save/load; and build, lint, test, Docker, and CI workflows.
 
-**Progress note:** An initial static code audit is documented in [AUDIT.md](AUDIT.md). Runtime validation, local build, browser review, and a complete persistence / CI verification pass remain outstanding.
+**Progress note:** The initial static audit is documented in [AUDIT.md](AUDIT.md). The active foundation has since passed CI build, lint, engine, and persistence tests. The project owner reported an exploratory browser check on 2026-11-14 with no visible issues; the detailed browser checklist is not fully recorded, so targeted end-to-end cases remain.
 
 Deliverables:
 - findings classified by severity and impact;
@@ -47,16 +47,18 @@ Resolve the core design questions: world scale, regions, and map representation;
 - [x] implement deterministic quarter orchestration and seeded randomness;
 - [x] implement core economic calculations and accounting invariants;
 - [x] implement actor policies and estimates-based intelligence;
-- [ ] implement versioned save/load;
+- [x] implement versioned save/load;
 - [x] establish unit, integration, and scenario tests.
 
-**Current status:** The framework-independent simulation foundation and a substantial economic/actor vertical-slice backend are implemented and covered by CI. Versioned campaign persistence and the player-facing playable vertical slice remain open; Phase 3 is therefore not declared complete yet. Scheduled principal and interest arrears, actual interest cash servicing, and payment-default tracking are now part of the finance foundation; creditor enforcement and insolvency remain later work.
+**Current status:** The framework-independent simulation engine, deterministic quarter resolution, actor policies, estimates-based intelligence, versioned campaign persistence, and player-facing vertical slice are implemented and covered by CI. The finance layer now includes arrears, payment defaults, operating payables, creditor workouts, administration, and liquidation. Phase 3 is complete. The playable slice is implemented; long-horizon balance and deeper content remain iterative work.
 
 **Exit criteria:** Core simulation rules can be exercised independently of the interface.
 
 ## Phase 4 — Vertical slice
 
 Build one compact scenario with a small world and a limited number of actors. It should include a meaningful economic decision, an independent rival response, and a visible consequence that affects the next decision.
+
+**Implementation status:** The Compute Bottleneck scenario, independent market actors, contract renewals, strategic initiatives, quarterly reports, finance, persistence, and the main player-facing destinations are implemented. The guided opening and sandbox continuation are covered by scenario tests. The project owner has completed an exploratory browser check; full checklist evidence and deeper gameplay/balance feedback remain ongoing.
 
 **Exit criteria:** A new player can understand the situation, make strategic choices, and find the resulting chain of consequences engaging.
 
@@ -68,7 +70,7 @@ Only after the vertical slice is enjoyable, deepen corporate structures and mark
 
 ## Phase 6 — UX, balance, and content
 
-Redesign the interface around strategic questions and actionable information; add onboarding and contextual explanations; balance viable strategic paths; test long campaigns and edge cases; improve accessibility, performance, and presentation.
+The core strategy-game interface, onboarding, and main destinations are implemented. Continue with focused visual polish rather than a wholesale redesign; balance viable strategic paths; test long campaigns and edge cases; improve accessibility, performance, and presentation.
 
 ## Phase 7 — Future options
 
