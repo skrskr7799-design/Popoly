@@ -55,7 +55,7 @@ export function CreditorWorkoutPanel({ state, onPropose, onFileAdministration }:
         <span>{vote.creditorId.replace('trade:', '').replaceAll('-', ' ')} · {formatMoney(vote.claimCents, true)}</span>
         <strong>{vote.vote}</strong><small>{vote.reason}</small>
         {vote.counterTerms && <>
-          <small>Counter: {vote.counterTerms.principalWriteDownBps} bps debt haircut · {vote.counterTerms.standstillQuarters} quarter standstill</small>
+          <small>Counter: {vote.counterTerms.principalWriteDownBps} bps unsecured haircut · {vote.counterTerms.tradePayableWriteDownBps ?? 0} bps trade write-down · {vote.counterTerms.debtToEquityConversionBps ?? 0} bps conversion · {vote.counterTerms.standstillQuarters} quarter standstill</small>
           <button type="button" className="pop-secondary-button" onClick={() => setDraft((current) => ({
             ...current,
             standstill: String(vote.counterTerms!.standstillQuarters),
