@@ -1,4 +1,3 @@
-import type { CSSProperties } from 'react';
 import type { RegionalMarketState, OperatingCompanyState } from '../domain/types';
 
 type Props = { market?: RegionalMarket; company?: OperatingCompany };
@@ -9,7 +8,6 @@ export function RegionalCommandMap({ market, company }: Props) {
   const utilization = power > 0 ? Math.min(100, load / power * 100) : 0;
   const capacity = company?.capacity.operationalLimitMW ?? 0;
   const reliability = company?.capacity.reliability ?? 0;
-  const style = { '--network-load': `${utilization}%` } as CSSProperties;
 
   return <svg className="pop-region-map" viewBox="0 0 620 330" role="img" aria-label="Schematic of the North Region compute, energy, equipment and customer network">
     <defs>
