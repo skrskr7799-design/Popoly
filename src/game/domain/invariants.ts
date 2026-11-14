@@ -151,6 +151,25 @@ export function validateGameState(state: GameState): ValidationIssue[] {
     }
   }
 
+  const payableIds = new Set<string>();
+  for (const payable of state.operatingPayables ?? []) {
+    if (payableIds.has(payable.id)) {
+      issues.push({ code: 'finance.operating_payable_duplicate', message: 'Operating payable IDs must be unique.', entityId: payable.id });
+    }
+    payableIds.add(payable.id);
+    if (typeof payable.id !== 'string' || payable.id.trim().length === 0 ||
+        !organizationIds.has(payable.entityId) ||
+        !['energy', 'payroll', 'network-vendor', 'tax-overhead'].includes(payable.creditorClass) ||
+        !Number.isSafeInteger(payable.originalAmountCents) || payable.originalAmountCents <= 0 ||
+        !Number.isSafeInteger(payable.outstandingAmountCents) || payable.outstandingAmountCents < 0 ||
+        payable.outstandingAmountCents > payable.originalAmountCents ||
+        !Number.isInteger(payable.incurredQuarter) || payable.incurredQuarter < 1 || payable.incurredQuarter > state.quarter ||
+        !Number.isInteger(payable.dueQuarter) || payable.dueQuarter < payable.incurredQuarter ||
+        !Number.isSafeInteger(payable.priority) || payable.priority < 1) {
+      issues.push({ code: 'finance.operating_payable_invalid', message: 'Operating payable must reference a legal entity and contain valid amounts, dates, class, and priority.', entityId: payable.id });
+    }
+  }
+
   const turnaroundIds = new Set(['workforce-reset', 'maintenance-deferral', 'vendor-renegotiation', 'facility-consolidation']);
   for (const company of state.operatingCompanies) {
     const actions = company.turnaroundActions ?? [];
