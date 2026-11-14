@@ -651,6 +651,40 @@ describe('atomic quarter transition', () => {
     expect(renewal.state.operatingCompanies[0]!.contracts.find((item) => item.id === 'asterion-contract-b')!.termEndQuarter).toBe(5);
   });
 
+  it('lets a rival bid using flexible capacity it can reallocate', () => {
+    const first = advanceQuarter(initializeGame(2035));
+    expect(first.ok).toBe(true);
+    if (!first.ok) return;
+    let state = first.state;
+    const kestrel = state.actors.find((actor) => actor.organizationId === 'kestrel-compute')!;
+    const customer = state.actors.find((actor) => actor.organizationId === 'asterion-ai')!;
+    const workload = kestrel.hiddenMetrics.currentWorkloadMW ?? kestrel.hiddenMetrics.deliveredWorkloadMaxMW ?? 0;
+    const flexibleMW = customer.hiddenMetrics.kestrelFlexibleMW ?? 0;
+    const fixedWorkload = Math.max(0, workload - flexibleMW);
+    expect(flexibleMW).toBeGreaterThan(0.25);
+    state = {
+      ...state,
+      actors: state.actors.map((actor) => actor.organizationId === 'kestrel-compute'
+        ? { ...actor, hiddenMetrics: {
+          ...actor.hiddenMetrics, effectiveCapacityMW: fixedWorkload + 8.25,
+          effectiveCapacityMinMW: fixedWorkload + 8, effectiveCapacityMaxMW: fixedWorkload + 8.5,
+        } }
+        : actor),
+    };
+    expect((state.actors.find((actor) => actor.organizationId === 'kestrel-compute')!.hiddenMetrics.effectiveCapacityMW! - workload))
+      .toBeLessThan(8);
+
+    const result = advanceQuarter(state, { contractRenewals: [{
+      contractId: 'asterion-contract-a', offeredPriceCentsPerMWQuarter: 53_000_000,
+      offeredWorkloadMW: 8, termQuarters: 4,
+    }] });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.report.contractRenewals?.[0]).toEqual(expect.objectContaining({
+      status: 'rejected', competitorBidAvailable: true, competitorProviderId: 'kestrel-compute',
+    }));
+  });
+
   it('does not let a rival bid for a fixed contract beyond its spare capacity', () => {
     const first = advanceQuarter(initializeGame(2035));
     expect(first.ok).toBe(true);
