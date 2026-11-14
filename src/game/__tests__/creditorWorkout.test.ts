@@ -74,7 +74,7 @@ describe('coordinated creditor workouts', () => {
   it('records rejection without applying unapproved debt or payable relief', () => {
     const opening = initializeGame(2035);
     const debtBefore = opening.debts.map((item) => [item.id, item.principalCents, item.quarterlyInterestRate]);
-    const result = proposeCreditorWorkout(opening, { ...plan, principalWriteDownBps: 2_500, tradePayableWriteDownBps: 1_500 });
+    const result = proposeCreditorWorkout(opening, { ...plan, standstillQuarters: 4, maturityExtensionQuarters: 12, interestReductionBps: 500 });
     expect(result.ok).toBe(true);
     if (!result.ok) return;
     expect(result.workout.status).toBe('rejected');
