@@ -116,6 +116,6 @@ export function QuarterStrategyOverview({
       </aside>
     </div>
 
-    {issues.length > 0 && <section className="pop-strategy-issues"><strong>{gameText("Decision validation")}</strong>{issues.map((issue, index) => <p key={`${issue.code}-${index}`}>{issue.code} — {issue.message}</p>)}</section>}
+    {issues.length > 0 && <section className="pop-strategy-issues"><strong>{gameText("Decision validation")}</strong>{issues.map((issue, index) => <p key={`${issue.code}-${index}`}>{issue.code} — {gameText(issue.message)}</p>)}</section>}
   </div>;
 }
