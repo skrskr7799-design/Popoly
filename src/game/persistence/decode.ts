@@ -47,7 +47,8 @@ export function isGameStateShape(value: unknown): value is GameState {
       isNumber(item.capacity.reliability) && isNumber(item.deliveredWorkloadMW) &&
       isRecord(item.cashCosts) && isNumber(item.cashCosts.operationsAndStaffingCents) &&
       isNumber(item.cashCosts.maintenanceCents) && isNumber(item.cashCosts.networkAndConnectivityCents) &&
-      isNumber(item.cashCosts.overheadComplianceInsuranceCents) && records(item.contracts) &&
+      isNumber(item.cashCosts.overheadComplianceInsuranceCents) &&
+      (item.turnaroundActions === undefined || isStringArray(item.turnaroundActions)) && records(item.contracts) &&
       item.contracts.every((contract) => isString(contract.id) && isString(contract.customerId) &&
         isString(contract.providerId) && isNumber(contract.workloadMW) &&
         isNumber(contract.priceCentsPerMWQuarter) && isString(contract.flexibility)))) return false;
