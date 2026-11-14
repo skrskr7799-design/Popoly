@@ -830,7 +830,6 @@ Object.assign(ru, {
   "additional firm power": "дополнительной гарантированной мощности",
   "percentage points of reliability": "п.п. надёжности",
   "intelligence confidence points": "пунктов достоверности разведданных",
-  "initiative(s) queued for resolution": "инициатив(ы) ожидают расчёта",
   "quarters remaining": "кварталов осталось",
   "Overdue": "Просрочено",
   "Prepare renewal proposal": "Подготовить предложение о продлении",
