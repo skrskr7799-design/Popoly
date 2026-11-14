@@ -72,7 +72,7 @@ Do not represent trade payables as a bank loan unless the creditor and terms are
 
 The cash bridge shows cash remitted to operating creditors, newly accrued obligations, closing unpaid balances and final cash separately. Cash remains non-negative. Previously incurred trade creditors are reserved ahead of new bank debt service. Within the operating ledger, scenario-defined priority and age determine payment order; partial payments reduce the outstanding claim without erasing its history. The quarter can complete into a distressed state only if all unpaid obligations have been represented and the resulting state passes invariants.
 
-Implemented in the active branch: legal-entity operating payable state, defensive save decoding, domain invariants, deterministic priority settlement, per-entity cash isolation, cash-bridge reconciliation, financial-health warnings, and a finance-panel creditor ledger. Save/restore round-trip coverage is being added. Creditor service curtailment, company-wide workouts and formal administration remain future work.
+Implemented in the active branch: legal-entity operating payable state, defensive save decoding, domain invariants, deterministic priority settlement, per-entity cash isolation, cash-bridge reconciliation, financial-health warnings, lender underwriting penalties for unpaid/overdue trade creditors, and a finance-panel creditor ledger. Save/restore round-trip and deterministic continuation tests now cover outstanding payables. Creditor service curtailment, company-wide workouts and formal administration remain future work.
 
 ## Distress escalation and creditor workout
 
