@@ -170,10 +170,15 @@ export default function CampaignApp() {
 
   const refreshCampaigns = async (showBusy = true) => {
     if (showBusy) setStorageBusy(true);
-    const result = await campaignRepository.list();
-    if (result.ok) setCampaigns(result.value);
-    else setStorageMessage(result.error.message);
-    if (showBusy) setStorageBusy(false);
+    try {
+      const result = await campaignRepository.list();
+      if (result.ok) setCampaigns(result.value);
+      else setStorageMessage(result.error.message);
+    } catch (error) {
+      setStorageMessage(error instanceof Error ? error.message : 'Could not refresh the campaign archive.');
+    } finally {
+      if (showBusy) setStorageBusy(false);
+    }
   };
 
   const openArchive = () => {
@@ -185,75 +190,89 @@ export default function CampaignApp() {
   const saveCurrentCampaign = async () => {
     if (!session) return;
     setStorageBusy(true);
-    const result = await session.save();
-    if (!result.ok) setStorageMessage(result.error.message);
-    else {
-      setStorageMessage('Campaign snapshot saved locally.');
-      await refreshCampaigns(false);
+    try {
+      const result = await session.save();
+      if (!result.ok) setStorageMessage(result.error.message);
+      else {
+        setStorageMessage('Campaign snapshot saved locally.');
+        await refreshCampaigns(false);
+      }
+    } catch (error) {
+      setStorageMessage(error instanceof Error ? error.message : 'Could not save the current campaign.');
+    } finally {
+      setStorageBusy(false);
     }
-    setStorageBusy(false);
   };
 
   const loadCampaign = async (campaignId: string) => {
     setStorageBusy(true);
-    const result = await CampaignSession.restore(campaignId, campaignRepository);
-    if (!result.ok) setStorageMessage(result.error.message);
-    else {
-      setSession(result.value.session);
-      setSelected([]);
-    setRenewalDrafts({});
-    setSelectedLoanOffers([]);
-    setCreditRequest({ borrowerId: 'nodeworks', amountDollars: '', termQuarters: '4', collateral: '' });
-      setReport(null);
-      setIssues([]);
-      setStorageMessage(result.value.recoveredFromPrevious
-        ? 'The current revision was unavailable. Restored the previous valid snapshot.'
-        : 'Campaign loaded and validated successfully.');
-      setShowStorage(false);
-      setRevision((value) => value + 1);
+    try {
+      const result = await CampaignSession.restore(campaignId, campaignRepository);
+      if (!result.ok) setStorageMessage(result.error.message);
+      else {
+        setSession(result.value.session);
+        setSelected([]);
+        setRenewalDrafts({});
+        setSelectedLoanOffers([]);
+        setCreditRequest({ borrowerId: 'nodeworks', amountDollars: '', termQuarters: '4', collateral: '' });
+        setReport(null);
+        setIssues([]);
+        setStorageMessage(result.value.recoveredFromPrevious
+          ? 'The current revision was unavailable. Restored the previous valid snapshot.'
+          : 'Campaign loaded and validated successfully.');
+        setShowStorage(false);
+        setRevision((value) => value + 1);
+      }
+    } catch (error) {
+      setStorageMessage(error instanceof Error ? error.message : 'Could not load the selected campaign.');
+    } finally {
+      setStorageBusy(false);
     }
-    setStorageBusy(false);
   };
 
   const exportCampaign = async (campaignId: string) => {
     setStorageBusy(true);
-    const result = await exportCampaignSave(campaignRepository, campaignId, loadCompatibility);
-    if (!result.ok) setStorageMessage(result.error.message);
-    else {
-      const blob = new Blob([result.value], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
-      const anchor = document.createElement('a');
-      anchor.href = url;
-      anchor.download = `popoly-${campaignId}.json`;
-      anchor.click();
-      URL.revokeObjectURL(url);
-      setStorageMessage('Validated campaign JSON exported.');
+    let objectUrl: string | null = null;
+    try {
+      const result = await exportCampaignSave(campaignRepository, campaignId, loadCompatibility);
+      if (!result.ok) setStorageMessage(result.error.message);
+      else {
+        const blob = new Blob([result.value], { type: 'application/json' });
+        objectUrl = URL.createObjectURL(blob);
+        const anchor = document.createElement('a');
+        anchor.href = objectUrl;
+        anchor.download = `popoly-${campaignId}.json`;
+        anchor.click();
+        setStorageMessage('Validated campaign JSON exported.');
+      }
+    } catch (error) {
+      setStorageMessage(error instanceof Error ? error.message : 'Could not export the selected campaign.');
+    } finally {
+      if (objectUrl) window.setTimeout(() => URL.revokeObjectURL(objectUrl!), 1_000);
+      setStorageBusy(false);
     }
-    setStorageBusy(false);
   };
 
   const importCampaign = async (file: File | null) => {
     if (!file) return;
     setStorageBusy(true);
-    let serialized: string;
     try {
-      serialized = await file.text();
-    } catch (error) {
-      setStorageMessage(error instanceof Error ? error.message : 'Could not read the selected JSON file.');
-      setStorageBusy(false);
-      return;
-    }
-    const imported = await importCampaignSave(campaignRepository, serialized, loadCompatibility);
-    if (!imported.ok) setStorageMessage(imported.error.message);
-    else {
+      const serialized = await file.text();
+      const imported = await importCampaignSave(campaignRepository, serialized, loadCompatibility);
+      if (!imported.ok) {
+        setStorageMessage(imported.error.message);
+        return;
+      }
+
       const restored = await CampaignSession.restore(imported.value.save.campaignId, campaignRepository);
-      if (!restored.ok) setStorageMessage(restored.error.message);
-      else {
+      if (!restored.ok) {
+        setStorageMessage(restored.error.message);
+      } else {
         setSession(restored.value.session);
         setSelected([]);
-    setRenewalDrafts({});
-    setSelectedLoanOffers([]);
-    setCreditRequest({ borrowerId: 'nodeworks', amountDollars: '', termQuarters: '4', collateral: '' });
+        setRenewalDrafts({});
+        setSelectedLoanOffers([]);
+        setCreditRequest({ borrowerId: 'nodeworks', amountDollars: '', termQuarters: '4', collateral: '' });
         setReport(null);
         setIssues([]);
         setShowStorage(false);
@@ -261,8 +280,11 @@ export default function CampaignApp() {
         setRevision((value) => value + 1);
       }
       await refreshCampaigns(false);
+    } catch (error) {
+      setStorageMessage(error instanceof Error ? error.message : 'Could not import the selected campaign file.');
+    } finally {
+      setStorageBusy(false);
     }
-    setStorageBusy(false);
   };
 
   const storagePanel = <CampaignStoragePanel campaigns={campaigns} activeCampaignId={session?.campaignId ?? ''}
