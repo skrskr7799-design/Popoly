@@ -10,7 +10,7 @@ export function RegionalCommandMap({ market, company }: Props) {
   const capacity = company?.capacity.operationalLimitMW ?? 0;
   const reliability = company?.capacity.reliability ?? 0;
 
-  return <svg className="pop-region-map" viewBox="0 0 620 330" role="img" aria-label="Schematic of the North Region compute, energy, equipment and customer network">
+  return <svg className="pop-region-map" viewBox="0 0 620 330" role="img" aria-label={gameText("Schematic of the North Region compute, energy, equipment and customer network")}>
     <defs>
       <linearGradient id="regionGlow" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stopColor="#68e4ce" stopOpacity=".2"/><stop offset="1" stopColor="#5c8eff" stopOpacity=".02"/></linearGradient>
       <linearGradient id="networkLine" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stopColor="#4a9e9c" stopOpacity=".1"/><stop offset=".5" stopColor="#75e6d0" stopOpacity=".95"/><stop offset="1" stopColor="#70a6ff" stopOpacity=".25"/></linearGradient>
