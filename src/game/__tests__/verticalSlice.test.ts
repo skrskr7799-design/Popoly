@@ -1,6 +1,8 @@
+import 'fake-indexeddb/auto';
 import { describe, expect, it } from 'vitest';
 import { CampaignSession, GUIDED_CAMPAIGN_QUARTERS } from '../campaign/session';
 import { validateGameState } from '../domain/invariants';
+import { IndexedDbCampaignSaveRepository } from '../persistence/indexedDbRepository';
 
 const strategies: Array<{ id: string; initiativesByQuarter: string[][] }> = [
   {
@@ -69,4 +71,51 @@ describe('Compute Bottleneck vertical slice', () => {
       expect(outcomes.get('resilience-first')?.reliability).toBeGreaterThan(0.985);
     }
   });
+
+  it('preserves the full guided outcome when restored from a mid-campaign save', async () => {
+    const repository = new IndexedDbCampaignSaveRepository({
+      databaseName: 'popoly-vertical-slice-mid-campaign-restore',
+    });
+    const now = () => new Date('2035-01-01T00:00:00.000Z');
+    const uninterrupted = CampaignSession.start({
+      seed: 2042,
+      campaignId: 'vertical-uninterrupted-reference',
+      now,
+    });
+    let resumed = CampaignSession.start({
+      seed: 2042,
+      campaignId: 'vertical-mid-campaign-restore',
+      repository,
+      now,
+    });
+
+    for (let quarter = 0; quarter < GUIDED_CAMPAIGN_QUARTERS; quarter += 1) {
+      const commands = quarter === 0
+        ? { launchInitiatives: ['commission-market-study'] }
+        : quarter === 2
+          ? { launchInitiatives: ['secure-equipment-allocation'] }
+          : {};
+
+      const expected = uninterrupted.advance(commands);
+      const actual = resumed.advance(commands);
+      expect(actual).toEqual(expected);
+      expect(actual.ok).toBe(true);
+
+      if (quarter === 3) {
+        expect((await resumed.save()).ok).toBe(true);
+        const restored = await CampaignSession.restore(resumed.campaignId, repository, { now });
+        expect(restored.ok).toBe(true);
+        if (!restored.ok) return;
+        expect(restored.value.recoveredFromPrevious).toBe(false);
+        resumed = restored.value.session;
+        expect(resumed.state).toEqual(uninterrupted.state);
+      }
+    }
+
+    expect(resumed.stage).toBe('sandbox');
+    expect(resumed.state).toEqual(uninterrupted.state);
+    expect(resumed.currentReport).toEqual(uninterrupted.currentReport);
+    expect(resumed.advance()).toEqual(uninterrupted.advance());
+  });
+
 });
