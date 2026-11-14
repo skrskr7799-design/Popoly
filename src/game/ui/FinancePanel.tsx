@@ -16,7 +16,7 @@ const statusLabel = (status: string | undefined) => {
 
 export function FinancePanel({
   state, report, selectedOfferIds, onToggleOffer,
-  creditRequest, onCreditRequestChange,
+  creditRequest, onCreditRequestChange, selectedTurnaroundActionIds, onToggleTurnaroundAction,
 }: {
   state: GameState;
   report: QuarterReport;
@@ -24,6 +24,8 @@ export function FinancePanel({
   onToggleOffer: (offerId: string) => void;
   creditRequest: { borrowerId: string; amountDollars: string; termQuarters: string; collateral: string };
   onCreditRequestChange: (next: { borrowerId: string; amountDollars: string; termQuarters: string; collateral: string }) => void;
+  selectedTurnaroundActionIds: TurnaroundActionId[];
+  onToggleTurnaroundAction: (actionId: TurnaroundActionId) => void;
 }) {
   const organizations = state.organizations;
   const organizationName = (id: string) => organizations.find((item) => item.id === id)?.name ?? id;
