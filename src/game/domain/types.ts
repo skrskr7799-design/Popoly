@@ -73,7 +73,7 @@ export interface OperatingCostProfile {
   overheadComplianceInsuranceCents: MoneyCents;
 }
 export type TurnaroundActionId = 'workforce-reset' | 'maintenance-deferral' | 'vendor-renegotiation' | 'facility-consolidation';
-export type OperatingPayableClass = 'energy' | 'payroll' | 'network-vendor' | 'tax-overhead';
+export type OperatingPayableClass = 'energy' | 'payroll' | 'maintenance' | 'network-vendor' | 'tax-overhead';
 export interface OperatingPayable {
   id: EntityId;
   entityId: EntityId;
