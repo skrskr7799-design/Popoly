@@ -43,7 +43,7 @@ export function settleOperatingPayables(
 
   const ids = new Set(existing.map((payable) => payable.id));
   const accrued: OperatingPayable[] = obligations.map((obligation) => {
-    if (!obligation.id.trim() || ids.has(obligation.id) ||
+    if (!obligation.id.trim() || !obligation.entityId.trim() || ids.has(obligation.id) ||
         !Number.isSafeInteger(obligation.amountCents) || obligation.amountCents <= 0 ||
         !Number.isInteger(obligation.dueQuarter) || obligation.dueQuarter < quarter ||
         !Number.isSafeInteger(obligation.priority) || obligation.priority < 1) {
@@ -70,7 +70,7 @@ export function settleOperatingPayables(
       a.payable.priority - b.payable.priority ||
       a.payable.dueQuarter - b.payable.dueQuarter ||
       a.payable.incurredQuarter - b.payable.incurredQuarter ||
-      a.payable.id.localeCompare(b.payable.id));
+      (a.payable.id < b.payable.id ? -1 : a.payable.id > b.payable.id ? 1 : 0));
 
   let cashRemainingCents = availableCashCents;
   const payments: OperatingPayablePayment[] = [];
