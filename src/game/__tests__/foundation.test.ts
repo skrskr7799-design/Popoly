@@ -134,6 +134,51 @@ describe('autonomous customer allocation', () => {
   });
 });
 
+describe('operating turnaround actions', () => {
+  it('applies persistent expense reductions and their operational trade-offs', () => {
+    const state = initializeGame(2035);
+    const openingCompany = state.operatingCompanies.find((item) => item.organizationId === 'nodeworks')!;
+    const openingOrganization = state.organizations.find((item) => item.id === 'nodeworks')!;
+    const result = advanceQuarter(state, {
+      turnaroundActions: [
+        { companyId: 'nodeworks', actionId: 'workforce-reset' },
+        { companyId: 'nodeworks', actionId: 'maintenance-deferral' },
+      ],
+    });
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    const company = result.state.operatingCompanies.find((item) => item.organizationId === 'nodeworks')!;
+    const organization = result.state.organizations.find((item) => item.id === 'nodeworks')!;
+    expect(company.cashCosts.operationsAndStaffingCents).toBe(Math.round(openingCompany.cashCosts.operationsAndStaffingCents * 0.75));
+    expect(company.cashCosts.maintenanceCents).toBe(Math.round(openingCompany.cashCosts.maintenanceCents * 0.7));
+    expect(company.capacity.reliability).toBeCloseTo(openingCompany.capacity.reliability - 0.016, 8);
+    expect(organization.reputation).toBe(openingOrganization.reputation - 1);
+    expect(company.turnaroundActions).toEqual(['workforce-reset', 'maintenance-deferral']);
+    expect(result.report.companies[0]!.operations.totalOperatingCostCents)
+      .toBeLessThan(buildQuarterReport(state).companies[0]!.operations.totalOperatingCostCents);
+    expect(validateGameState(result.state)).toEqual([]);
+  });
+
+  it('prevents a turnaround action from being stacked more than once', () => {
+    const state = initializeGame();
+    const first = advanceQuarter(state, {
+      turnaroundActions: [{ companyId: 'nodeworks', actionId: 'vendor-renegotiation' }],
+    });
+    expect(first.ok).toBe(true);
+    if (!first.ok) return;
+
+    const repeated = advanceQuarter(first.state, {
+      turnaroundActions: [{ companyId: 'nodeworks', actionId: 'vendor-renegotiation' }],
+    });
+    expect(repeated.ok).toBe(false);
+    if (repeated.ok) return;
+    expect(repeated.issues).toContainEqual(expect.objectContaining({
+      code: 'command.turnaround_already_applied',
+    }));
+  });
+});
+
 describe('financial health assessment', () => {
   it('classifies the opening operating company as stable with positive operating cash flow', () => {
     const state = initializeGame(2035);
