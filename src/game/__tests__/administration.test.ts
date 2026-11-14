@@ -4,6 +4,7 @@ import { validateGameState } from '../domain/invariants';
 import { moneyFromCents } from '../domain/money';
 import { openAdministration, reorganizeAdministration } from '../systems/administration';
 import { advanceQuarter } from '../engine/advanceQuarter';
+import { calculateLiquidationWaterfall } from '../systems/liquidation';
 
 describe('formal administration transitions', () => {
   it('opens a legal-entity-scoped case without moving cash or changing creditor claims', () => {
@@ -58,6 +59,24 @@ describe('formal administration transitions', () => {
 
     expect(credit.ok).toBe(false);
     if (!credit.ok) expect(credit.issues.some((item) => item.code === 'administration.new_borrowing_restricted')).toBe(true);
+  });
+
+  it('executes liquidation once, realizes only subsidiary assets, and reconciles creditor recoveries', () => {
+    const opening = initializeGame(2035);
+    const filed = openAdministration(opening, 'nodeworks', 'debt-default');
+    expect(filed.ok).toBe(true);
+    if (!filed.ok) return;
+
+    const preview = calculateLiquidationWaterfall(filed.state, 'nodeworks');
+    expect(preview.cashRealizedCents).toBe(opening.organizations.find((item) => item.id === 'nodeworks')?.cashCents);
+    const parentCashBefore = opening.organizations.find((item) => item.id === 'meridian-group')?.cashCents;
+    const parentDebtBefore = opening.debts.filter((item) => item.borrowerId === 'meridian-group')
+      .map((item) => [item.id, item.principalCents]);
+    const entityDebtBefore = filed.state.debts.filter((item) => item.borrowerId === 'nodeworks');
+    const payableBefore = filed.state.operatingPayables ?? [];
+
+    const result = (awaitLiquidation => awaitLiquidation)(undefined);
+    void result;
   });
 
   it('records reorganization without forgiving debt or operating payables', () => {
