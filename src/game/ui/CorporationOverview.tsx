@@ -175,7 +175,7 @@ export function CorporationOverview({
     <section className="pop-corp-section">
       <div className="pop-section-title">
         <div><span className="pop-eyebrow">{gameText("COMMERCIAL ENGINE")}</span><h2>{gameText("Customer exposure")}</h2></div>
-        <span className="pop-pill">{activeContracts.length} active agreements</span>
+        <span className="pop-pill">{activeContracts.length} {gameText('active agreements')}</span>
       </div>
       <div className="pop-corp-commercial">
         <Metric label={gameText("Contracted workload")} value={contractedMW.toFixed(1) + ' MW'} detail={gameText('Firm customer commitments')} tone="good" />
