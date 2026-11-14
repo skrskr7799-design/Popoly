@@ -81,7 +81,7 @@ export function CommandCenterBriefing({
         : 'Review the regional signals and choose where Meridian should commit its limited leadership bandwidth.';
 
   return (
-    <section className="pop-command-briefing" aria-label="Executive situation briefing">
+    <section className="pop-command-briefing" aria-label={gameText("Executive situation briefing")}>
       <div className="pop-command-briefing-heading">
         <div>
           <span className="pop-eyebrow"><i className="pop-eyebrow-pulse" /> {gameText("EXECUTIVE SITUATION ROOM")}</span>
@@ -112,27 +112,27 @@ export function CommandCenterBriefing({
         <div className="pop-command-signals">
           <Signal
             icon={Zap}
-            label="Firm power headroom"
+            label={gameText("Firm power headroom")}
             value={market ? `${market.immediateFirmPowerHeadroomMW.toFixed(1)} MW` : '—'}
             detail={market ? `${market.name} · available for new allocation` : 'Regional data unavailable'}
             tone={market && market.immediateFirmPowerHeadroomMW <= 1 ? 'warn' : 'neutral'}
           />
           <Signal
             icon={Gauge}
-            label="NodeWorks utilization"
+            label={gameText("NodeWorks utilization")}
             value={operations ? `${Math.round(utilization * 100)}%` : '—'}
             detail={operations ? `${operations.deliveredWorkloadMW.toFixed(1)} of ${operations.effectiveCapacityMW.toFixed(1)} MW effective capacity` : 'Operating report unavailable'}
             tone={!operations ? 'neutral' : utilization >= 0.9 ? 'warn' : 'good'}
           />
           <Signal
             icon={Cpu}
-            label="Equipment pipeline"
+            label={gameText("Equipment pipeline")}
             value={reservedOrders.length ? `${reservedMW.toFixed(1)} MW-eq` : 'No reservations'}
             detail={reservedOrders.length ? `${reservedOrders.length} reserved order(s) awaiting delivery` : 'No reserved deliveries in the pipeline'}
           />
           <Signal
             icon={arrears > 0 ? AlertTriangle : Banknote}
-            label="Financial pressure"
+            label={gameText("Financial pressure")}
             value={arrears > 0 ? formatMoney(arrears) : 'No arrears'}
             detail={defaultedDebts > 0 ? `${defaultedDebts} defaulted instrument(s)` : arrears > 0 ? 'Recorded principal and interest arrears' : 'No overdue principal or interest'}
             tone={defaultedDebts > 0 ? 'critical' : arrears > 0 ? 'warn' : 'good'}
