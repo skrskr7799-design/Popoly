@@ -588,6 +588,29 @@ Object.assign(ru, {
   "SIMULATION BUILD 0.1.0": "СБОРКА СИМУЛЯЦИИ 0.1.0"
 });
 
+
+Object.assign(ru, {
+  "Active": "Активно",
+  "Closed": "Закрыто",
+  "outstanding instrument(s)": "непогашенных долговых обязательств",
+  "Unassigned": "Не назначен",
+  "Revolving": "Возобновляемый",
+  "Open": "Открытый",
+  "Borrowing restriction applies": "Действует ограничение на новые займы",
+  "No borrowing restriction": "Ограничений на новые займы нет",
+  "Cross-default clause": "Условие перекрёстного дефолта",
+  "No cross-default clause": "Без условия перекрёстного дефолта",
+  "strategic project(s) in progress": "стратегических проектов в работе",
+  "No reservations": "Нет резервов",
+  "reserved order(s) awaiting delivery": "заказов зарезервировано и ожидает поставки",
+  "No reserved deliveries in the pipeline": "В очереди нет зарезервированных поставок",
+  "defaulted instrument(s)": "долговых обязательств в дефолте",
+  "Recorded principal and interest arrears": "Зафиксирована просрочка по основному долгу и процентам",
+  "No overdue principal or interest": "Просрочки по основному долгу и процентам отсутствуют",
+  "effective capacity": "эффективная мощность",
+  "available for new allocation": "доступно для нового распределения"
+});
+
 export function gameText(source: string, locale?: Locale): string {
   const activeLocale = locale ?? useI18n.getState().locale;
   if (activeLocale === 'en') return source;
