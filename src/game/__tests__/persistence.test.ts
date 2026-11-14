@@ -1,6 +1,8 @@
 import 'fake-indexeddb/auto';
 import { describe, expect, it } from 'vitest';
 import { initializeGame } from '../engine/initialize';
+import { openAdministration } from '../systems/administration';
+import { decodeCampaignSaveShape } from '../persistence/decode';
 import { moneyFromCents } from '../domain/money';
 import { advanceQuarter } from '../engine/advanceQuarter';
 import { canonicalJson } from '../persistence/canonicalJson';
@@ -109,6 +111,21 @@ describe('campaign save core', () => {
     expect(loaded.ok).toBe(true);
     if (!loaded.ok) return;
     expect(loaded.value.state.operatingPayables).toEqual(state.operatingPayables);
+  });
+
+  it('round-trips a formal administration case and company status', async () => {
+    const filed = openAdministration(initializeGame(2035), 'nodeworks', 'trade-creditor-arrears');
+    expect(filed.ok).toBe(true);
+    if (!filed.ok) return;
+    const created = await createCampaignSave(filed.state, metadata, testDigest);
+    expect(created.ok).toBe(true);
+    if (!created.ok) return;
+    const decoded = decodeCampaignSaveShape(JSON.parse(serializeCampaignSave(created.value)));
+    expect(decoded.ok).toBe(true);
+    if (!decoded.ok) return;
+    expect(decoded.value.state.administrationCases).toEqual(filed.state.administrationCases);
+    expect(decoded.value.state.operatingCompanies.find((item) => item.organizationId === 'nodeworks')?.status)
+      .toBe('administration');
   });
 
   it('rejects a checksum mismatch without returning state', async () => {
