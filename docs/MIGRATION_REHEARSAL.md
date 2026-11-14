@@ -1,6 +1,6 @@
 # Migration Rehearsal — Game Foundation to Main
 
-**Status:** Non-destructive rehearsal prepared; no changes have been made to `main`.
+**Status:** Legacy snapshot archived and non-destructive rehearsal prepared; no changes have been made to `main`.
 **Source branch:** `docs/game-foundation`
 **Target branch:** `main`
 
@@ -33,7 +33,7 @@
 | `docker-publish.yml` | Existing workflow is present on both branches and remains unchanged | Main push continues publishing the image |
 | `game-engine-ci.yml` | Added on source branch; push validation plus PR validation against `main` | Keep as required pre-merge gate |
 
-The Docker build install command has been aligned with CI's legacy-peer-dependency install flags. A CI step now builds the production image and starts it briefly to verify the served HTML entry point. Treat this check as pending until the latest workflow run completes successfully.
+The Docker build install command has been aligned with CI's legacy-peer-dependency install flags. A CI step now builds the production image and starts it briefly to verify the served HTML entry point. This Docker build and HTTP smoke test passed in workflow run [43588680792](https://github.com/skrskr7799-design/Popoly/actions/runs/43588680792) on commit `ec6a6d672af425ce19372065aa5d8cfdd44c6d58`.
 
 ## 4. Validation already completed
 
@@ -47,7 +47,7 @@ The Docker build install command has been aligned with CI's legacy-peer-dependen
 
 1. Complete the latest CI run, including Docker build and container smoke test.
 2. Complete and record the browser checklist on desktop, tablet, and mobile; include the exact tested commit.
-3. Create `legacy/prototype/` from the exact pre-cutover `main` snapshot. Verify the archive is complete and independently identifiable.
+3. [x] Create `legacy/prototype/` from the exact pre-cutover `main` snapshot. Verify the archive is complete and independently identifiable.
 4. Audit imports and remove/move only the legacy source files that are no longer needed by the active app. Keep the archived copy untouched.
 5. Re-run lint, TypeScript build, all tests, Docker image build, and container smoke test on the final source commit.
 6. Open a draft PR from `docs/game-foundation` to `main` for review. Confirm the base/head SHAs, 631-commit history range, changed-file list, and that no unrelated files or workflows are lost.
@@ -58,6 +58,6 @@ The Docker build install command has been aligned with CI's legacy-peer-dependen
 
 - `main` has not been modified.
 - No pull request has been opened.
-- No legacy source files have been moved or deleted.
+- No legacy source files have been moved or deleted from `src/`; the complete original project snapshot is now safely archived under `legacy/prototype/`.
 - No Docker image has yet been deployed to the user's host.
 - Full browser checklist execution remains outstanding.
