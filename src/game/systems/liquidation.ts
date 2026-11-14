@@ -24,6 +24,7 @@ export interface LiquidationAssetRealization {
 export interface LiquidationWaterfall {
   entityId: string;
   grossAssetProceedsCents: MoneyCents;
+  cashRealizedCents: MoneyCents;
   administrationCostsCents: MoneyCents;
   securedDebtRecoveryCents: MoneyCents;
   unsecuredEstateCents: MoneyCents;
@@ -69,6 +70,8 @@ export function calculateLiquidationWaterfall(
   let administrationCostsCents = 0;
   let securedDebtRecoveryCents = 0;
   let unsecuredEstateCents = 0;
+  const cashRealizedCents = Math.max(0, state.organizations.find((item) => item.id === entityId)?.cashCents ?? 0);
+  unsecuredEstateCents += cashRealizedCents;
 
   for (const asset of assets) {
     const gross = asset.realizableValueCents;
@@ -175,6 +178,7 @@ export function calculateLiquidationWaterfall(
   return {
     entityId,
     grossAssetProceedsCents: moneyFromCents(grossAssetProceedsCents),
+    cashRealizedCents: moneyFromCents(cashRealizedCents),
     administrationCostsCents: moneyFromCents(administrationCostsCents),
     securedDebtRecoveryCents: moneyFromCents(securedDebtRecoveryCents),
     unsecuredEstateCents: moneyFromCents(unsecuredEstateCents),
