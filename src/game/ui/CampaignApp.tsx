@@ -482,6 +482,7 @@ export default function CampaignApp() {
 
       <CommandCenterBriefing state={state} report={currentReport} completedQuarters={session.completedQuarters}
         onOpenStrategy={() => setActiveView('strategy')} onOpenMarkets={() => setActiveView('markets')} />
+      {company?.status === 'liquidated' && <section className="pop-panel pop-administration pop-administration-closed"><div className="pop-finance-subtitle"><strong>Campaign concluded</strong><span className="pop-pill pop-pill-warn">Liquidation</span></div><p>NodeWorks has ceased operations. The liquidation ledger is final; quarter progression is disabled because post-insolvency group play is not yet implemented.</p><button className="pop-primary" onClick={restartCampaign}>Start a new campaign</button></section>}
 
       <section id="group-overview" className="pop-stat-grid">
         <StatCard label="MERIDIAN · CASH" value={money(holdingCash)} note={`Debt ${money(holdingDebt)}`} icon={Banknote} tone="good" />
@@ -517,7 +518,7 @@ export default function CampaignApp() {
 
           {report && <QuarterReportPanel report={report} state={state} />}
           <section id="nodeworks" className="pop-panel">
-            <SectionTitle eyebrow="OPERATING COMPANY" title="NodeWorks" right={<span className="pop-pill pop-pill-green">Controlled subsidiary</span>} />
+            <SectionTitle eyebrow="OPERATING COMPANY" title="NodeWorks" right={<span className={company?.status === 'liquidated' ? 'pop-pill pop-pill-warn' : 'pop-pill pop-pill-green'}>{company?.status === 'liquidated' ? 'Liquidated' : company?.status === 'administration' ? 'In administration' : 'Controlled subsidiary'}</span>} />
             <div className="pop-operating-summary">
               <div><span>Installed IT</span><strong>{company?.capacity.installedITMW.toFixed(1)} MW</strong></div>
               <div><span>Grid allocation</span><strong>{company?.capacity.gridAllocationMW.toFixed(1)} MW</strong></div>
