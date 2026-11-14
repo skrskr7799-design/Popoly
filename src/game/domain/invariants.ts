@@ -224,7 +224,11 @@ export function validateGameState(state: GameState): ValidationIssue[] {
             Number.isSafeInteger(item.claimAmountCents) && item.claimAmountCents >= 0 &&
             Number.isSafeInteger(item.recoveryCents) && item.recoveryCents >= 0 &&
             Number.isSafeInteger(item.shortfallCents) && item.shortfallCents >= 0 &&
-            item.recoveryCents + item.shortfallCents === item.claimAmountCents)))))) {
+            item.recoveryCents + item.shortfallCents === item.claimAmountCents) ||
+          resolution.totalCreditorClaimsCents !== resolution.distributions.reduce((sum, item) => sum + item.claimAmountCents, 0) ||
+          resolution.totalCreditorRecoveryCents !== resolution.distributions.reduce((sum, item) => sum + item.recoveryCents, 0) ||
+          resolution.grossAssetProceedsCents + resolution.cashRealizedCents - resolution.administrationCostsCents !==
+            resolution.totalCreditorRecoveryCents + resolution.shareholderResidualCents)))) {
       issues.push({ code: 'administration.case_invalid', message: 'Administration case, status, dates, or resolution ledger is invalid.', entityId: administrationCase.id });
     }
     if ((administrationCase.status === 'active' && company?.status !== 'administration') ||
