@@ -58,6 +58,9 @@ export function CorporationOverview({
   const ownershipPercent = operating && holdingStake
     ? holdingStake.shares / Math.max(1, operating.issuedShares) * 100
     : 0;
+  const votingPercent = operating && holdingStake
+    ? holdingStake.votingShares / Math.max(1, operating.issuedShares) * 100
+    : 0;
   const capacity = operating?.capacity;
   const effective = operations?.effectiveCapacityMW ?? 0;
   const delivered = operations?.deliveredWorkloadMW ?? operating?.deliveredWorkloadMW ?? 0;
@@ -112,7 +115,7 @@ export function CorporationOverview({
             <div><span>Strategic bandwidth</span><strong>{state.holding.leadershipCapacityPerQuarter} <small>units / quarter</small></strong></div>
           </div>
         </article>
-        <div className="pop-corp-ownership-link"><i /><span><strong>{ownershipPercent.toFixed(0)}%</strong> equity stake · voting control recorded separately</span><i /></div>
+        <div className="pop-corp-ownership-link"><i /><span><strong>{ownershipPercent.toFixed(0)}%</strong> equity stake · <strong>{votingPercent.toFixed(0)}%</strong> voting rights</span><i /></div>
         <article className="pop-corp-entity-card is-child">
           <div className="pop-corp-entity-head"><EntityMark /><div><span>OPERATING SUBSIDIARY</span><h3>{subsidiary?.name ?? 'NodeWorks'}</h3><small>Compute infrastructure · Customer delivery · Operations</small></div><span className="pop-corp-entity-code">NW / 01</span></div>
           <div className="pop-corp-entity-finance">
