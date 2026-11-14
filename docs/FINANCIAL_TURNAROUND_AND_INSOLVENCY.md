@@ -72,7 +72,7 @@ Do not represent trade payables as a bank loan unless the creditor and terms are
 
 The cash bridge shows cash remitted to operating creditors, newly accrued obligations, closing unpaid balances and final cash separately. Cash remains non-negative. Previously incurred trade creditors are reserved ahead of new bank debt service. Within the operating ledger, scenario-defined priority and age determine payment order; partial payments reduce the outstanding claim without erasing its history. The quarter can complete into a distressed state only if all unpaid obligations have been represented and the resulting state passes invariants.
 
-Implemented in the active branch: legal-entity operating payable state, defensive save decoding, domain invariants, deterministic priority settlement, per-entity cash isolation, cash-bridge reconciliation, reversible energy-capacity and service-reliability restrictions from overdue essential suppliers, financial-health warnings, lender underwriting penalties for unpaid/overdue trade creditors, and a finance-panel creditor ledger. Save/restore round-trip and deterministic continuation tests cover outstanding payables. A scenario-owned corporate asset register now records book value, realizable value, ownership and secured-debt links. The first liquidation calculation applies administration costs, collateral-limited secured recovery, statutory-style operating-creditor tiers, pro-rata recovery within an underfunded tier, and unsecured debt recovery without pooling assets across legal entities. This is a calculation foundation only: formal administration entry, asset-sale decisions, creditor voting/workout and campaign continuation still remain future work.
+Implemented in the active branch: legal-entity operating payable state, defensive save decoding, domain invariants, deterministic priority settlement, per-entity cash isolation, cash-bridge reconciliation, reversible energy-capacity and service-reliability restrictions from overdue essential suppliers, financial-health warnings, lender underwriting penalties for unpaid/overdue trade creditors, and a finance-panel creditor ledger. Save/restore round-trip and deterministic continuation tests cover outstanding payables. A scenario-owned corporate asset register now records book value, realizable value, ownership and secured-debt links. The first liquidation calculation applies administration costs, collateral-limited secured recovery, statutory-style operating-creditor tiers, pro-rata recovery within an underfunded tier, and unsecured debt recovery without pooling assets across legal entities. This is a calculation foundation only: asset-sale execution, creditor voting/workout and campaign continuation still remain future work. A persistent administration case can now be opened for one operating legal entity and closed through a recorded reorganization without silently changing cash, debt or trade-payable balances.
 
 ## Asset register and liquidation waterfall
 
@@ -149,7 +149,12 @@ Avoid changing the game-state schema version until the exact migration/defaultin
 - Add creditor workout milestones and save/restore coverage.
 
 ### Phase C — Administration and insolvency
-- Add formal administration/liquidation state and trigger rules.
+- [x] Add a persistent legal-entity administration case and operating-company status.
+- [x] Add explicit filing and reorganization transitions; preserve existing creditor claims and cash on reorganization.
+- [ ] Add distress-based filing eligibility and player-facing administration choices.
+- [ ] Add atomic asset realization, creditor distributions and liquidation outcome.
+- [ ] Restrict ordinary investment and new commitments while administration is active.
+- [ ] Define campaign continuation after subsidiary failure.
 - Implement claims, asset realization and priority waterfall.
 - Define campaign continuation after subsidiary failure.
 - Test solvency recovery, successful restructuring, failed workout and liquidation.
