@@ -89,6 +89,27 @@ describe('campaign save core', () => {
     expect(loaded.value.recoveredFromMigration).toBe(false);
   });
 
+  it('round-trips operating creditor balances as authoritative campaign state', async () => {
+    const state = initializeGame(2035);
+    state.operatingPayables = [{
+      id: 'nodeworks-energy-q1',
+      entityId: 'nodeworks',
+      creditorClass: 'energy',
+      originalAmountCents: 125_000_000 as never,
+      outstandingAmountCents: 75_000_000 as never,
+      incurredQuarter: 1,
+      dueQuarter: 1,
+      priority: 2,
+    }];
+    const created = await createCampaignSave(state, metadata, testDigest);
+    expect(created.ok).toBe(true);
+    if (!created.ok) return;
+    const loaded = await loadCampaignSave(serializeCampaignSave(created.value), compatibility, testDigest);
+    expect(loaded.ok).toBe(true);
+    if (!loaded.ok) return;
+    expect(loaded.value.state.operatingPayables).toEqual(state.operatingPayables);
+  });
+
   it('rejects a checksum mismatch without returning state', async () => {
     const created = await createCampaignSave(initializeGame(2035), metadata, testDigest);
     expect(created.ok).toBe(true);
