@@ -76,6 +76,7 @@ export function isGameStateShape(value: unknown): value is GameState {
         (item.resolution === undefined || (isRecord(item.resolution) &&
           isNumber(item.resolution.resolvedQuarter) &&
           isNumber(item.resolution.grossAssetProceedsCents) &&
+          isNumber(item.resolution.cashRealizedCents) &&
           isNumber(item.resolution.administrationCostsCents) &&
           isNumber(item.resolution.totalCreditorClaimsCents) &&
           isNumber(item.resolution.totalCreditorRecoveryCents) &&
