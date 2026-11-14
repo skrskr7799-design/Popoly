@@ -72,4 +72,29 @@ describe('operating payables in the quarter engine', () => {
     expect(health.status).toBe('distressed');
     expect(health.debtArrearsCents).toBe(0);
   });
+  it('reserves cash for opening trade creditors before paying bank interest', () => {
+    const opening = initializeGame(2035);
+    const oldCreditor = {
+      id: 'nodeworks-overdue-energy',
+      entityId: 'nodeworks',
+      creditorClass: 'energy' as const,
+      originalAmountCents: moneyFromCents(700_000_000),
+      outstandingAmountCents: moneyFromCents(700_000_000),
+      incurredQuarter: 1,
+      dueQuarter: 1,
+      priority: 1,
+    };
+    const state = { ...opening, operatingPayables: [oldCreditor] };
+    const result = advanceQuarter(state);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+
+    const interest = result.report.debtInterestService?.find((line) =>
+      line.borrowerId === 'nodeworks' && line.debtId === 'nodeworks-infrastructure-debt');
+    const paidOldClaim = result.state.operatingPayables?.find((item) => item.id === oldCreditor.id);
+    expect(interest?.interestPaidCents).toBe(0);
+    expect(interest?.closingInterestArrearsCents).toBeGreaterThan(0);
+    expect(paidOldClaim?.outstandingAmountCents).toBe(0);
+  });
+
 });
