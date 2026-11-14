@@ -526,7 +526,6 @@ export default function CampaignApp() {
       </div>
 
       <footer className="pop-footer"><span>POPOLY / THE COMPUTE BOTTLENECK</span><span>SIMULATION BUILD 0.1.0</span><button onClick={restartCampaign}>Restart campaign</button></footer>
-      </> : <> 
       </>}
     </main>
   </div>;
