@@ -6,6 +6,7 @@ import { advanceAutonomousActors, getRivalRenewalBid } from '../systems/actors';
 import { buildQuarterReport, type ContractNegotiationResult, type ContractRenewalResult, type CreditDecisionReportLine, type CovenantReportLine, type DebtRestructuringReportLine, type QuarterReport } from '../systems/quarterReport';
 import { calculateCreditAssessment, calculateDebtServiceObligation, calculateScenarioDebtService } from '../systems/finance';
 import { getTurnaroundAction } from '../scenario/turnaround';
+import { settleOperatingPayables } from '../systems/operatingPayables';
 
 export interface WorkloadDecision {
   companyId: string;
@@ -1480,6 +1481,64 @@ export function advanceQuarter(state: GameState, commands: QuarterCommands = {})
         ...company, cashBridge: applyProjectCashOutflow(company.cashBridge),
       }));
     }
+    // Operating expenses are recognized in full, but only cash actually
+    // remitted leaves the company. Any unpaid portion remains in the separate
+    // trade-payables ledger; this does not create bank debt or pool group cash.
+    let operatingPayables = candidate.operatingPayables ?? [];
+    const payableCashByEntity = new Map<string, number>();
+    for (const company of candidate.operatingCompanies) {
+      const companyReport = report.companies.find((item) => item.companyId === company.organizationId);
+      const bridge = report.entityCashBridges.find((item) => item.organizationId === company.organizationId);
+      if (!companyReport || !bridge) continue;
+      const operations = companyReport.operations;
+      const obligations = [
+        { id: `${company.organizationId}-payroll-q${report.quarter}`, entityId: company.organizationId,
+          creditorClass: 'payroll' as const, amountCents: company.cashCosts.operationsAndStaffingCents, dueQuarter: report.quarter, priority: 1 },
+        { id: `${company.organizationId}-energy-q${report.quarter}`, entityId: company.organizationId,
+          creditorClass: 'energy' as const, amountCents: operations.energyCostCents, dueQuarter: report.quarter, priority: 2 },
+        { id: `${company.organizationId}-maintenance-q${report.quarter}`, entityId: company.organizationId,
+          creditorClass: 'maintenance' as const, amountCents: company.cashCosts.maintenanceCents, dueQuarter: report.quarter, priority: 3 },
+        { id: `${company.organizationId}-network-q${report.quarter}`, entityId: company.organizationId,
+          creditorClass: 'network-vendor' as const, amountCents: company.cashCosts.networkAndConnectivityCents, dueQuarter: report.quarter, priority: 4 },
+        { id: `${company.organizationId}-overhead-q${report.quarter}`, entityId: company.organizationId,
+          creditorClass: 'tax-overhead' as const, amountCents: company.cashCosts.overheadComplianceInsuranceCents, dueQuarter: report.quarter, priority: 5 },
+      ].filter((item) => item.amountCents > 0);
+      const availableForOperatingCreditors = bridge.closingCashCents + operations.totalOperatingCostCents;
+      if (!Number.isSafeInteger(availableForOperatingCreditors) || availableForOperatingCreditors < 0) {
+        return { ok: false, issues: [issue(
+          'finance.cash_pre_operating_obligations_negative',
+          'The legal entity cannot cover cash already committed ahead of current operating creditors.',
+          company.organizationId,
+        )] };
+      }
+      const settlement = settleOperatingPayables(
+        operatingPayables, company.organizationId, obligations,
+        availableForOperatingCreditors, report.quarter,
+      );
+      operatingPayables = settlement.payables;
+      const paidCents = settlement.payments.reduce((sum, payment) => sum + payment.amountCents, 0);
+      const accruedCents = operations.totalOperatingCostCents;
+      const closingCashCents = settlement.cashRemainingCents;
+      payableCashByEntity.set(company.organizationId, closingCashCents);
+      const updatedBridge = {
+        ...bridge,
+        closingCashCents: moneyFromCents(closingCashCents),
+        netCashChangeCents: moneyFromCents(closingCashCents - bridge.openingCashCents),
+        operatingPayablesPaidCents: moneyFromCents(paidCents),
+        operatingPayablesAccruedCents: moneyFromCents(accruedCents),
+        operatingPayablesOutstandingCents: settlement.outstandingCents,
+      };
+      report.entityCashBridges = report.entityCashBridges.map((item) =>
+        item.organizationId === company.organizationId ? updatedBridge : item);
+      report.companies = report.companies.map((item) =>
+        item.companyId === company.organizationId ? { ...item, cashBridge: updatedBridge } : item);
+    }
+    candidate = { ...candidate, operatingPayables };
+    report.operatingPayables = operatingPayables.map((payable) => ({ ...payable }));
+    report.operatingPayablesOutstandingCents = moneyFromCents(
+      operatingPayables.reduce((sum, payable) => sum + payable.outstandingAmountCents, 0),
+    );
+
     const closingCash = new Map(report.entityCashBridges.map((bridge) => [
       bridge.organizationId, bridge.closingCashCents,
     ]));
