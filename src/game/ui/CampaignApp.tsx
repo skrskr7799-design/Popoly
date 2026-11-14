@@ -121,7 +121,7 @@ function QuarterReportPanel({ report, state }: { report: QuarterReport; state: G
   const initiativeName = (id: string) =>
     COMPUTE_BOTTLENECK_INITIATIVES.find((item) => item.id === id)?.name ?? id.replaceAll('-', ' ');
   return <section className="pop-panel pop-report">
-    <SectionTitle eyebrow="RESOLUTION" title={`${formatQuarter(report.quarter)} · Quarter review`} right={<span className="pop-pill pop-pill-green">{gameText("Resolved")}</span>} />
+    <SectionTitle eyebrow={gameText("RESOLUTION")} title={`${formatQuarter(report.quarter)} · Quarter review`} right={<span className="pop-pill pop-pill-green">{gameText("Resolved")}</span>} />
     <div className="pop-report-grid">
       <div><small>{gameText("NodeWorks revenue")}</small><strong>{money(company?.operations.revenueCents ?? 0)}</strong></div>
       <div><small>{gameText("Operating contribution")}</small><strong className={(company?.operations.operatingCashContributionCents ?? 0) >= 0 ? 'tone-good' : 'tone-warn'}>{money(company?.operations.operatingCashContributionCents ?? 0)}</strong></div>
@@ -449,9 +449,9 @@ export default function CampaignApp() {
 
     <main className="pop-main">
       <header className="pop-topbar"><div><span className="pop-eyebrow">{gameText("MERIDIAN GROUP / EXECUTIVE OFFICE")}</span><h1>{gameText(({ command: 'Command center', corporation: 'Corporate group', markets: 'Markets & intelligence', strategy: 'Quarter strategy' } as const)[activeView])}</h1></div>
-        <div className="pop-topbar-right"><span className="pop-quarter-chip">{formatQuarter(state.quarter)}</span><button type="button" className="pop-quiet-button" onClick={() => setLocale(locale === "ru" ? "en" : "ru")} aria-label="Change language">{locale === "ru" ? "EN" : "RU"}</button><span className="pop-status"><i /> {gameText(session.stage === 'guided' ? 'Guided campaign' : 'Sandbox mode')}</span><button className="pop-secondary-button" onClick={() => void saveCurrentCampaign()} disabled={storageBusy}><Banknote size={14} /> {gameText("Save")}</button><button className="pop-quiet-button" onClick={() => showStorage ? setShowStorage(false) : openArchive()}><FolderOpen size={14} /> {gameText("Archive")}</button></div>
+        <div className="pop-topbar-right"><span className="pop-quarter-chip">{formatQuarter(state.quarter)}</span><button type="button" className="pop-quiet-button" onClick={() => setLocale(locale === "ru" ? "en" : "ru")} aria-label={gameText("Change language")}>{locale === "ru" ? "EN" : "RU"}</button><span className="pop-status"><i /> {gameText(session.stage === 'guided' ? 'Guided campaign' : 'Sandbox mode')}</span><button className="pop-secondary-button" onClick={() => void saveCurrentCampaign()} disabled={storageBusy}><Banknote size={14} /> {gameText("Save")}</button><button className="pop-quiet-button" onClick={() => showStorage ? setShowStorage(false) : openArchive()}><FolderOpen size={14} /> {gameText("Archive")}</button></div>
       </header>
-      <nav className="pop-mobile-nav" aria-label="Game navigation">
+      <nav className="pop-mobile-nav" aria-label={gameText("Game navigation")}>
         <button className={activeView === 'command' ? 'active' : ''} aria-current={activeView === 'command' ? 'page' : undefined} onClick={() => setActiveView('command')}><Activity size={16} /><span>{gameText("Command")}</span></button>
         <button className={activeView === 'corporation' ? 'active' : ''} aria-current={activeView === 'corporation' ? 'page' : undefined} onClick={() => setActiveView('corporation')}><Building2 size={16} /><span>{gameText("Group")}</span></button>
         <button className={activeView === 'markets' ? 'active' : ''} aria-current={activeView === 'markets' ? 'page' : undefined} onClick={() => setActiveView('markets')}><Globe2 size={16} /><span>{gameText("Markets")}</span></button>
@@ -479,12 +479,12 @@ export default function CampaignApp() {
       <MarketsOverview state={state} report={currentReport} activityReport={report ?? undefined} />
       {storageMessage && <div className="pop-storage-message">{storageMessage}<button onClick={() => setStorageMessage(null)}>{gameText("Dismiss")}</button></div>}
       {showStorage && storagePanel}
-      <footer className="pop-footer"><span>{gameText("POPOLY / THE COMPUTE BOTTLENECK")}</span><span>MARKET INTELLIGENCE · {formatQuarter(state.quarter)}</span><button onClick={restartCampaign}>{gameText("Restart campaign")}</button></footer>
+      <footer className="pop-footer"><span>{gameText("POPOLY / THE COMPUTE BOTTLENECK")}</span><span>{gameText("MARKET INTELLIGENCE")} · {formatQuarter(state.quarter)}</span><button onClick={restartCampaign}>{gameText("Restart campaign")}</button></footer>
       </> : activeView === 'strategy' ? <>
       {company?.status === 'liquidated' ? <section className="pop-panel pop-administration pop-administration-closed"><div className="pop-finance-subtitle"><strong>{gameText("Campaign concluded")}</strong><span className="pop-pill pop-pill-warn">{gameText("Liquidation")}</span></div><p>{gameText("NodeWorks has been liquidated. The subsidiary's assets and remaining creditor claims have been resolved through the administration waterfall. Post-insolvency group operations are not yet part of this campaign.")}</p><button className="pop-primary" onClick={restartCampaign}>{gameText("Start a new campaign")}</button></section> : <QuarterStrategyOverview state={state} selected={selected} active={active} issues={issues} onToggle={toggle} onResolve={resolveQuarter} />}
       {storageMessage && <div className="pop-storage-message">{storageMessage}<button onClick={() => setStorageMessage(null)}>{gameText("Dismiss")}</button></div>}
       {showStorage && storagePanel}
-      <footer className="pop-footer"><span>{gameText("POPOLY / THE COMPUTE BOTTLENECK")}</span><span>STRATEGIC PLANNING · {formatQuarter(state.quarter)}</span><button onClick={restartCampaign}>{gameText("Restart campaign")}</button></footer>
+      <footer className="pop-footer"><span>{gameText("POPOLY / THE COMPUTE BOTTLENECK")}</span><span>{gameText("STRATEGIC PLANNING")} · {formatQuarter(state.quarter)}</span><button onClick={restartCampaign}>{gameText("Restart campaign")}</button></footer>
       </> : <>
       <section className="pop-hero pop-command-hero">
         <div className="pop-hero-copy"><span className="pop-eyebrow"><i className="pop-eyebrow-pulse" /> STRATEGIC POSITION · NORTH REGION · 2035</span><h2>{gameText("The future is")}<br /><em>{gameText("under construction.")}</em></h2>
@@ -503,8 +503,8 @@ export default function CampaignApp() {
       {company?.status === 'liquidated' && <section className="pop-panel pop-administration pop-administration-closed"><div className="pop-finance-subtitle"><strong>{gameText("Campaign concluded")}</strong><span className="pop-pill pop-pill-warn">{gameText("Liquidation")}</span></div><p>{gameText("NodeWorks has ceased operations. The liquidation ledger is final; quarter progression is disabled because post-insolvency group play is not yet implemented.")}</p><button className="pop-primary" onClick={restartCampaign}>{gameText("Start a new campaign")}</button></section>}
 
       <section id="group-overview" className="pop-stat-grid">
-        <StatCard label={gameText('MERIDIAN · CASH')} value={money(holdingCash)} note={`Debt ${money(holdingDebt)}`} icon={Banknote} tone="good" />
-        <StatCard label={gameText('NODEWORKS · CASH')} value={money(nodeworksCash)} note={`Debt ${money(nodeworksDebt)}`} icon={Building2} />
+        <StatCard label={gameText('MERIDIAN · CASH')} value={money(holdingCash)} note={`${gameText("Debt")} ${money(holdingDebt)}`} icon={Banknote} tone="good" />
+        <StatCard label={gameText('NODEWORKS · CASH')} value={money(nodeworksCash)} note={`${gameText("Debt")} ${money(nodeworksDebt)}`} icon={Building2} />
         <StatCard label={gameText('EFFECTIVE CAPACITY')} value={`${operating?.effectiveCapacityMW.toFixed(1) ?? '—'} MW`} note={`Delivered ${company?.deliveredWorkloadMW.toFixed(1) ?? '—'} MW`} icon={Gauge} />
         <StatCard label={gameText('RELIABILITY')} value={company ? formatPercent(company.capacity.reliability, 2) : '—'} note={`Utilization ${operating && operating.effectiveCapacityMW > 0 ? formatPercent(operating.deliveredWorkloadMW / operating.effectiveCapacityMW) : '—'}`} icon={ShieldCheck} tone="good" />
       </section>
@@ -607,7 +607,7 @@ export default function CampaignApp() {
         </div>
       </div>
 
-      <footer className="pop-footer"><span>{gameText("POPOLY / THE COMPUTE BOTTLENECK")}</span><span>SIMULATION BUILD 0.1.0</span><button onClick={restartCampaign}>{gameText("Restart campaign")}</button></footer>
+      <footer className="pop-footer"><span>{gameText("POPOLY / THE COMPUTE BOTTLENECK")}</span><span>{gameText("SIMULATION BUILD 0.1.0")}</span><button onClick={restartCampaign}>{gameText("Restart campaign")}</button></footer>
       </>}
     </main>
   </div>;
