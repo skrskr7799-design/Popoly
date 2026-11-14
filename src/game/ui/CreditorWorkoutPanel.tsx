@@ -41,7 +41,7 @@ export function CreditorWorkoutPanel({ state, onPropose, onFileAdministration }:
     <p className="pop-muted">{gameText("Lenders vote independently by claim value. Secured creditors must consent to changes affecting their secured portion; write-downs apply only to unsecured deficiency. Trade creditors are represented by existing payable classes. No concessions apply unless the approval threshold is reached.")}</p>
     {workouts.slice(0, 2).map((workout) => <article className="pop-loan-offer" key={workout.id}>
       <div className="pop-loan-heading">
-        <strong>{workout.status.toUpperCase()}</strong>
+        <strong>{gameText(workout.status.toUpperCase())}</strong>
         <span className="pop-pill">{formatMoney(workout.acceptedClaimsCents, true)} / {formatMoney(workout.totalClaimsCents, true)} accepted</span>
       </div>
       <div className="pop-debt-metrics">
@@ -54,7 +54,7 @@ export function CreditorWorkoutPanel({ state, onPropose, onFileAdministration }:
       {workout.debtConvertedCents !== undefined && <p className="pop-muted">{formatMoney(workout.debtConvertedCents, true)} converted into {workout.newSharesIssued?.toLocaleString()} new voting shares at a pre-money valuation of {formatMoney(workout.terms.equityPreMoneyValuationCents ?? 0, true)}.</p>}
       {workout.votes.map((vote) => <div className="pop-operating-payable" key={vote.creditorId}>
         <span>{vote.creditorId.replace('trade:', '').replaceAll('-', ' ')} · {formatMoney(vote.claimCents, true)}</span>
-        <strong>{vote.vote}</strong><small>{vote.reason}</small>
+        <strong>{gameText(vote.vote)}</strong><small>{gameText(vote.reason)}</small>
         {vote.counterTerms && <>
           <small>Counter: {vote.counterTerms.principalWriteDownBps} bps unsecured haircut · {vote.counterTerms.tradePayableWriteDownBps ?? 0} bps trade write-down · {vote.counterTerms.debtToEquityConversionBps ?? 0} bps conversion · {vote.counterTerms.standstillQuarters} quarter standstill</small>
           <button type="button" className="pop-secondary-button" onClick={() => setDraft((current) => ({
@@ -70,10 +70,10 @@ export function CreditorWorkoutPanel({ state, onPropose, onFileAdministration }:
         </>}
       </div>)}
       {workout.milestones.map((milestone) => <div className="pop-operating-payable" key={milestone.id}>
-        <span>{milestone.metric.replaceAll('-', ' ')}</span><strong>{milestone.status}</strong>
+        <span>{gameText(milestone.metric.replaceAll('-', ' '))}</span><strong>{gameText(milestone.status)}</strong>
         <small>{milestone.measuredCents === undefined ? 'Awaiting review' : formatMoney(milestone.measuredCents, true)}</small>
       </div>)}
-      {workout.resolutionNote && <p className="pop-muted">{workout.resolutionNote}</p>}
+      {workout.resolutionNote && <p className="pop-muted">{gameText(workout.resolutionNote)}</p>}
       {workout.status === 'breached' && company?.status !== 'administration' && company?.status !== 'liquidated' && <button type="button" className="pop-primary" onClick={() => onFileAdministration('creditor-workout-breach')}>{gameText("Escalate to administration")}</button>}
     </article>)}
     {!active && company?.status !== 'liquidated' && <div className="pop-credit-request">
