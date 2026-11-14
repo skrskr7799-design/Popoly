@@ -57,6 +57,12 @@ export function isGameStateShape(value: unknown): value is GameState {
       isNumber(item.quarterHours) && isNumber(item.availablePowerMW) && isNumber(item.committedPowerMW) &&
       isNumber(item.referenceEnergyPriceCentsPerMWh) && isNumber(item.immediateFirmPowerHeadroomMW) &&
       isNumber(item.equipmentDeliveryPoolMWEquivalentPerQuarter))) return false;
+  if (state.assets !== undefined && (!records(state.assets) ||
+      !state.assets.every((item) => isString(item.id) && isString(item.ownerId) &&
+        isString(item.assetClass) && isNumber(item.bookValueCents) &&
+        isNumber(item.realizableValueCents) &&
+        (item.securedDebtId === undefined || isString(item.securedDebtId)) &&
+        (item.disposedQuarter === undefined || isNumber(item.disposedQuarter))))) return false;
   if (state.operatingPayables !== undefined && (!records(state.operatingPayables) ||
       !state.operatingPayables.every((item) => isString(item.id) && isString(item.entityId) &&
         isString(item.creditorClass) && isNumber(item.originalAmountCents) &&
