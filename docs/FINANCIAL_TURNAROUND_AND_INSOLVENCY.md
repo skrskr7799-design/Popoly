@@ -169,7 +169,7 @@ Avoid changing the game-state schema version until the exact migration/defaultin
 - [x] Add deterministic workout transitions and focused domain tests.
 - [ ] Add managed multi-seed turnaround campaigns and browser-level workout walkthroughs.
 
-**Workout implementation note:** Trade creditors are represented by existing payable classes, not invented legal entities. Debt-to-equity conversion remains deferred until the scenario has a defensible enterprise/equity valuation model; no arbitrary share-conversion ratio is used.
+**Workout implementation note:** Trade creditors are represented by existing payable classes, not invented legal entities. Debt-to-equity conversion requires an explicit player-proposed pre-money equity valuation; accepted lenders receive newly issued voting shares at that price, the company’s issued-share count and ownership ledger update together, and the converted principal is removed from debt. Secured liens remain attached to any residual secured principal.
 
 ### Phase D — Validation
 - Keep the unattended seed-2035 distress boundary as a regression case: unpaid trade creditors must appear before quarter 29, with no negative cash or invalid state.

@@ -14,6 +14,7 @@ export function CreditorWorkoutPanel({ state, onPropose }: {
   const [draft, setDraft] = useState({
     standstill: '1', extension: '2', rate: '100', debtHaircut: '0', tradeHaircut: '0',
     deadline: '4', cashTarget: '0', payableCap: '5000000', arrearsCap: '1000000', waiver: false,
+    conversion: '0', equityValuation: '100000000',
   });
   const update = (key: keyof typeof draft, value: string | boolean) => setDraft((current) => ({ ...current, [key]: value }));
   const submit = () => onPropose({
@@ -28,6 +29,8 @@ export function CreditorWorkoutPanel({ state, onPropose }: {
     minimumOperatingCashContributionCents: Math.round(Number(draft.cashTarget) * 100),
     maximumOperatingPayablesCents: Math.round(Number(draft.payableCap) * 100),
     maximumDebtArrearsCents: Math.round(Number(draft.arrearsCap) * 100),
+    debtToEquityConversionBps: Number(draft.conversion),
+    ...(Number(draft.conversion) > 0 ? { equityPreMoneyValuationCents: Math.round(Number(draft.equityValuation) * 100) } : {}),
   });
 
   return <section className="pop-finance-subsection pop-creditor-workout">
@@ -42,8 +45,10 @@ export function CreditorWorkoutPanel({ state, onPropose }: {
         <span><small>Standstill</small><strong>{workout.terms.standstillQuarters} qtr</strong></span>
         <span><small>Rate reduction</small><strong>{workout.terms.interestReductionBps} bps</strong></span>
         <span><small>Debt haircut</small><strong>{workout.terms.principalWriteDownBps} bps</strong></span>
+        <span><small>Debt → equity</small><strong>{workout.terms.debtToEquityConversionBps} bps</strong></span>
         <span><small>Review deadline</small><strong>{formatQuarter(Math.max(...workout.milestones.map((item) => item.dueQuarter)))}</strong></span>
       </div>
+      {workout.debtConvertedCents !== undefined && <p className="pop-muted">{formatMoney(workout.debtConvertedCents, true)} converted into {workout.newSharesIssued?.toLocaleString()} new voting shares at a pre-money valuation of {formatMoney(workout.terms.equityPreMoneyValuationCents ?? 0, true)}.</p>}
       {workout.votes.map((vote) => <div className="pop-operating-payable" key={vote.creditorId}>
         <span>{vote.creditorId.replace('trade:', '').replaceAll('-', ' ')} · {formatMoney(vote.claimCents, true)}</span>
         <strong>{vote.vote}</strong><small>{vote.reason}</small>
@@ -56,6 +61,8 @@ export function CreditorWorkoutPanel({ state, onPropose }: {
             rate: String(vote.counterTerms!.interestReductionBps),
             debtHaircut: String(vote.counterTerms!.principalWriteDownBps),
             tradeHaircut: String(vote.counterTerms!.tradePayableWriteDownBps ?? current.tradeHaircut),
+            conversion: String(vote.counterTerms!.debtToEquityConversionBps ?? current.conversion),
+            equityValuation: String((vote.counterTerms!.equityPreMoneyValuationCents ?? 0) / 100 || current.equityValuation),
           }))}>Use this counter</button>
         </>}
       </div>)}
@@ -71,6 +78,8 @@ export function CreditorWorkoutPanel({ state, onPropose }: {
       <label><span>Interest reduction · bps</span><input type="number" min="0" max="500" step="25" value={draft.rate} onChange={(e) => update('rate', e.target.value)}/></label>
       <label><span>Unsecured principal write-down · bps</span><input type="number" min="0" max="2500" step="100" value={draft.debtHaircut} onChange={(e) => update('debtHaircut', e.target.value)}/></label>
       <label><span>Trade payable write-down · bps</span><input type="number" min="0" max="1500" step="100" value={draft.tradeHaircut} onChange={(e) => update('tradeHaircut', e.target.value)}/></label>
+      <label><span>Debt-to-equity conversion · bps</span><input type="number" min="0" max="5000" step="100" value={draft.conversion} onChange={(e) => update('conversion', e.target.value)}/></label>
+      <label><span>Pre-money equity valuation · USD</span><input type="number" min="1" step="1000000" value={draft.equityValuation} onChange={(e) => update('equityValuation', e.target.value)}/></label>
       <label><span>Recovery deadline</span><select value={draft.deadline} onChange={(e) => update('deadline', e.target.value)}>{[1,2,3,4,6,8,12].map((n) => <option key={n} value={n}>{n} quarters</option>)}</select></label>
       <label><span>Minimum operating cash contribution · USD</span><input type="number" step="100000" value={draft.cashTarget} onChange={(e) => update('cashTarget', e.target.value)}/></label>
       <label><span>Maximum trade payables · USD</span><input type="number" min="0" step="100000" value={draft.payableCap} onChange={(e) => update('payableCap', e.target.value)}/></label>
