@@ -168,8 +168,8 @@ export function FinancePanel({
       <div className="pop-liquidation-claims">
         {liquidationPreview.distributions.map((item) => <div key={`${item.claimId}:${item.claimClass}`}>
           <span>{item.claimClass.replaceAll('-', ' ')} · {item.creditorId.replace('operating-creditor:', '')}</span>
-          <b>{formatMoney(item.recoveryCents, true)} recovered</b>
-          {item.shortfallCents > 0 && <small>{formatMoney(item.shortfallCents, true)} unpaid</small>}
+          <b>{formatMoney(item.recoveryCents, true)} {gameText('recovered')}</b>
+          {item.shortfallCents > 0 && <small>{formatMoney(item.shortfallCents, true)} {gameText('unpaid')}</small>}
         </div>)}
       </div></div>}
       <p className="pop-administration-warning-copy">{gameText("Liquidation is irreversible. Assets are sold, the company stops operating, and any unpaid creditor claims remain recorded against the failed entity.")}</p>
@@ -230,7 +230,7 @@ export function FinancePanel({
         })}
       </div>
       {selectedTurnaroundActionIds.length > 0 && <p className="pop-finance-alert">
-        {selectedTurnaroundActionIds.length} turnaround program(s) selected · {selectedTurnaroundActionIds.length} leadership unit(s) committed this quarter.
+        {selectedTurnaroundActionIds.length} {gameText('turnaround program(s) selected')} · {selectedTurnaroundActionIds.length} {gameText('leadership unit(s) committed this quarter')}.
       </p>}
     </div>
 
@@ -276,7 +276,7 @@ export function FinancePanel({
             <span>{gameText(debt.covenantTerms.restrictAdditionalBorrowing ? 'Borrowing restriction applies' : 'No borrowing restriction')}</span>
           </div>}
           {(arrears > 0 || dueNow || debt.crossDefaultedByDebtId) && <div className="pop-debt-warning">
-            {arrears > 0 ? `Arrears ${formatMoney(arrears, true)} · ${debt.overdueQuarters ?? 0} overdue quarter(s)` : dueNow ? 'Principal maturity / acceleration is due this quarter.' : `Cross-default linked to ${debt.crossDefaultedByDebtId}`}
+            {arrears > 0 ? `${gameText('Arrears')} ${formatMoney(arrears, true)} · ${debt.overdueQuarters ?? 0} ${gameText('overdue quarter(s)')}` : dueNow ? gameText('Principal maturity / acceleration is due this quarter.') : `${gameText('Cross-default linked to')} ${debt.crossDefaultedByDebtId}`}
           </div>}
         </article>;
       })}
@@ -342,7 +342,7 @@ export function FinancePanel({
         </label>
         <label><span>{gameText("Term")}</span>
           <select disabled={!requestAllowed} value={creditRequest.termQuarters} onChange={(event) => onCreditRequestChange({ ...creditRequest, termQuarters: event.target.value })}>
-            {Array.from({ length: 11 }, (_, index) => index + 2).map((term) => <option key={term} value={term}>{term} quarters</option>)}
+            {Array.from({ length: 11 }, (_, index) => index + 2).map((term) => <option key={term} value={term}>{term} {gameText('quarters')}</option>)}
           </select>
         </label>
         <label className="pop-credit-collateral"><span>{gameText("Collateral description · optional")}</span>
