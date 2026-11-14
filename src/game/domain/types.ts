@@ -97,7 +97,9 @@ export interface OperatingPayable {
   priority: number;
 }
 export interface OperatingCompanyState {
-  organizationId: EntityId; issuedShares: number; capacity: InfrastructureCapacity;
+  organizationId: EntityId;
+  /** A subsidiary in administration is restricted; a liquidated entity no longer operates. */
+  status?: 'operating' | 'administration' | 'liquidated'; issuedShares: number; capacity: InfrastructureCapacity;
   deliveredWorkloadMW: number; cashCosts: OperatingCostProfile; contracts: ServiceContract[];
   /** One-time turnaround actions already implemented; prevents duplicate savings. */
   turnaroundActions?: TurnaroundActionId[];
@@ -161,10 +163,36 @@ export interface StrategicProjectState {
   leadershipCost: number;
   initialCostCents: MoneyCents;
 }
+export interface AdministrationDistribution {
+  claimId: EntityId;
+  creditorId: EntityId;
+  claimClass: 'secured-debt' | 'operating-payable' | 'unsecured-debt';
+  claimAmountCents: MoneyCents;
+  recoveryCents: MoneyCents;
+  shortfallCents: MoneyCents;
+}
+export interface AdministrationResolution {
+  resolvedQuarter: number;
+  grossAssetProceedsCents: MoneyCents;
+  administrationCostsCents: MoneyCents;
+  totalCreditorClaimsCents: MoneyCents;
+  totalCreditorRecoveryCents: MoneyCents;
+  shareholderResidualCents: MoneyCents;
+  distributions: AdministrationDistribution[];
+}
+export interface AdministrationCase {
+  id: EntityId;
+  entityId: EntityId;
+  openedQuarter: number;
+  trigger: 'voluntary' | 'debt-default' | 'trade-creditor-arrears';
+  status: 'active' | 'liquidated' | 'reorganized';
+  resolvedQuarter?: number;
+  resolution?: AdministrationResolution;
+}
 export interface GameState {
   schemaVersion: 1; scenarioId: string; scenarioVersion: string; seed: number; quarter: number;
   organizations: Organization[]; ownership: OwnershipStake[]; debts: DebtInstrument[];
   holding: HoldingState; operatingCompanies: OperatingCompanyState[];
-  regionalMarkets: RegionalMarketState[]; operatingPayables?: OperatingPayable[]; assets?: CorporateAsset[]; actors: ActorState[]; playerIntelligence: IntelligenceEstimate[]; projects: StrategicProjectState[]; equipmentOrders: EquipmentOrderState[]; lenders: LenderState[]; loanOffers: LoanOfferState[];
+  regionalMarkets: RegionalMarketState[]; operatingPayables?: OperatingPayable[]; assets?: CorporateAsset[]; administrationCases?: AdministrationCase[]; actors: ActorState[]; playerIntelligence: IntelligenceEstimate[]; projects: StrategicProjectState[]; equipmentOrders: EquipmentOrderState[]; lenders: LenderState[]; loanOffers: LoanOfferState[];
 }
 export interface ValidationIssue { code: string; message: string; entityId?: EntityId; }
