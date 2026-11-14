@@ -106,9 +106,11 @@ export function calculateLiquidationWaterfall(
       claimId: debt.id,
       creditorId: debt.lenderId ?? `lender-claim:${debt.id}`,
       claimClass: 'secured-debt',
-      claimAmountCents: moneyFromCents(originalClaim),
+      // The secured tranche is limited to realized collateral proceeds; any
+      // remaining principal is represented once in the unsecured tier below.
+      claimAmountCents: moneyFromCents(recovered),
       recoveryCents: moneyFromCents(recovered),
-      shortfallCents: moneyFromCents(originalClaim - recovered),
+      shortfallCents: moneyFromCents(0),
     });
   }
 
@@ -121,7 +123,7 @@ export function calculateLiquidationWaterfall(
     const priority = payablePriority(payable);
     unsecuredClaims.push({
       claimId: payable.id,
-      creditorId: payable.creditorClass,
+      creditorId: `operating-creditor:${payable.creditorClass}`,
       claimClass: 'operating-payable',
       amountCents: payable.outstandingAmountCents,
       priority,
