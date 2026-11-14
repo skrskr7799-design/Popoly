@@ -166,6 +166,18 @@ function applyProjectEffect(state: GameState, project: StrategicProjectState): G
 
 function validateCommands(state: GameState, commands: QuarterCommands): ValidationIssue[] {
   const issues: ValidationIssue[] = [];
+  for (const company of state.operatingCompanies.filter((item) => item.status === 'administration')) {
+    if ((commands.workloadDecisions ?? []).some((item) => item.companyId === company.organizationId)) {
+      issues.push(issue('administration.workload_restricted', 'Workload changes are suspended while the company is in administration.', company.organizationId));
+    }
+    if ((commands.requestCredit ?? []).some((item) => item.borrowerId === company.organizationId) ||
+        (commands.acceptLoanOffers ?? []).some((item) =>
+          state.loanOffers.some((offer) => offer.id === item.offerId && offer.borrowerId === company.organizationId)) ||
+        (commands.debtDrawdowns ?? []).some((item) =>
+          state.debts.some((debt) => debt.id === item.debtId && debt.borrowerId === company.organizationId))) {
+      issues.push(issue('administration.new_borrowing_restricted', 'New borrowing and facility drawdowns are suspended while the company is in administration.', company.organizationId));
+    }
+  }
   const seenCompanies = new Set<string>();
   for (const decision of commands.workloadDecisions ?? []) {
     if (seenCompanies.has(decision.companyId)) {
