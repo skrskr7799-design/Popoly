@@ -1,6 +1,7 @@
 import 'fake-indexeddb/auto';
 import { describe, expect, it } from 'vitest';
 import { initializeGame } from '../engine/initialize';
+import { moneyFromCents } from '../domain/money';
 import { advanceQuarter } from '../engine/advanceQuarter';
 import { canonicalJson } from '../persistence/canonicalJson';
 import { createCampaignSave, serializeCampaignSave } from '../persistence/save';
@@ -95,8 +96,8 @@ describe('campaign save core', () => {
       id: 'nodeworks-energy-q1',
       entityId: 'nodeworks',
       creditorClass: 'energy',
-      originalAmountCents: 125_000_000 as never,
-      outstandingAmountCents: 75_000_000 as never,
+      originalAmountCents: moneyFromCents(125_000_000),
+      outstandingAmountCents: moneyFromCents(75_000_000),
       incurredQuarter: 1,
       dueQuarter: 1,
       priority: 2,
