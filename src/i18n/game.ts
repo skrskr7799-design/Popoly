@@ -678,7 +678,22 @@ Object.assign(ru, {
 export function gameText(source: string, locale?: Locale): string {
   const activeLocale = locale ?? useI18n.getState().locale;
   if (activeLocale === 'en') return source;
-  return ru[source] ?? source;
+  const exact = ru[source];
+  if (exact) return exact;
+
+  const defaulted = source.match(/^(\\d+) debt instrument\\(s\\) are in default\\. Review the financial position before committing more capital\\.$/);
+  if (defaulted) return `${defaulted[1]} долговых обязательств находятся в дефолте. Проверьте финансовое положение, прежде чем выделять дополнительный капитал.`;
+
+  const arrears = source.match(/^(.+) in principal and interest arrears is recorded across the group\\.$/);
+  if (arrears) return `По группе зафиксирована просрочка по основному долгу и процентам на сумму ${arrears[1]}.`;
+
+  const bottleneck = source.match(/^(.+) sets the current capacity ceiling$/);
+  if (bottleneck) return `${ru[bottleneck[1]] ?? bottleneck[1]} определяет текущий предел мощности.`;
+
+  const constraint = source.match(/^NodeWorks is constrained by ([\\d.]+) MW of (.+)\\. Expansion elsewhere may not increase deliverable capacity until this ceiling moves\\.$/);
+  if (constraint) return `Мощность NodeWorks ограничена показателем «${ru[constraint[2]] ?? constraint[2]}» на уровне ${constraint[1]} МВт. Расширение других ресурсов не увеличит фактическую поставку, пока это ограничение не будет снято.`;
+
+  return source;
 }
 
 export function useGameLocale(): Locale {
