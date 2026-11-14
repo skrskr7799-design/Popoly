@@ -120,7 +120,7 @@ export function FinancePanel({
       <div className="pop-finance-summary">
         <div><span>{gameText("Operating cash contribution")}</span><strong>{formatMoney(operatingHealth.operatingCashContributionCents, true)}</strong></div>
         <div><span>{gameText("Projected closing cash")}</span><strong>{formatMoney(operatingHealth.closingCashCents, true)}</strong></div>
-        <div><span>{gameText("Cash runway")}</span><strong>{operatingHealth.cashRunwayQuarters === null ? 'Cash-positive' : `${operatingHealth.cashRunwayQuarters.toFixed(1)} qtrs`}</strong></div>
+        <div><span>{gameText("Cash runway")}</span><strong>{operatingHealth.cashRunwayQuarters === null ? gameText('Cash-positive') : `${operatingHealth.cashRunwayQuarters.toFixed(1)} ${gameText('qtrs')}`}</strong></div>
         <div><span>{gameText("Debt arrears")}</span><strong>{formatMoney(operatingHealth.debtArrearsCents, true)}</strong></div>
       </div>
       <div className="pop-finance-summary">
@@ -151,7 +151,7 @@ export function FinancePanel({
 
 
     {operatingCompany?.status === 'administration' && administrationCase && <div className="pop-finance-subsection pop-administration">
-      <div className="pop-finance-subtitle"><strong>{gameText("Formal administration")}</strong><span className="pop-pill pop-pill-warn">Active · {formatQuarter(administrationCase.openedQuarter)}</span></div>
+      <div className="pop-finance-subtitle"><strong>{gameText("Formal administration")}</strong><span className="pop-pill pop-pill-warn">{gameText('Active')} · {formatQuarter(administrationCase.openedQuarter)}</span></div>
       <p>{gameText("The company is under administrator control. New borrowing and discretionary workload changes are suspended; essential operations and approved turnaround work continue.")}</p>
       <div className="pop-administration-meta"><span>{gameText("Filing basis")}</span><strong>{administrationCase.trigger.replaceAll('-', ' ')}</strong></div>
       {reorganizationReady
@@ -181,7 +181,7 @@ export function FinancePanel({
       <button type="button" className="pop-secondary-button pop-admin-danger" onClick={() => onFileAdministration()}>{gameText("File for administration")}</button>
     </div>}
     {resolvedAdministrationCase?.status === 'liquidated' && resolvedAdministrationCase.resolution && <div className="pop-finance-subsection pop-administration pop-administration-closed">
-      <div className="pop-finance-subtitle"><strong>{gameText("NodeWorks liquidation completed")}</strong><span className="pop-pill pop-pill-warn">Closed · {formatQuarter(resolvedAdministrationCase.resolvedQuarter ?? state.quarter)}</span></div>
+      <div className="pop-finance-subtitle"><strong>{gameText("NodeWorks liquidation completed")}</strong><span className="pop-pill pop-pill-warn">{gameText('Closed')} · {formatQuarter(resolvedAdministrationCase.resolvedQuarter ?? state.quarter)}</span></div>
       <div className="pop-finance-summary">
         <div><span>{gameText("Asset proceeds")}</span><strong>{formatMoney(resolvedAdministrationCase.resolution.grossAssetProceedsCents, true)}</strong></div>
         <div><span>{gameText("Cash realized")}</span><strong>{formatMoney(resolvedAdministrationCase.resolution.cashRealizedCents, true)}</strong></div>
@@ -225,7 +225,7 @@ export function FinancePanel({
               <em>{savings}</em>
               <small className="pop-turnaround-tradeoff">Trade-off: {gameText(action.tradeoff)}</small>
             </span>
-            <span className="pop-turnaround-state">{applied ? 'Implemented' : selected ? 'Selected' : 'Available'}</span>
+            <span className="pop-turnaround-state">{gameText(applied ? 'Implemented' : selected ? 'Selected' : 'Available')}</span>
           </label>;
         })}
       </div>
@@ -242,14 +242,14 @@ export function FinancePanel({
         const debt = activeDebts.filter((item) => item.borrowerId === id)
           .reduce((sum, item) => sum + item.principalCents, 0);
         return <div className="pop-finance-entity" key={id}>
-          <div><strong>{organization.name}</strong><span>Debt {formatMoney(debt, true)}</span></div>
+          <div><strong>{organization.name}</strong><span>{gameText('Debt')} {formatMoney(debt, true)}</span></div>
           <strong>{formatMoney(organization.cashCents, true)}</strong>
         </div>;
       })}
     </div>
 
     <div className="pop-finance-subsection">
-      <div className="pop-finance-subtitle"><strong>{gameText("Debt portfolio")}</strong><small>{activeDebts.length} outstanding instrument(s)</small></div>
+      <div className="pop-finance-subtitle"><strong>{gameText("Debt portfolio")}</strong><small>{activeDebts.length} {gameText('outstanding instrument(s)')}</small></div>
       {activeDebts.map((debt) => {
         const arrears = (debt.arrearsPrincipalCents ?? 0) + (debt.arrearsInterestCents ?? 0);
         const service = calculateDebtServiceObligation(debt, state.quarter);
@@ -263,9 +263,9 @@ export function FinancePanel({
           </div>
           <div className="pop-debt-metrics">
             <span><small>{gameText("Principal")}</small><strong>{formatMoney(debt.principalCents, true)}</strong></span>
-            <span><small>{gameText("Creditor")}</small><strong>{debt.lenderId ? organizationName(debt.lenderId) : 'Unassigned'}</strong></span>
+            <span><small>{gameText("Creditor")}</small><strong>{debt.lenderId ? organizationName(debt.lenderId) : gameText('Unassigned')}</strong></span>
             <span><small>{gameText("Quarterly rate")}</small><strong>{formatPercent(debt.quarterlyInterestRate, 2)}</strong></span>
-            <span><small>{gameText("Maturity")}</small><strong>{debt.maturityQuarter === undefined ? (debt.facilityLimitCents ? 'Revolving' : 'Open') : formatQuarter(debt.maturityQuarter)}</strong></span>
+            <span><small>{gameText("Maturity")}</small><strong>{debt.maturityQuarter === undefined ? (debt.facilityLimitCents ? gameText('Revolving') : gameText('Open')) : formatQuarter(debt.maturityQuarter)}</strong></span>
             <span><small>{gameText("Debt service due")}</small><strong>{formatMoney(service, true)}</strong></span>
             <span><small>{gameText("Scheduled principal")}</small><strong>{formatMoney(debt.scheduledPrincipalCentsPerQuarter ?? 0, true)}</strong></span>
           </div>
@@ -273,7 +273,7 @@ export function FinancePanel({
           {debt.covenantTerms && <div className="pop-covenant-line">
             <span>DSCR minimum {debt.covenantTerms.minimumDebtServiceCoverage?.toFixed(2) ?? '—'}×</span>
             <span>Leverage maximum {debt.covenantTerms.maximumDebtToAnnualCashFlow?.toFixed(2) ?? '—'}×</span>
-            <span>{debt.covenantTerms.restrictAdditionalBorrowing ? 'Borrowing restriction applies' : 'No borrowing restriction'}</span>
+            <span>{gameText(debt.covenantTerms.restrictAdditionalBorrowing ? 'Borrowing restriction applies' : 'No borrowing restriction')}</span>
           </div>}
           {(arrears > 0 || dueNow || debt.crossDefaultedByDebtId) && <div className="pop-debt-warning">
             {arrears > 0 ? `Arrears ${formatMoney(arrears, true)} · ${debt.overdueQuarters ?? 0} overdue quarter(s)` : dueNow ? 'Principal maturity / acceleration is due this quarter.' : `Cross-default linked to ${debt.crossDefaultedByDebtId}`}
@@ -316,7 +316,7 @@ export function FinancePanel({
           <div className="pop-offer-terms">
             <span>DSCR ≥ {offer.covenantTerms?.minimumDebtServiceCoverage?.toFixed(2) ?? '—'}×</span>
             <span>Leverage ≤ {offer.covenantTerms?.maximumDebtToAnnualCashFlow?.toFixed(1) ?? '—'}×</span>
-            <span>{offer.crossDefaultClause ? 'Cross-default clause' : 'No cross-default clause'}</span>
+            <span>{gameText(offer.crossDefaultClause ? 'Cross-default clause' : 'No cross-default clause')}</span>
             {offer.collateralDescription && <span>Security: {offer.collateralDescription}</span>}
           </div>
           <label className={`pop-offer-accept ${blocked ? 'is-blocked' : ''}`}>
