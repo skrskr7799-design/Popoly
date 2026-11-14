@@ -59,7 +59,7 @@ export function FinancePanel({
   const operatingHealth = operatingCompany ? assessFinancialHealth(state, report, operatingCompany.organizationId) : undefined;
   const creditorPressure = report.companies.find((item) => item.companyId === operatingCompany?.organizationId)?.creditorPressure;
   const administrationCase = (state.administrationCases ?? []).find((item) => item.entityId === operatingCompany?.organizationId && item.status === 'active');
-  const reorganizationReady = !!operatingHealth && operatingHealth.status !== 'distressed' && operatingHealth.operatingPayablesCents === 0 && operatingHealth.debtArrearsCents === 0 && operatingHealth.defaultedDebtCount === 0 && operatingHealth.covenantBreachCount === 0;
+  const reorganizationReady = !!operatingHealth && operatingHealth.status === 'stable' && operatingHealth.operatingPayablesCents === 0 && operatingHealth.debtArrearsCents === 0 && operatingHealth.defaultedDebtCount === 0 && operatingHealth.covenantBreachCount === 0;
   const totalCash = borrowerIds.reduce((sum, id) =>
     sum + (organizations.find((item) => item.id === id)?.cashCents ?? 0), 0);
   const lenderResources = new Map(state.lenders.map((lender) => [
