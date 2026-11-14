@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { settleOperatingPayables } from '../systems/operatingPayables';
+import { applyOperatingCreditorPressure, settleOperatingPayables } from '../systems/operatingPayables';
+import { initializeGame } from '../engine/initialize';
 import { moneyFromCents } from '../domain/money';
 import type { OperatingPayable } from '../domain/types';
 
@@ -73,6 +74,35 @@ describe('operating payable settlement', () => {
     ]);
     expect(result.payables.find((item) => item.id === 'parent-energy')?.outstandingAmountCents).toBe(800);
     expect(result.outstandingCents).toBe(0);
+  });
+
+  it('applies reversible energy and workforce restrictions only to overdue claims', () => {
+    const company = initializeGame(2035).operatingCompanies[0]!;
+    const energy = {
+      id: 'energy-q1', entityId: company.organizationId, creditorClass: 'energy' as const,
+      originalAmountCents: moneyFromCents(100_000_000), outstandingAmountCents: moneyFromCents(100_000_000),
+      incurredQuarter: 1, dueQuarter: 1, priority: 2,
+    };
+    const payroll = {
+      id: 'payroll-q1', entityId: company.organizationId, creditorClass: 'payroll' as const,
+      originalAmountCents: moneyFromCents(100_000_000), outstandingAmountCents: moneyFromCents(100_000_000),
+      incurredQuarter: 1, dueQuarter: 2, priority: 1,
+    };
+    const pressured = applyOperatingCreditorPressure(company, [energy, payroll], 3);
+    expect(pressured.pressure.gridAllocationReductionMW).toBe(1);
+    expect(pressured.pressure.reliabilityPenalty).toBe(0.004);
+    expect(pressured.company.capacity.gridAllocationMW).toBe(company.capacity.gridAllocationMW - 1);
+    expect(pressured.company.capacity.reliability).toBeCloseTo(company.capacity.reliability - 0.004, 8);
+    expect(company.capacity.gridAllocationMW).toBe(19.9);
+    expect(company.capacity.reliability).toBe(0.995);
+
+    const cured = applyOperatingCreditorPressure(company, [], 3);
+    expect(cured.pressure).toEqual({
+      reliabilityPenalty: 0,
+      gridAllocationReductionMW: 0,
+      affectedClasses: [],
+    });
+    expect(cured.company).toBe(company);
   });
 
 });
