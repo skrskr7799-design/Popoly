@@ -80,11 +80,15 @@ function updateRenewalRiskIntelligence(state: GameState, actors: ActorState[]): 
   const relationship = customer.hiddenMetrics.relationshipScore ?? 65;
   const capacity = kestrel.hiddenMetrics.effectiveCapacityMW ?? kestrel.hiddenMetrics.effectiveCapacityMinMW ?? 0;
   const workload = kestrel.hiddenMetrics.currentWorkloadMW ?? kestrel.hiddenMetrics.deliveredWorkloadMaxMW ?? 0;
+  const replaceableFlexibleMW = customer.hiddenMetrics.kestrelFlexibleMW ?? 0;
+  // Renewal risk should reflect capacity available after Kestrel rebalances
+  // flexible customer demand, just like its actual renewal-bid calculation.
+  const fixedWorkload = Math.max(0, workload - replaceableFlexibleMW);
   const activeContractIds = new Set(nodeworks.contracts.filter((item) => item.flexibility === 'contracted').map((item) => item.id));
   const updated = state.playerIntelligence.filter((item) =>
     !item.metric.startsWith('contractRenewalRisk:') || activeContractIds.has(item.metric.slice('contractRenewalRisk:'.length)));
   for (const contract of nodeworks.contracts.filter((item) => item.flexibility === 'contracted')) {
-    const competitorCanServe = capacity - workload + 1e-9 >= contract.workloadMW;
+    const competitorCanServe = capacity - fixedWorkload + 1e-9 >= contract.workloadMW;
     const risk = Math.max(0, Math.min(100,
       50 - (relationship - 60) * 1.1 +
       (competitorCanServe ? 12 : 0) +
