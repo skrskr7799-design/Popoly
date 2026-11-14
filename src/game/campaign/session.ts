@@ -143,7 +143,9 @@ export class CampaignSession {
     if (!result.ok) return result;
 
     this.stateValue = clone(result.state);
-    this.reportValue = clone(result.report);
+    // Keep the session's planning report aligned with the new decision quarter.
+    // The resolved quarter report is returned to the caller for the review screen.
+    this.reportValue = buildQuarterReport(this.stateValue);
     return {
       ok: true,
       state: clone(result.state),
