@@ -72,6 +72,7 @@ describe('operating payables in the quarter engine', () => {
     expect(health.overdueOperatingPayablesCents).toBe(900_000);
     expect(health.status).toBe('distressed');
     expect(health.debtArrearsCents).toBe(0);
+    expect(health.reasons).toContain('Energy suppliers have restricted grid allocation because of overdue invoices.');
   });
   it('reserves cash for opening trade creditors before paying bank interest', () => {
     const opening = initializeGame(2035);
