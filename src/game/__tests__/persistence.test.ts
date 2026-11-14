@@ -1,7 +1,7 @@
 import 'fake-indexeddb/auto';
 import { describe, expect, it } from 'vitest';
 import { initializeGame } from '../engine/initialize';
-import { openAdministration } from '../systems/administration';
+import { liquidateAdministration, openAdministration } from '../systems/administration';
 import { decodeCampaignSaveShape } from '../persistence/decode';
 import { moneyFromCents } from '../domain/money';
 import { advanceQuarter } from '../engine/advanceQuarter';
@@ -126,6 +126,24 @@ describe('campaign save core', () => {
     expect(decoded.value.state.administrationCases).toEqual(filed.state.administrationCases);
     expect(decoded.value.state.operatingCompanies.find((item) => item.organizationId === 'nodeworks')?.status)
       .toBe('administration');
+  });
+
+  it('round-trips a completed liquidation and creditor distribution ledger', async () => {
+    const filed = openAdministration(initializeGame(2035), 'nodeworks', 'debt-default');
+    expect(filed.ok).toBe(true);
+    if (!filed.ok) return;
+    const liquidated = liquidateAdministration(filed.state, filed.administrationCase.id);
+    expect(liquidated.ok).toBe(true);
+    if (!liquidated.ok) return;
+    const created = await createCampaignSave(liquidated.state, metadata, testDigest);
+    expect(created.ok).toBe(true);
+    if (!created.ok) return;
+    const loaded = await loadCampaignSave(serializeCampaignSave(created.value), compatibility, testDigest);
+    expect(loaded.ok).toBe(true);
+    if (!loaded.ok) return;
+    expect(loaded.value.state).toEqual(liquidated.state);
+    expect(loaded.value.state.administrationCases?.[0].resolution?.distributions)
+      .toEqual(liquidated.administrationCase.resolution?.distributions);
   });
 
   it('rejects a checksum mismatch without returning state', async () => {
