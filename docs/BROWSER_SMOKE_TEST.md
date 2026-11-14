@@ -214,3 +214,13 @@ A manual browser check was reported by the project owner on 2026-11-14. The owne
 - **Individual case results:** Not recorded; the checklist above remains available for detailed follow-up.
 
 This is a user-reported exploratory check, not a claim that every BS-01–BS-25 case was executed. Re-run targeted cases after material UI, campaign-flow, or persistence changes.
+
+
+## 11. Markets & Intelligence destination
+
+### BS-26 — Dedicated market intelligence view
+- [ ] Pass  [ ] Fail  [ ] Blocked
+- **Steps:** Open Markets & Intelligence from desktop and mobile navigation. Inspect regional power, equipment throughput, contracted workload, actor profiles, intelligence ranges, confidence/freshness, and recent world activity. Advance a disposable campaign by one quarter and inspect the updated report signals.
+- **Expected:** The destination renders as a distinct strategy-game screen, not a dashboard continuation. Regional values match the authoritative scenario state. External actor information is sourced only from `playerIntelligence`; hidden actor metrics are never displayed. Known, reported, estimated, and unknown information remain visually distinguishable. Empty activity and missing-intelligence states remain understandable. No horizontal overflow or clipped content at 390 px, 768 px, and 1280 px.
+- **Actual result / evidence:**
+
