@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { CampaignSession, GUIDED_CAMPAIGN_QUARTERS } from '../campaign/session';
 import { IndexedDbCampaignSaveRepository } from '../persistence/indexedDbRepository';
 import type { MoneyCents } from '../domain/types';
+import { IndexedDbCampaignSaveRepository } from '../persistence/indexedDbRepository';
 
 function fixedClock() {
   let tick = Date.parse('2035-01-01T00:00:00.000Z');
@@ -113,7 +114,8 @@ describe('CampaignSession', () => {
     expect(result.ok).toBe(false);
     if (!result.ok) expect(result.error.code).toBe('campaign.repository_unavailable');
   });
-}
+});
+
   it('restores an active creditor workout and continues with identical outcomes', async () => {
     const repository = new IndexedDbCampaignSaveRepository({
       databaseName: 'popoly-session-workout-restore',
