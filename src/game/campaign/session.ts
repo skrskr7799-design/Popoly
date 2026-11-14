@@ -5,6 +5,7 @@ import { COMPUTE_BOTTLENECK_SCENARIO_ID, COMPUTE_BOTTLENECK_SCENARIO_VERSION } f
 import { buildQuarterReport, type QuarterReport } from '../systems/quarterReport';
 import { validateGameState } from '../domain/invariants';
 import { assessFinancialHealth } from '../systems/financialHealth';
+import { advanceCreditorWorkouts, proposeCreditorWorkout, type CreditorWorkoutProposal, type CreditorWorkoutResult } from '../systems/creditorWorkout';
 import { openAdministration as fileAdministration, reorganizeAdministration as completeReorganization, liquidateAdministration as executeLiquidation, type AdministrationTrigger, type AdministrationTransitionResult } from '../systems/administration';
 import { createCampaignSave } from '../persistence/save';
 import { restoreCampaign } from '../persistence/restore';
@@ -145,15 +146,14 @@ export class CampaignSession {
     const result = resolveQuarter(this.stateValue, commands);
     if (!result.ok) return result;
 
-    this.stateValue = clone(result.state);
+    const workoutState = advanceCreditorWorkouts(result.state, result.report);
+    const workoutIssues = validateGameState(workoutState);
+    if (workoutIssues.length > 0) return { ok: false, issues: workoutIssues };
+    this.stateValue = clone(workoutState);
     // Keep the session's planning report aligned with the new decision quarter.
     // The resolved quarter report is returned to the caller for the review screen.
     this.reportValue = buildQuarterReport(this.stateValue);
-    return {
-      ok: true,
-      state: clone(result.state),
-      report: clone(result.report),
-    };
+    return { ok: true, state: clone(workoutState), report: clone(result.report) };
   }
 
   /** Open a formal administration case without changing cash or creditor balances. */
@@ -176,6 +176,12 @@ export class CampaignSession {
     if (!administrationCase || administrationCase.status !== 'active') {
       return { ok: false, code: 'administration.case_not_active', message: 'Only an active administration case can be reorganized.' };
     }
+    const unresolvedWorkout = (this.stateValue.creditorWorkouts ?? []).find((item) =>
+      item.entityId === administrationCase.entityId && (item.status === 'active' || item.status === 'breached'));
+    if (unresolvedWorkout) return {
+      ok: false, code: 'administration.workout_unresolved',
+      message: 'The creditor workout must complete its recovery milestones before administration can close.',
+    };
     const health = assessFinancialHealth(this.stateValue, this.reportValue, administrationCase.entityId);
     if (!health || health.status !== 'stable' || health.operatingPayablesCents > 0 ||
         health.debtArrearsCents > 0 || health.defaultedDebtCount > 0 || health.covenantBreachCount > 0) {
@@ -189,6 +195,20 @@ export class CampaignSession {
     const issues = validateGameState(result.state);
     if (issues.length > 0) return {
       ok: false, code: 'administration.state_invalid',
+      message: issues.map((item) => item.message).join(' '),
+    };
+    this.stateValue = clone(result.state);
+    this.reportValue = buildQuarterReport(this.stateValue);
+    return { ...result, state: clone(result.state) };
+  }
+
+  /** Submit a coordinated workout; votes and approved concessions commit atomically. */
+  proposeCreditorWorkout(proposal: CreditorWorkoutProposal): CreditorWorkoutResult {
+    const result = proposeCreditorWorkout(this.stateValue, proposal);
+    if (!result.ok) return result;
+    const issues = validateGameState(result.state);
+    if (issues.length > 0) return {
+      ok: false, code: 'workout.state_invalid',
       message: issues.map((item) => item.message).join(' '),
     };
     this.stateValue = clone(result.state);

@@ -58,6 +58,7 @@ interface ResolvedDebtRepayment extends DebtRepaymentCommand {
 function getScheduledDebtRepayments(state: GameState): ResolvedDebtRepayment[] {
   return state.debts.reduce<ResolvedDebtRepayment[]>((repayments, debt) => {
     if (debt.principalCents <= 0) return repayments;
+    if ((debt.paymentStandstillThroughQuarter ?? 0) >= state.quarter) return repayments;
     if (debt.acceleratedAtQuarter !== undefined && debt.acceleratedAtQuarter <= state.quarter) {
       repayments.push({ debtId: debt.id, principalCents: debt.principalCents, repaymentType: 'acceleration' });
       return repayments;
@@ -999,7 +1000,8 @@ export function advanceQuarter(state: GameState, commands: QuarterCommands = {})
       const openingArrears = debt.arrearsInterestCents ?? 0;
       const totalDue = openingArrears + accrued;
       let available = availableByBorrower.get(debt.borrowerId) ?? 0;
-      const paid = Math.min(Math.max(0, available), totalDue);
+      const standstillActive = (debt.paymentStandstillThroughQuarter ?? 0) >= report.quarter;
+      const paid = standstillActive ? 0 : Math.min(Math.max(0, available), totalDue);
       const closingArrears = totalDue - paid;
       available -= paid;
       if (paid > 0) {

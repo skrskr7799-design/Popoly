@@ -443,5 +443,71 @@ export function validateGameState(state: GameState): ValidationIssue[] {
     }
   }
 
+  const workoutIds = new Set<string>();
+  const activeWorkoutEntities = new Set<string>();
+  for (const debt of state.debts) {
+    if (debt.paymentStandstillThroughQuarter !== undefined &&
+        (!Number.isInteger(debt.paymentStandstillThroughQuarter) || debt.paymentStandstillThroughQuarter < 1)) {
+      issues.push({ code: 'finance.payment_standstill_invalid', message: 'Payment standstill must end in a valid campaign quarter.', entityId: debt.id });
+    }
+  }
+  for (const workout of state.creditorWorkouts ?? []) {
+    const companyExists = state.operatingCompanies.some((item) => item.organizationId === workout.entityId);
+    const voteIds = new Set<string>();
+    const milestoneIds = new Set<string>();
+    const totalVotes = workout.votes.reduce((sum, item) => sum + item.claimCents, 0);
+    const acceptedVotes = workout.votes.filter((item) => item.vote === 'accepted').reduce((sum, item) => sum + item.claimCents, 0);
+    const terms = workout.terms;
+    const invalidTerms = !Number.isSafeInteger(terms.standstillQuarters) || terms.standstillQuarters < 0 || terms.standstillQuarters > 4 ||
+      !Number.isSafeInteger(terms.maturityExtensionQuarters) || terms.maturityExtensionQuarters < 0 || terms.maturityExtensionQuarters > 12 ||
+      !Number.isSafeInteger(terms.interestReductionBps) || terms.interestReductionBps < 0 || terms.interestReductionBps > 500 ||
+      !Number.isSafeInteger(terms.principalWriteDownBps) || terms.principalWriteDownBps < 0 || terms.principalWriteDownBps > 2500 ||
+      !Number.isSafeInteger(terms.tradePayableWriteDownBps) || terms.tradePayableWriteDownBps < 0 || terms.tradePayableWriteDownBps > 1500 ||
+      typeof terms.covenantWaiver !== 'boolean';
+    const invalidVotes = workout.votes.some((vote) => {
+      const duplicate = voteIds.has(vote.creditorId); voteIds.add(vote.creditorId);
+      return duplicate || !vote.creditorId.trim() || !['lender', 'trade-creditor-class'].includes(vote.creditorKind) ||
+        !['accepted', 'countered', 'rejected'].includes(vote.vote) ||
+        !Number.isSafeInteger(vote.claimCents) || vote.claimCents <= 0 ||
+        !Number.isSafeInteger(vote.securedClaimCents) || vote.securedClaimCents < 0 ||
+        vote.securedClaimCents > vote.claimCents || typeof vote.reason !== 'string' ||
+        (vote.counterTerms !== undefined && (!Number.isSafeInteger(vote.counterTerms.principalWriteDownBps) ||
+          !Number.isSafeInteger(vote.counterTerms.interestReductionBps) ||
+          !Number.isSafeInteger(vote.counterTerms.maturityExtensionQuarters) ||
+          !Number.isSafeInteger(vote.counterTerms.standstillQuarters) ||
+          (vote.counterTerms.tradePayableWriteDownBps !== undefined && !Number.isSafeInteger(vote.counterTerms.tradePayableWriteDownBps))));
+    });
+    const invalidMilestones = workout.milestones.some((milestone) => {
+      const duplicate = milestoneIds.has(milestone.id); milestoneIds.add(milestone.id);
+      return duplicate || !milestone.id.trim() ||
+        !['operating-cash-contribution', 'operating-payables', 'debt-arrears'].includes(milestone.metric) ||
+        !Number.isSafeInteger(milestone.targetCents) || !Number.isInteger(milestone.dueQuarter) ||
+        milestone.dueQuarter < workout.openedQuarter || !['pending', 'met', 'missed'].includes(milestone.status) ||
+        (milestone.measuredCents !== undefined && !Number.isSafeInteger(milestone.measuredCents)) ||
+        (milestone.assessedQuarter !== undefined && (!Number.isInteger(milestone.assessedQuarter) ||
+          milestone.assessedQuarter < workout.openedQuarter || milestone.assessedQuarter > state.quarter));
+    });
+    const duplicateActive = workout.status === 'active' && activeWorkoutEntities.has(workout.entityId);
+    if (workout.status === 'active') activeWorkoutEntities.add(workout.entityId);
+    if (workoutIds.has(workout.id) || !workout.id.trim() || !companyExists ||
+        !Number.isInteger(workout.openedQuarter) || workout.openedQuarter < 1 || workout.openedQuarter > state.quarter ||
+        !['active', 'completed', 'rejected', 'breached', 'withdrawn'].includes(workout.status) ||
+        invalidTerms || invalidVotes || invalidMilestones || duplicateActive ||
+        !Number.isSafeInteger(workout.totalClaimsCents) || workout.totalClaimsCents <= 0 ||
+        !Number.isSafeInteger(workout.acceptedClaimsCents) || workout.acceptedClaimsCents < 0 ||
+        workout.acceptedClaimsCents > workout.totalClaimsCents ||
+        totalVotes !== workout.totalClaimsCents || acceptedVotes !== workout.acceptedClaimsCents ||
+        !Number.isInteger(workout.approvalThresholdBps) || workout.approvalThresholdBps < 1 || workout.approvalThresholdBps > 10_000 ||
+        (workout.status === 'active' && (workout.effectiveQuarter === undefined || workout.completedQuarter !== undefined || workout.breachedQuarter !== undefined)) ||
+        (workout.status === 'completed' && (!Number.isInteger(workout.completedQuarter) || !workout.milestones.every((item) => item.status === 'met'))) ||
+        (workout.status === 'breached' && (!Number.isInteger(workout.breachedQuarter) || !workout.milestones.some((item) => item.status === 'missed'))) ||
+        (workout.effectiveQuarter !== undefined && (!Number.isInteger(workout.effectiveQuarter) || workout.effectiveQuarter < workout.openedQuarter || workout.effectiveQuarter > state.quarter)) ||
+        (workout.completedQuarter !== undefined && (workout.completedQuarter < workout.openedQuarter || workout.completedQuarter > state.quarter)) ||
+        (workout.breachedQuarter !== undefined && (workout.breachedQuarter < workout.openedQuarter || workout.breachedQuarter > state.quarter))) {
+      issues.push({ code: 'finance.creditor_workout_invalid', message: 'Creditor workout, votes, terms, milestones or lifecycle dates are invalid.', entityId: workout.id });
+    }
+    workoutIds.add(workout.id);
+  }
+
   return issues;
 }

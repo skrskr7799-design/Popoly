@@ -199,6 +199,7 @@ export interface CreditorWorkoutCounterTerms {
   interestReductionBps: number;
   maturityExtensionQuarters: number;
   standstillQuarters: number;
+  tradePayableWriteDownBps?: number;
 }
 export interface CreditorWorkoutVote {
   creditorId: EntityId;

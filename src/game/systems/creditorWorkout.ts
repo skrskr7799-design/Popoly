@@ -133,6 +133,7 @@ export function proposeCreditorWorkout(state: GameState, input: CreditorWorkoutP
       : debt.maturityQuarter;
     return {
       ...debt, principalCents: moneyFromCents(debt.principalCents - writeDown),
+      arrearsPrincipalCents: moneyFromCents(Math.min(debt.arrearsPrincipalCents ?? 0, debt.principalCents - writeDown)),
       quarterlyInterestRate: Math.max(0, debt.quarterlyInterestRate - terms.interestReductionBps / 10_000),
       ...(maturityQuarter !== undefined ? { maturityQuarter } : {}),
       ...(terms.standstillQuarters > 0 ? { paymentStandstillThroughQuarter: state.quarter + terms.standstillQuarters - 1 } : {}),

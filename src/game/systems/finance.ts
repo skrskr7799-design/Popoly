@@ -24,6 +24,7 @@ export interface CreditAssessment {
 
 export function calculateDebtServiceObligation(debt: DebtInstrument, quarter: number): number {
   if (debt.paymentStatus === 'settled' || (debt.covenantStartQuarter ?? 1) > quarter) return 0;
+  if ((debt.paymentStandstillThroughQuarter ?? 0) >= quarter) return 0;
   const principal = Math.max(0, debt.principalCents);
   const interestDue = Math.round(principal * debt.quarterlyInterestRate) + (debt.arrearsInterestCents ?? 0);
   const principalDue = principal <= 0 ? 0

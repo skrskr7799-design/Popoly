@@ -34,7 +34,8 @@ export function isGameStateShape(value: unknown): value is GameState {
       isNumber(item.shares) && isNumber(item.votingShares))) return false;
   if (!state.debts.every((item) => isString(item.id) && isString(item.borrowerId) &&
       isNumber(item.principalCents) && isNumber(item.quarterlyInterestRate) &&
-      hasOptionalRecord(item, 'covenantTerms'))) return false;
+      hasOptionalRecord(item, 'covenantTerms') &&
+      (item.paymentStandstillThroughQuarter === undefined || isNumber(item.paymentStandstillThroughQuarter)))) return false;
 
   const holding = state.holding;
   if (!isString(holding.organizationId) || !isNumber(holding.leadershipCapacityPerQuarter) ||
@@ -86,6 +87,25 @@ export function isGameStateShape(value: unknown): value is GameState {
             isString(distribution.creditorId) && isString(distribution.claimClass) &&
             isNumber(distribution.claimAmountCents) && isNumber(distribution.recoveryCents) &&
             isNumber(distribution.shortfallCents))))))) return false;
+  if (state.creditorWorkouts !== undefined && (!records(state.creditorWorkouts) ||
+      !state.creditorWorkouts.every((item) => isString(item.id) && isString(item.entityId) &&
+        isNumber(item.openedQuarter) && isString(item.status) && isRecord(item.terms) &&
+        isNumber(item.terms.standstillQuarters) && isNumber(item.terms.maturityExtensionQuarters) &&
+        isNumber(item.terms.interestReductionBps) && isNumber(item.terms.principalWriteDownBps) &&
+        isNumber(item.terms.tradePayableWriteDownBps) && typeof item.terms.covenantWaiver === 'boolean' &&
+        isNumber(item.totalClaimsCents) && isNumber(item.acceptedClaimsCents) &&
+        isNumber(item.approvalThresholdBps) && records(item.votes) &&
+        item.votes.every((vote) => isString(vote.creditorId) && isString(vote.creditorKind) &&
+          isNumber(vote.claimCents) && isNumber(vote.securedClaimCents) && isString(vote.vote) &&
+          isString(vote.reason) && (vote.counterTerms === undefined || isRecord(vote.counterTerms))) &&
+        records(item.milestones) && item.milestones.every((milestone) => isString(milestone.id) &&
+          isString(milestone.metric) && isNumber(milestone.targetCents) && isNumber(milestone.dueQuarter) &&
+          isString(milestone.status) && (milestone.measuredCents === undefined || isNumber(milestone.measuredCents)) &&
+          (milestone.assessedQuarter === undefined || isNumber(milestone.assessedQuarter))) &&
+        (item.effectiveQuarter === undefined || isNumber(item.effectiveQuarter)) &&
+        (item.completedQuarter === undefined || isNumber(item.completedQuarter)) &&
+        (item.breachedQuarter === undefined || isNumber(item.breachedQuarter)) &&
+        (item.resolutionNote === undefined || isString(item.resolutionNote))))) return false;
   if (!state.actors.every((item) => isString(item.organizationId) && isStringArray(item.goals) &&
       isRecord(item.hiddenMetrics) && Object.values(item.hiddenMetrics).every(isNumber))) return false;
   if (!state.playerIntelligence.every((item) => isString(item.subjectId) && isString(item.metric) &&
