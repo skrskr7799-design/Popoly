@@ -1061,6 +1061,34 @@ describe('autonomous world simulation', () => {
     expect(publicAction?.summary).not.toMatch(/[0-9]/);
   });
 
+  it('rewards cheaper and more reliable suppliers with a larger flexible-demand share', () => {
+    const allocate = (price: number, reliability: number) => {
+      const state = initializeGame(2035);
+      state.actors = state.actors.map((actor) => actor.organizationId === 'kestrel-compute'
+        ? { ...actor, hiddenMetrics: {
+          ...actor.hiddenMetrics,
+          effectiveCapacityMW: 24,
+          currentWorkloadMW: 21,
+          priceCentsPerMWQuarter: price,
+          reliability,
+        } }
+        : actor);
+      return advanceAutonomousActors(state).state.actors
+        .find((actor) => actor.organizationId === 'asterion-ai')!.hiddenMetrics.kestrelFlexibleMW!;
+    };
+
+    const baseline = allocate(40_500_000, 0.975);
+    const cheaper = allocate(38_000_000, 0.975);
+    const moreExpensive = allocate(44_000_000, 0.975);
+    const moreReliable = allocate(40_500_000, 0.99);
+    const lessReliable = allocate(40_500_000, 0.94);
+
+    expect(cheaper).toBeGreaterThan(baseline);
+    expect(moreExpensive).toBeLessThan(baseline);
+    expect(moreReliable).toBeGreaterThan(baseline);
+    expect(lessReliable).toBeLessThan(baseline);
+  });
+
   it('makes a capacity-constrained Kestrel protect price rather than chase volume', () => {
     const state = initializeGame(2035);
     state.actors = state.actors.map((actor) => actor.organizationId === 'kestrel-compute'
