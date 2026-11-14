@@ -150,9 +150,9 @@ describe('operating turnaround actions', () => {
     if (!result.ok) return;
     const company = result.state.operatingCompanies.find((item) => item.organizationId === 'nodeworks')!;
     const organization = result.state.organizations.find((item) => item.id === 'nodeworks')!;
-    expect(company.cashCosts.operationsAndStaffingCents).toBe(Math.round(openingCompany.cashCosts.operationsAndStaffingCents * 0.75));
-    expect(company.cashCosts.maintenanceCents).toBe(Math.round(openingCompany.cashCosts.maintenanceCents * 0.7));
-    expect(company.capacity.reliability).toBeCloseTo(openingCompany.capacity.reliability - 0.016, 8);
+    expect(company.cashCosts.operationsAndStaffingCents).toBe(Math.round(openingCompany.cashCosts.operationsAndStaffingCents * 0.7));
+    expect(company.cashCosts.maintenanceCents).toBe(Math.round(openingCompany.cashCosts.maintenanceCents * 0.6));
+    expect(company.capacity.reliability).toBeCloseTo(openingCompany.capacity.reliability - 0.003, 8);
     expect(organization.reputation).toBeLessThanOrEqual(openingOrganization.reputation - 1);
     expect(company.turnaroundActions).toEqual(['workforce-reset', 'maintenance-deferral']);
     expect(result.report.companies[0]!.operations.totalOperatingCostCents)
@@ -286,6 +286,34 @@ describe('long-horizon economic stress boundary', () => {
     expect(operations.operatingCashContributionCents).toBeLessThan(0);
     expect(operations.totalOperatingCostCents).toBeGreaterThan(operations.revenueCents);
     expect(validateGameState(state)).toEqual([]);
+  });
+});
+
+describe('managed long-horizon economic stability', () => {
+  it('can sustain a 12-year run when management responds with a full turnaround plan', () => {
+    let state = initializeGame(2035);
+    const actions = [
+      'workforce-reset',
+      'maintenance-deferral',
+      'vendor-renegotiation',
+      'facility-consolidation',
+    ] as const;
+
+    for (let turn = 0; turn < 48; turn += 1) {
+      const result = advanceQuarter(state, turn === 0 ? {
+        turnaroundActions: actions.map((actionId) => ({ companyId: 'nodeworks', actionId })),
+      } : {});
+      expect(result.ok, result.ok ? undefined : JSON.stringify(result.issues)).toBe(true);
+      if (!result.ok) return;
+      state = result.state;
+      expect(state.quarter).toBe(turn + 2);
+      expect(validateGameState(state)).toEqual([]);
+      expect(state.organizations.every((item) => item.cashCents >= 0 && item.debtCents >= 0)).toBe(true);
+    }
+
+    const company = state.operatingCompanies.find((item) => item.organizationId === 'nodeworks')!;
+    expect(company.turnaroundActions).toHaveLength(4);
+    expect(state.quarter).toBe(50);
   });
 });
 
