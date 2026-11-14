@@ -2,6 +2,7 @@ import type { GameState, TurnaroundActionId } from '../domain/types';
 import type { QuarterReport } from '../systems/quarterReport';
 import { calculateDebtServiceObligation } from '../systems/finance';
 import { assessFinancialHealth } from '../systems/financialHealth';
+import { calculateLiquidationWaterfall } from '../systems/liquidation';
 import { COMPUTE_BOTTLENECK_TURNAROUND_ACTIONS } from '../scenario/turnaround';
 import { formatMoney, formatPercent, formatQuarter } from './format';
 
@@ -17,7 +18,7 @@ const statusLabel = (status: string | undefined) => {
 export function FinancePanel({
   state, report, selectedOfferIds, onToggleOffer,
   creditRequest, onCreditRequestChange, selectedTurnaroundActionIds, onToggleTurnaroundAction,
-  onFileAdministration, onReorganizeAdministration,
+  onFileAdministration, onReorganizeAdministration, onLiquidateAdministration,
 }: {
   state: GameState;
   report: QuarterReport;
@@ -29,6 +30,7 @@ export function FinancePanel({
   onToggleTurnaroundAction: (actionId: TurnaroundActionId) => void;
   onFileAdministration: () => void;
   onReorganizeAdministration: (caseId: string) => void;
+  onLiquidateAdministration: (caseId: string) => void;
 }) {
   const organizations = state.organizations;
   const organizationName = (id: string) => organizations.find((item) => item.id === id)?.name ?? id;
@@ -60,6 +62,9 @@ export function FinancePanel({
   const creditorPressure = report.companies.find((item) => item.companyId === operatingCompany?.organizationId)?.creditorPressure;
   const administrationCase = (state.administrationCases ?? []).find((item) => item.entityId === operatingCompany?.organizationId && item.status === 'active');
   const reorganizationReady = !!operatingHealth && operatingHealth.status === 'stable' && operatingHealth.operatingPayablesCents === 0 && operatingHealth.debtArrearsCents === 0 && operatingHealth.defaultedDebtCount === 0 && operatingHealth.covenantBreachCount === 0;
+  const liquidationPreview = administrationCase && operatingCompany
+    ? calculateLiquidationWaterfall(state, operatingCompany.organizationId) : undefined;
+  const resolvedAdministrationCase = (state.administrationCases ?? []).find((item) => item.entityId === operatingCompany?.organizationId && item.status !== 'active');
   const totalCash = borrowerIds.reduce((sum, id) =>
     sum + (organizations.find((item) => item.id === id)?.cashCents ?? 0), 0);
   const lenderResources = new Map(state.lenders.map((lender) => [
@@ -146,11 +151,32 @@ export function FinancePanel({
       {reorganizationReady
         ? <button type="button" className="pop-primary" onClick={() => onReorganizeAdministration(administrationCase.id)}>Complete creditor reorganization</button>
         : <p className="pop-muted">Reorganization is not yet viable. Clear operating payables and debt arrears, restore operating cash flow, and resolve defaults or covenant breaches.</p>}
+      {liquidationPreview && <div className="pop-liquidation-preview">
+        <strong>Liquidation estimate</strong>
+        <div><span>Asset proceeds</span><b>{formatMoney(liquidationPreview.grossAssetProceedsCents, true)}</b></div>
+        <div><span>Company cash added to estate</span><b>{formatMoney(liquidationPreview.cashRealizedCents, true)}</b></div>
+        <div><span>Administration costs</span><b>−{formatMoney(liquidationPreview.administrationCostsCents, true)}</b></div>
+        <div><span>Creditor recovery</span><b>{formatMoney(liquidationPreview.totalCreditorRecoveryCents, true)}</b></div>
+        <div><span>Unpaid creditor claims</span><b>{formatMoney(liquidationPreview.totalCreditorClaimsCents - liquidationPreview.totalCreditorRecoveryCents, true)}</b></div>
+        <div><span>Shareholder residual</span><b>{formatMoney(liquidationPreview.shareholderResidualCents, true)}</b></div>
+      </div>
+      <p className="pop-administration-warning-copy">Liquidation is irreversible. Assets are sold, the company stops operating, and any unpaid creditor claims remain recorded against the failed entity.</p>
+      <button type="button" className="pop-secondary-button pop-admin-danger" onClick={() => onLiquidateAdministration(administrationCase.id)}>Liquidate NodeWorks</button>
     </div>}
     {operatingCompany?.status !== 'administration' && operatingCompany?.status !== 'liquidated' && operatingHealth?.status === 'distressed' && !administrationCase && <div className="pop-finance-subsection pop-administration pop-administration-warning">
       <div className="pop-finance-subtitle"><strong>Creditor protection may be required</strong><span className="pop-pill pop-pill-warn">Distressed</span></div>
       <p>NodeWorks is in financial distress. Filing opens a formal administration case; it does not erase debt or transfer Meridian Group's cash to the subsidiary.</p>
       <button type="button" className="pop-secondary-button pop-admin-danger" onClick={onFileAdministration}>File for administration</button>
+    </div>}
+    {resolvedAdministrationCase?.status === 'liquidated' && resolvedAdministrationCase.resolution && <div className="pop-finance-subsection pop-administration pop-administration-closed">
+      <div className="pop-finance-subtitle"><strong>NodeWorks liquidation completed</strong><span className="pop-pill pop-pill-warn">Closed · {formatQuarter(resolvedAdministrationCase.resolvedQuarter ?? state.quarter)}</span></div>
+      <div className="pop-finance-summary">
+        <div><span>Asset proceeds</span><strong>{formatMoney(resolvedAdministrationCase.resolution.grossAssetProceedsCents, true)}</strong></div>
+        <div><span>Cash realized</span><strong>{formatMoney(resolvedAdministrationCase.resolution.cashRealizedCents, true)}</strong></div>
+        <div><span>Creditor recovery</span><strong>{formatMoney(resolvedAdministrationCase.resolution.totalCreditorRecoveryCents, true)}</strong></div>
+        <div><span>Shareholder residual</span><strong>{formatMoney(resolvedAdministrationCase.resolution.shareholderResidualCents, true)}</strong></div>
+      </div>
+      <p>All remaining assets have been disposed. Creditor shortfalls remain recorded; the subsidiary is no longer operating.</p>
     </div>}
     {ownedAssets.length > 0 && <div className="pop-finance-subsection pop-asset-position">
       <div className="pop-finance-subtitle"><strong>NodeWorks asset base</strong><small>Indicative scenario valuations</small></div>
