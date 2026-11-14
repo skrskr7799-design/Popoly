@@ -26,3 +26,18 @@ jobs:
         run: npm run build
       - name: Game engine tests
         run: npm test
+      - name: Build production Docker image
+        run: docker build --pull=false -t popoly:ci .
+      - name: Smoke-test production container
+        run: |
+          docker run --detach --name popoly-ci -p 127.0.0.1:3847:3000 popoly:ci
+          trap 'docker stop popoly-ci >/dev/null 2>&1 || true' EXIT
+          for attempt in $(seq 1 20); do
+            if curl --fail --silent http://127.0.0.1:3847/ > /tmp/popoly.html; then
+              break
+            fi
+            sleep 1
+          done
+          test -s /tmp/popoly.html
+          grep -q '<div id="root"></div>' /tmp/popoly.html
+          grep -q '/assets/.*\.js' /tmp/popoly.html
