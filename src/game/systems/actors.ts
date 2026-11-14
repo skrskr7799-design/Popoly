@@ -244,7 +244,12 @@ export function getRivalRenewalBid(state: GameState, contract: GameState['operat
   if (!kestrel) return undefined;
   const capacity = kestrel.hiddenMetrics.effectiveCapacityMW ?? kestrel.hiddenMetrics.effectiveCapacityMinMW ?? 0;
   const workload = kestrel.hiddenMetrics.currentWorkloadMW ?? kestrel.hiddenMetrics.deliveredWorkloadMaxMW ?? 0;
-  if (capacity - workload + 1e-9 < contract.workloadMW) return undefined;
+  const replaceableFlexibleMW = state.actors.find((actor) => actor.organizationId === 'asterion-ai')
+    ?.hiddenMetrics.kestrelFlexibleMW ?? 0;
+  // Kestrel can rebalance its existing flexible allocation when bidding for
+  // a guaranteed contract; only fixed workload should consume bid capacity.
+  const fixedWorkload = Math.max(0, workload - replaceableFlexibleMW);
+  if (capacity - fixedWorkload + 1e-9 < contract.workloadMW) return undefined;
   const roll = actorRandom(state, `kestrel-renewal-${contract.id}`);
   const discount = 0.04 + roll * 0.025;
   return {
@@ -350,7 +355,11 @@ export function advanceAutonomousActors(
       const kestrel = kestrelIndex >= 0 ? actors[kestrelIndex]! : undefined;
       const kestrelCapacity = kestrel?.hiddenMetrics.effectiveCapacityMW ?? kestrel?.hiddenMetrics.effectiveCapacityMinMW ?? 0;
       const kestrelWorkload = kestrel?.hiddenMetrics.currentWorkloadMW ?? 0;
-      const transferred = Math.min(expiredNodeWorksMW, Math.max(0, kestrelCapacity - kestrelWorkload));
+      const replaceableFlexibleMW = customer.hiddenMetrics.kestrelFlexibleMW ?? 0;
+      const kestrelFixedWorkload = Math.max(0, kestrelWorkload - replaceableFlexibleMW);
+      // Flexible demand is reallocated immediately after expiry, so it must
+      // not block the fixed-volume transfer before that reallocation occurs.
+      const transferred = Math.min(expiredNodeWorksMW, Math.max(0, kestrelCapacity - kestrelFixedWorkload));
       actors[customerIndex] = { ...customer, hiddenMetrics: {
         ...customer.hiddenMetrics, nodeworksContractMW: nodeworksFixed,
         kestrelContractMW: (customer.hiddenMetrics.kestrelContractMW ?? 0) + transferred,
