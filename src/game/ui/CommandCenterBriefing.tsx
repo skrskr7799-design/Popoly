@@ -104,7 +104,7 @@ export function CommandCenterBriefing({
             </div>
           </div>
           <div className="pop-command-situation-footer">
-            <span>{activeProjects} strategic project(s) in progress</span>
+            <span>{activeProjects} {gameText('strategic project(s) in progress')}</span>
             <button type="button" onClick={onOpenStrategy}>{gameText("Review priorities")} <ArrowRight size={14} /></button>
           </div>
         </article>
@@ -114,27 +114,27 @@ export function CommandCenterBriefing({
             icon={Zap}
             label={gameText("Firm power headroom")}
             value={market ? `${market.immediateFirmPowerHeadroomMW.toFixed(1)} MW` : '—'}
-            detail={market ? `${gameText(market.name)} · {gameText('available for new allocation')}` : 'Regional data unavailable'}
+            detail={market ? `${gameText(market.name)} · ${gameText('available for new allocation')}` : gameText('Regional data unavailable')}
             tone={market && market.immediateFirmPowerHeadroomMW <= 1 ? 'warn' : 'neutral'}
           />
           <Signal
             icon={Gauge}
             label={gameText("NodeWorks utilization")}
             value={operations ? `${Math.round(utilization * 100)}%` : '—'}
-            detail={operations ? `${operations.deliveredWorkloadMW.toFixed(1)} of ${operations.effectiveCapacityMW.toFixed(1)} MW effective capacity` : 'Operating report unavailable'}
+            detail={operations ? `${operations.deliveredWorkloadMW.toFixed(1)} of ${operations.effectiveCapacityMW.toFixed(1)} MW ${gameText('effective capacity')}` : gameText('Operating report unavailable')}
             tone={!operations ? 'neutral' : utilization >= 0.9 ? 'warn' : 'good'}
           />
           <Signal
             icon={Cpu}
             label={gameText("Equipment pipeline")}
-            value={reservedOrders.length ? `${reservedMW.toFixed(1)} MW-eq` : 'No reservations'}
-            detail={reservedOrders.length ? `${reservedOrders.length} reserved order(s) awaiting delivery` : 'No reserved deliveries in the pipeline'}
+            value={reservedOrders.length ? `${reservedMW.toFixed(1)} MW-eq` : gameText('No reservations')}
+            detail={reservedOrders.length ? `${reservedOrders.length} reserved order(s) awaiting delivery`  : gameText('No reserved deliveries in the pipeline')}
           />
           <Signal
             icon={arrears > 0 ? AlertTriangle : Banknote}
             label={gameText("Financial pressure")}
-            value={arrears > 0 ? formatMoney(arrears) : 'No arrears'}
-            detail={defaultedDebts > 0 ? `${defaultedDebts} defaulted instrument(s)` : arrears > 0 ? 'Recorded principal and interest arrears' : 'No overdue principal or interest'}
+            value={arrears > 0 ? formatMoney(arrears) : gameText('No arrears')}
+            detail={defaultedDebts > 0 ? `${defaultedDebts} ${gameText('defaulted instrument(s)')}` : arrears > 0 ? 'Recorded principal and interest arrears' : gameText('No overdue principal or interest')}
             tone={defaultedDebts > 0 ? 'critical' : arrears > 0 ? 'warn' : 'good'}
           />
         </div>
@@ -144,7 +144,7 @@ export function CommandCenterBriefing({
         <div className="pop-command-timeline">
           <div className="pop-command-lower-heading">
             <div><span className="pop-command-kicker">{gameText("CAMPAIGN ARC")}</span><strong>{gameText("The first eight quarters")}</strong></div>
-            <span>{Math.min(completedQuarters, OPENING_QUARTERS)} / {OPENING_QUARTERS} complete</span>
+            <span>{Math.min(completedQuarters, OPENING_QUARTERS)} / {OPENING_QUARTERS} {gameText('complete')}</span>
           </div>
           <div className="pop-quarter-track" aria-label={`${Math.min(completedQuarters, OPENING_QUARTERS)} of eight opening quarters complete`}>
             {Array.from({ length: OPENING_QUARTERS }, (_, index) => {
