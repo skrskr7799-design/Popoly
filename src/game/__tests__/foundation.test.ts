@@ -133,6 +133,54 @@ describe('autonomous customer allocation', () => {
   });
 });
 
+describe('long-horizon economic stability', () => {
+  it('keeps autonomous markets, operating cash flow, and debt ledgers valid over twelve simulated years', () => {
+    for (const seed of [2035, 2041]) {
+      let state = initializeGame(seed);
+      const openingQuarter = state.quarter;
+      const observedEnergyPrices: number[] = [];
+      const observedDemand: number[] = [];
+      const observedCash: number[] = [];
+
+      for (let turn = 0; turn < 48; turn += 1) {
+        const result = advanceQuarter(state);
+        expect(result.ok, `seed ${seed}, quarter ${state.quarter}`).toBe(true);
+        if (!result.ok) break;
+
+        state = result.state;
+        expect(state.quarter).toBe(openingQuarter + turn + 1);
+        expect(validateGameState(state)).toEqual([]);
+        expect(state.organizations.every((item) =>
+          Number.isFinite(item.cashCents) && Number.isFinite(item.debtCents) &&
+          Math.abs(item.cashCents) < 1e15 && item.debtCents >= 0,
+        )).toBe(true);
+        expect(state.debts.every((item) =>
+          Number.isFinite(item.principalCents) && item.principalCents >= 0 &&
+          Number.isFinite(item.arrearsInterestCents ?? 0) &&
+          Number.isFinite(item.arrearsPrincipalCents ?? 0),
+        )).toBe(true);
+        expect(result.report.companies.every((item) =>
+          Number.isFinite(item.operations.revenueCents) &&
+          Number.isFinite(item.operations.totalOperatingCostCents) &&
+          Number.isFinite(item.operations.operatingCashContributionCents),
+        )).toBe(true);
+
+        const market = state.regionalMarkets[0]!;
+        const customer = state.actors.find((item) => item.organizationId === 'asterion-ai')!;
+        observedEnergyPrices.push(market.referenceEnergyPriceCentsPerMWh);
+        observedDemand.push(customer.hiddenMetrics.demandMW ?? 0);
+        observedCash.push(state.organizations.find((item) => item.id === 'nodeworks')!.cashCents);
+      }
+
+      expect(state.quarter).toBe(openingQuarter + 48);
+      expect(observedEnergyPrices).toHaveLength(48);
+      expect(observedDemand[47]).toBeGreaterThan(observedDemand[0]!);
+      expect(observedEnergyPrices.every((value) => Number.isFinite(value) && value > 0)).toBe(true);
+      expect(observedCash.every((value) => Number.isFinite(value))).toBe(true);
+    }
+  });
+});
+
 describe('explicit debt principal repayments', () => {
   it("repays principal from the borrower's own cash and leaves current-quarter interest unchanged", () => {
     const state = initializeGame();
