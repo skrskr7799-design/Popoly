@@ -249,6 +249,10 @@ button { font: inherit; }
 }
 
 
+.pop-financial-health { padding: 14px; border: 1px solid rgba(239, 183, 126, .18); border-radius: 9px; background: linear-gradient(120deg, rgba(30, 39, 47, .72), rgba(15, 27, 37, .72)); }
+.pop-financial-health .pop-finance-summary { margin: 10px 0 0; background: rgba(5, 13, 22, .42); }
+.pop-financial-health-reasons { display: grid; gap: 6px; margin: 12px 0 0; padding-left: 17px; color: #d7ad83; font-size: 9px; line-height: 1.5; }
+.pop-financial-health-reasons li::marker { color: #e7a96f; }
 .pop-finance-panel { margin-top: 14px; }
 .pop-finance-summary { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 9px; margin: 15px 0 18px; padding: 13px; border: 1px solid #263545; border-radius: 8px; background: #0c1520; }
 .pop-finance-summary span,.pop-finance-summary strong { display: block; }
