@@ -29,6 +29,45 @@ describe('coordinated creditor workouts', () => {
     expect(validateGameState(result.state)).toEqual([]);
   });
 
+  it('applies approved lender terms and trade-class compromises to their own claims', () => {
+    const opening = initializeGame(2035);
+    const withTradeClaim = {
+      ...opening,
+      operatingPayables: [{
+        id: 'nodeworks-energy-q1', entityId: 'nodeworks', creditorClass: 'energy' as const,
+        originalAmountCents: 1_000_000, outstandingAmountCents: 1_000_000,
+        incurredQuarter: 1, dueQuarter: 1, priority: 2,
+      }],
+    };
+    const openingDebt = withTradeClaim.debts.find((item) => item.borrowerId === 'nodeworks')!;
+    const result = proposeCreditorWorkout(withTradeClaim, {
+      ...plan, interestReductionBps: 100, tradePayableWriteDownBps: 500,
+    });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.workout.status).toBe('active');
+    expect(result.workout.votes.every((vote) => vote.vote === 'accepted')).toBe(true);
+    const amendedDebt = result.state.debts.find((item) => item.id === openingDebt.id)!;
+    expect(amendedDebt.quarterlyInterestRate).toBeCloseTo(openingDebt.quarterlyInterestRate - 0.01);
+    expect(amendedDebt.paymentStandstillThroughQuarter).toBe(opening.quarter);
+    expect(result.state.operatingPayables?.[0]?.outstandingAmountCents).toBe(950_000);
+    expect(result.state.organizations.find((item) => item.id === 'nodeworks')?.debtCents)
+      .toBe(result.state.debts.filter((item) => item.borrowerId === 'nodeworks').reduce((sum, item) => sum + item.principalCents, 0));
+    expect(validateGameState(result.state)).toEqual([]);
+  });
+
+  it('returns creditor counter-terms when the requested relief exceeds a lender policy', () => {
+    const opening = initializeGame(2035);
+    const result = proposeCreditorWorkout(opening, {
+      ...plan, standstillQuarters: 4, maturityExtensionQuarters: 9,
+      interestReductionBps: 400, principalWriteDownBps: 1_500,
+    });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.workout.status).toBe('rejected');
+    expect(result.workout.votes.some((vote) => vote.vote === 'countered' && vote.counterTerms !== undefined)).toBe(true);
+  });
+
   it('records rejection without applying unapproved debt or payable relief', () => {
     const opening = initializeGame(2035);
     const debtBefore = opening.debts.map((item) => [item.id, item.principalCents, item.quarterlyInterestRate]);

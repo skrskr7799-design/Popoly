@@ -59,7 +59,7 @@ export function CreditorWorkoutPanel({ state, onPropose }: {
       <label><span>Payment standstill</span><select value={draft.standstill} onChange={(e) => update('standstill', e.target.value)}>{[0,1,2,3,4].map((n) => <option key={n} value={n}>{n} quarters</option>)}</select></label>
       <label><span>Maturity extension</span><select value={draft.extension} onChange={(e) => update('extension', e.target.value)}>{[0,1,2,3,4,6,8,12].map((n) => <option key={n} value={n}>{n} quarters</option>)}</select></label>
       <label><span>Interest reduction · bps</span><input type="number" min="0" max="500" step="25" value={draft.rate} onChange={(e) => update('rate', e.target.value)}/></label>
-      <label><span>Principal write-down · bps</span><input type="number" min="0" max="2500" step="100" value={draft.debtHaircut} onChange={(e) => update('debtHaircut', e.target.value)}/></label>
+      <label><span>Unsecured principal write-down · bps</span><input type="number" min="0" max="2500" step="100" value={draft.debtHaircut} onChange={(e) => update('debtHaircut', e.target.value)}/></label>
       <label><span>Trade payable write-down · bps</span><input type="number" min="0" max="1500" step="100" value={draft.tradeHaircut} onChange={(e) => update('tradeHaircut', e.target.value)}/></label>
       <label><span>Recovery deadline</span><select value={draft.deadline} onChange={(e) => update('deadline', e.target.value)}>{[1,2,3,4,6,8,12].map((n) => <option key={n} value={n}>{n} quarters</option>)}</select></label>
       <label><span>Minimum operating cash contribution · USD</span><input type="number" step="100000" value={draft.cashTarget} onChange={(e) => update('cashTarget', e.target.value)}/></label>
