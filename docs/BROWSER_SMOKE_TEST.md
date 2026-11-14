@@ -202,3 +202,15 @@ Test the main dashboard, initiative area, contract portfolio, finance panel, qua
 - Follow-up issue references:
 
 **Exit criterion:** The browser smoke test is complete only after the critical launch, quarter-resolution, contract/finance, save/restore, JSON transfer, and responsive cases have been executed in a real browser. Record blocked cases explicitly; do not infer a pass from automated tests.
+
+## 10. Initial manual browser pass (2026-11-14)
+
+A manual browser check was reported by the project owner on 2026-11-14. The owner reported that the application looked good overall and no issues had been noticed at the time of testing.
+
+- **Outcome:** Initial manual pass; no visible defects reported.
+- **Browser / version:** Not recorded.
+- **OS / device / viewport:** Not recorded.
+- **Exact commit tested:** Not confirmed.
+- **Individual case results:** Not recorded; the checklist above remains available for detailed follow-up.
+
+This is a user-reported exploratory check, not a claim that every BS-01–BS-25 case was executed. Re-run targeted cases after material UI, campaign-flow, or persistence changes.
