@@ -2019,6 +2019,31 @@ describe('quarter funding and debt-service invariants', () => {
     expect(assessment?.debtServiceCoverage).toBeCloseTo(0.5, 6);
   });
 
+  it('reduces credit capacity when trade creditors remain unpaid or overdue', () => {
+    const opening = initializeGame(2035);
+    const baseline = calculateCreditAssessment(opening, 'nodeworks', moneyFromCents(53_000_000))!;
+    const distressed = {
+      ...opening,
+      quarter: 2,
+      operatingPayables: [{
+        id: 'nodeworks-energy-q1',
+        entityId: 'nodeworks',
+        creditorClass: 'energy' as const,
+        originalAmountCents: moneyFromCents(200_000_000),
+        outstandingAmountCents: moneyFromCents(200_000_000),
+        incurredQuarter: 1,
+        dueQuarter: 1,
+        priority: 2,
+      }],
+    };
+    const assessment = calculateCreditAssessment(distressed, 'nodeworks', moneyFromCents(53_000_000))!;
+    expect(assessment.operatingPayablesCents).toBe(200_000_000);
+    expect(assessment.overdueOperatingPayablesCents).toBe(200_000_000);
+    expect(assessment.cashFlowAfterOperatingPayablesCents).toBe(-147_000_000);
+    expect(assessment.debtServiceCoverage).toBeLessThan(baseline.debtServiceCoverage);
+    expect(assessment.score).toBeLessThan(baseline.score);
+  });
+
   it('rejects negative cash balances and non-finite reputation values in persisted state', () => {
     const state = initializeGame();
     state.organizations = state.organizations.map((organization) => organization.id === 'nodeworks'
