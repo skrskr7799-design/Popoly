@@ -177,7 +177,7 @@ export class CampaignSession {
       return { ok: false, code: 'administration.case_not_active', message: 'Only an active administration case can be reorganized.' };
     }
     const health = assessFinancialHealth(this.stateValue, this.reportValue, administrationCase.entityId);
-    if (!health || health.status === 'distressed' || health.operatingPayablesCents > 0 ||
+    if (!health || health.status !== 'stable' || health.operatingPayablesCents > 0 ||
         health.debtArrearsCents > 0 || health.defaultedDebtCount > 0 || health.covenantBreachCount > 0) {
       return {
         ok: false, code: 'administration.reorganization_not_viable',
