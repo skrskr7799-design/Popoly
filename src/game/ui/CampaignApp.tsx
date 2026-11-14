@@ -6,7 +6,7 @@ import {
 } from 'lucide-react';
 import { CampaignSession, GUIDED_CAMPAIGN_QUARTERS } from '../campaign/session';
 import { COMPUTE_BOTTLENECK_INITIATIVES, type StrategicInitiativeDefinition } from '../scenario/initiatives';
-import type { GameState, ValidationIssue } from '../domain/types';
+import type { GameState, TurnaroundActionId, ValidationIssue } from '../domain/types';
 import type { QuarterReport } from '../systems/quarterReport';
 import { formatMillions, formatMoney, formatPercent, formatQuarter } from './format';
 import { IndexedDbCampaignSaveRepository } from '../persistence/indexedDbRepository';
@@ -147,6 +147,7 @@ export default function CampaignApp() {
   const [session, setSession] = useState<CampaignSession | null>(null);
   const [activeView, setActiveView] = useState<'command' | 'corporation' | 'markets' | 'strategy'>('command');
   const [selected, setSelected] = useState<string[]>([]);
+  const [selectedTurnaroundActions, setSelectedTurnaroundActions] = useState<TurnaroundActionId[]>([]);
   const [renewalDrafts, setRenewalDrafts] = useState<Record<string, ContractRenewalDraft>>({});
   const [selectedLoanOffers, setSelectedLoanOffers] = useState<string[]>([]);
   const [creditRequest, setCreditRequest] = useState({
@@ -165,6 +166,7 @@ export default function CampaignApp() {
     setSession(next);
     setActiveView('command');
     setSelected([]);
+    setSelectedTurnaroundActions([]);
     setRenewalDrafts({});
     setSelectedLoanOffers([]);
     setCreditRequest({ borrowerId: 'nodeworks', amountDollars: '', termQuarters: '4', collateral: '' });
@@ -355,6 +357,7 @@ export default function CampaignApp() {
   const resolveQuarter = () => {
     const result = session.advance({
       launchInitiatives: selected,
+      turnaroundActions: selectedTurnaroundActions.map((actionId) => ({ companyId: 'nodeworks', actionId })),
       contractRenewals: renewalCommands,
       acceptLoanOffers: selectedLoanOffers.map((offerId) => ({ offerId })),
       requestCredit: creditRequests,
@@ -493,6 +496,9 @@ export default function CampaignApp() {
               current.includes(offerId) ? current.filter((id) => id !== offerId) : [...current, offerId])}
             creditRequest={creditRequest}
             onCreditRequestChange={setCreditRequest}
+            selectedTurnaroundActionIds={selectedTurnaroundActions}
+            onToggleTurnaroundAction={(actionId) => setSelectedTurnaroundActions((current) =>
+              current.includes(actionId) ? current.filter((id) => id !== actionId) : [...current, actionId])}
           />
         </div>
 
