@@ -52,6 +52,7 @@ describe('coordinated creditor workouts', () => {
     const amendedDebt = result.state.debts.find((item) => item.id === openingDebt.id)!;
     expect(amendedDebt.quarterlyInterestRate).toBeCloseTo(openingDebt.quarterlyInterestRate - 0.01);
     expect(amendedDebt.paymentStandstillThroughQuarter).toBe(opening.quarter);
+    expect(amendedDebt.maturityQuarter).toBe(openingDebt.maturityQuarter);
     expect(result.state.operatingPayables?.[0]?.outstandingAmountCents).toBe(950_000);
     expect(result.state.organizations.find((item) => item.id === 'nodeworks')?.debtCents)
       .toBe(result.state.debts.filter((item) => item.borrowerId === 'nodeworks').reduce((sum, item) => sum + item.principalCents, 0));
@@ -166,6 +167,18 @@ describe('coordinated creditor workouts', () => {
     expect(loaded.value.state.creditorWorkouts).toEqual(proposed.state.creditorWorkouts);
     expect(loaded.value.state.debts).toEqual(proposed.state.debts);
     expect(validateGameState(loaded.value.state)).toEqual([]);
+  });
+
+  it('rejects workouts when an outstanding debt has no identified lender', () => {
+    const opening = initializeGame(2035);
+    const state = {
+      ...opening,
+      debts: opening.debts.map((debt) => debt.borrowerId === 'nodeworks'
+        ? { ...debt, lenderId: undefined } : debt),
+    };
+    expect(proposeCreditorWorkout(state, plan)).toMatchObject({
+      ok: false, code: 'workout.creditor_unrepresented',
+    });
   });
 
   it('keeps creditor claims scoped to the borrower entity', () => {

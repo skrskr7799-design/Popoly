@@ -19,11 +19,11 @@ const validBps = (value: number) => Number.isSafeInteger(value) && value >= 0 &&
 function creditorClaims(state: GameState, entityId: string) {
   const claims = new Map<string, { creditorId: string; creditorKind: 'lender' | 'trade-creditor-class'; claimCents: number; securedClaimCents: number }>();
   for (const debt of state.debts) {
-    if (debt.borrowerId !== entityId || debt.principalCents <= 0 || !debt.lenderId) continue;
+    if (debt.borrowerId !== entityId || debt.principalCents + (debt.arrearsInterestCents ?? 0) + (debt.arrearsPrincipalCents ?? 0) <= 0 || !debt.lenderId) continue;
     const current = claims.get(debt.lenderId) ?? { creditorId: debt.lenderId, creditorKind: 'lender' as const, claimCents: 0, securedClaimCents: 0 };
     current.claimCents += debt.principalCents + (debt.arrearsInterestCents ?? 0) + (debt.arrearsPrincipalCents ?? 0);
     if ((state.assets ?? []).some((asset) => asset.ownerId === entityId && asset.securedDebtId === debt.id && asset.disposedQuarter === undefined)) {
-      current.securedClaimCents += debt.principalCents;
+      current.securedClaimCents += debt.principalCents + (debt.arrearsInterestCents ?? 0) + (debt.arrearsPrincipalCents ?? 0);
     }
     claims.set(debt.lenderId, current);
   }
@@ -48,16 +48,17 @@ function voteForCreditor(state: GameState, creditor: ReturnType<typeof creditorC
   const lender = state.lenders.find((item) => item.organizationId === creditor.creditorId);
   const base = { ...creditor, claimCents: moneyFromCents(creditor.claimCents), securedClaimCents: moneyFromCents(creditor.securedClaimCents) };
   if (!lender) return { ...base, vote: 'rejected', reason: 'No active lender profile represents this claim.' };
+  const effectiveHaircut = creditor.securedClaimCents >= creditor.claimCents ? 0 : terms.principalWriteDownBps;
   const haircutLimit = lender.riskAppetite === 'conservative' ? 300 : lender.riskAppetite === 'balanced' ? 700 : 1_200;
   const rateLimit = lender.riskAppetite === 'conservative' ? 100 : lender.riskAppetite === 'balanced' ? 200 : 350;
   const extensionLimit = lender.riskAppetite === 'conservative' ? 3 : lender.riskAppetite === 'balanced' ? 5 : 8;
   const standstillLimit = lender.riskAppetite === 'conservative' ? 1 : lender.riskAppetite === 'balanced' ? 2 : 3;
-  const exceeds = terms.principalWriteDownBps > haircutLimit || terms.interestReductionBps > rateLimit ||
+  const exceeds = effectiveHaircut > haircutLimit || terms.interestReductionBps > rateLimit ||
     terms.maturityExtensionQuarters > extensionLimit || terms.standstillQuarters > standstillLimit;
-  const farBeyond = terms.principalWriteDownBps > haircutLimit + 800 || terms.interestReductionBps > rateLimit + 200 ||
+  const farBeyond = effectiveHaircut > haircutLimit + 800 || terms.interestReductionBps > rateLimit + 200 ||
     terms.maturityExtensionQuarters > extensionLimit + 3 || terms.standstillQuarters > standstillLimit + 1;
   const counterTerms = {
-    ...terms, principalWriteDownBps: Math.min(terms.principalWriteDownBps, haircutLimit),
+    ...terms, principalWriteDownBps: Math.min(effectiveHaircut, haircutLimit),
     interestReductionBps: Math.min(terms.interestReductionBps, rateLimit),
     maturityExtensionQuarters: Math.min(terms.maturityExtensionQuarters, extensionLimit),
     standstillQuarters: Math.min(terms.standstillQuarters, standstillLimit),
@@ -90,6 +91,10 @@ export function proposeCreditorWorkout(state: GameState, input: CreditorWorkoutP
       input.maximumOperatingPayablesCents < 0 || input.maximumDebtArrearsCents < 0) {
     return fail('workout.terms_invalid', 'Workout terms or recovery milestones are outside supported limits.');
   }
+  const unrepresentedDebt = state.debts.find((debt) => debt.borrowerId === input.entityId &&
+    debt.principalCents + (debt.arrearsInterestCents ?? 0) + (debt.arrearsPrincipalCents ?? 0) > 0 && !debt.lenderId);
+  if (unrepresentedDebt) return fail('workout.creditor_unrepresented',
+    'Every outstanding debt instrument must identify its legal lender before a coordinated workout can proceed.');
   const creditors = creditorClaims(state, input.entityId);
   const totalClaims = creditors.reduce((sum, item) => sum + item.claimCents, 0);
   if (totalClaims <= 0) return fail('workout.no_creditors', 'There are no outstanding represented creditor claims to negotiate.');
@@ -130,8 +135,8 @@ export function proposeCreditorWorkout(state: GameState, input: CreditorWorkoutP
     const secured = (state.assets ?? []).some((asset) => asset.ownerId === input.entityId &&
       asset.securedDebtId === debt.id && asset.disposedQuarter === undefined);
     const writeDown = secured ? 0 : Math.floor(debt.principalCents * terms.principalWriteDownBps / 10_000);
-    const maturityQuarter = terms.maturityExtensionQuarters > 0
-      ? Math.max(debt.maturityQuarter ?? state.quarter + 4, state.quarter) + terms.maturityExtensionQuarters
+    const maturityQuarter = terms.maturityExtensionQuarters > 0 && debt.maturityQuarter !== undefined
+      ? debt.maturityQuarter + terms.maturityExtensionQuarters
       : debt.maturityQuarter;
     return {
       ...debt, principalCents: moneyFromCents(debt.principalCents - writeDown),
