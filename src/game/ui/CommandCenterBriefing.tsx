@@ -45,10 +45,10 @@ export function CommandCenterBriefing({
   const capacity = company?.capacity;
   const ceilings = capacity ? [
     { label: 'Installed IT', value: capacity.installedITMW },
-    { label: 'Grid allocation', value: capacity.gridAllocationMW },
-    { label: 'Equipment', value: capacity.commissionedEquipmentMW },
-    { label: 'Operational limit', value: capacity.operationalLimitMW },
-  ].concat(operations ? [{ label: 'Reliability-adjusted capacity', value: operations.effectiveCapacityMW }] : [])
+    { label: gameText('Grid allocation'), value: capacity.gridAllocationMW },
+    { label: gameText('Equipment'), value: capacity.commissionedEquipmentMW },
+    { label: gameText('Operational limit'), value: capacity.operationalLimitMW },
+  ].concat(operations ? [{ label: gameText('Reliability-adjusted capacity'), value: operations.effectiveCapacityMW }] : [])
     .sort((a, b) => a.value - b.value) : [];
   const bottleneck = ceilings[0];
   const utilization = operations && operations.effectiveCapacityMW > 0
@@ -99,8 +99,8 @@ export function CommandCenterBriefing({
           <div className="pop-command-situation-body">
             <div className="pop-command-situation-mark"><RadioTower size={22} /></div>
             <div>
-              <h3>{situationTitle}</h3>
-              <p>{situationDetail}</p>
+              <h3>{gameText(situationTitle)}</h3>
+              <p>{gameText(situationDetail)}</p>
             </div>
           </div>
           <div className="pop-command-situation-footer">
@@ -114,7 +114,7 @@ export function CommandCenterBriefing({
             icon={Zap}
             label={gameText("Firm power headroom")}
             value={market ? `${market.immediateFirmPowerHeadroomMW.toFixed(1)} MW` : '—'}
-            detail={market ? `${market.name} · available for new allocation` : 'Regional data unavailable'}
+            detail={market ? `${gameText(market.name)} · {gameText('available for new allocation')}` : 'Regional data unavailable'}
             tone={market && market.immediateFirmPowerHeadroomMW <= 1 ? 'warn' : 'neutral'}
           />
           <Signal
@@ -176,7 +176,7 @@ export function CommandCenterBriefing({
           </div>
           <div className="pop-command-world-note">
             <Activity size={14} />
-            <span>{actorActions.length ? actorActions[0].summary : 'No new external actor activity is recorded in this quarter’s report.'}</span>
+            <span>{actorActions.length ? gameText(actorActions[0].summary) : gameText('No new external actor activity is recorded in this quarter’s report.')}</span>
           </div>
         </div>
       </div>
