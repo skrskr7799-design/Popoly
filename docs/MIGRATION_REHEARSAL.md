@@ -8,8 +8,8 @@
 ## 1. Repository snapshot
 
 - Target `main` HEAD: `3c8c1183490562111f820dafd602eca18826df11`.
-- Candidate snapshot validated in push and PR CI: `ae46c48b8b75af3f786f534ebdf9730aa3587475`.
-- GitHub compare reports source branch **649 commits ahead, 0 behind**, across **111 changed files**.
+- Candidate snapshot validated in push and PR CI: `442d76f44b0a3df92900f45bd41127880ba486a0`.
+- GitHub compare reports source branch **over 650 commits ahead, 0 behind**, across **111 changed files**.
 - The PR is open, draft, and currently reported mergeable. It is not merged.
 - The source branch is ahead of the current target without target-only commits to reconcile. The history range is large; review the complete PR commit/file list before choosing the final merge strategy.
 - No merge, force-push, branch deletion, or change to `main` is part of this rehearsal.
@@ -36,9 +36,9 @@
 | `docker-publish.yml` | Existing workflow is present on both branches and remains unchanged | Main push continues publishing the image |
 | `game-engine-ci.yml` | Added on source branch; validates pushes and PRs to `main` | Keep as pre-merge gate |
 
-The Docker build install command is aligned with CI's legacy-peer-dependency install flags. The workflow builds the production image, starts the container, and checks that the root HTML and compiled JS asset are served. The full push and PR workflows passed on candidate commit `ae46c48`:
-- [Push CI run 43589058144](https://github.com/skrskr7799-design/Popoly/actions/runs/43589058144)
-- [PR CI run 43589061401](https://github.com/skrskr7799-design/Popoly/actions/runs/43589061401)
+The Docker build install command is aligned with CI's legacy-peer-dependency install flags. The workflow builds the production image, starts the container, and checks that the root HTML and compiled JS asset are served. The full push and PR workflows passed on candidate commit `442d76f`:
+- [Push CI run 43589149275](https://github.com/skrskr7799-design/Popoly/actions/runs/43589058144)
+- [PR CI run 43589154028](https://github.com/skrskr7799-design/Popoly/actions/runs/43589061401)
 
 ## 4. Validation already completed
 

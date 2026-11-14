@@ -83,7 +83,7 @@ The core strategy-game interface, onboarding, and main destinations are implemen
 - [ ] Complete and record the full browser checklist on desktop, tablet, and mobile.
 - [x] Archive the exact pre-cutover `main` prototype under `legacy/prototype/` (27 tracked files from commit `3c8c118`).
 - [x] Open a draft migration PR to `main` and verify it is mergeable without modifying `main` ([PR #1](https://github.com/skrskr7799-design/Popoly/pull/1)).
-- [ ] Review the full 645-commit PR history and select the final merge strategy.
+- [ ] Review the full over-650-commit PR history and select the final merge strategy.
 - [ ] Complete the full browser checklist before merging.
 
 **Current release posture:** `docs/game-foundation` is the candidate release branch. `main` remains unchanged. See [MIGRATION_REHEARSAL.md](MIGRATION_REHEARSAL.md) for the current comparison and exact cutover sequence.
