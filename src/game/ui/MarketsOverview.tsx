@@ -1,5 +1,5 @@
 import {
-  Activity, ArrowDownRight, ArrowUpRight, Clock3, Cpu, Factory,
+  Activity, Clock3, Cpu, Factory,
   Gauge, Globe2, Network, RadioTower, ShieldCheck, Signal, Zap,
 } from 'lucide-react';
 import type { GameState, IntelligenceEstimate, KnowledgeClass } from '../domain/types';
