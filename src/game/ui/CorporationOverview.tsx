@@ -98,8 +98,8 @@ export function CorporationOverview({
         <h2>{gameText("One group.")}<br /><em>{gameText("Distinct engines.")}</em></h2>
         <p>{gameText("Meridian sets direction and allocates strategic capital. NodeWorks converts infrastructure, power and equipment into contracted compute services.")}</p>
         <div className="pop-corp-intro-tags">
-          <span><CircleDot size={13} /> {gameText("2 legal entities")}</span>
-          <span><Network size={13} /> {gameText("1 operating subsidiary")}</span>
+          <span><CircleDot size={13} /> 2 legal entities</span>
+          <span><Network size={13} /> 1 operating subsidiary</span>
           <span><ShieldCheck size={13} /> {gameText("Separate balance sheets")}</span>
         </div>
       </div>
@@ -118,16 +118,16 @@ export function CorporationOverview({
       </div>
       <div className="pop-corp-hierarchy">
         <article className="pop-corp-entity-card is-parent">
-          <div className="pop-corp-entity-head"><EntityMark holding /><div><span>{gameText("HOLDING COMPANY")}</span><h3>{holding?.name ?? 'Meridian Group'}</h3><small>{gameText("Group strategy · Capital allocation · Executive control")}</small></div><span className="pop-corp-entity-code">{gameText("MG / 01")}</span></div>
+          <div className="pop-corp-entity-head"><EntityMark holding /><div><span>{gameText("HOLDING COMPANY")}</span><h3>{holding?.name ?? 'Meridian Group'}</h3><small>{gameText("Group strategy · Capital allocation · Executive control")}</small></div><span className="pop-corp-entity-code">MG / 01</span></div>
           <div className="pop-corp-entity-finance">
             <div><span>{gameText("Available cash")}</span><strong>{formatMoney(holding?.cashCents ?? 0, true)}</strong></div>
             <div><span>{gameText("Outstanding debt")}</span><strong>{formatMoney(debtTotal(holdingDebt), true)}</strong></div>
             <div><span>{gameText("Strategic bandwidth")}</span><strong>{state.holding.leadershipCapacityPerQuarter} <small>{gameText("units / quarter")}</small></strong></div>
           </div>
         </article>
-        <div className="pop-corp-ownership-link"><i /><span><strong>{ownershipPercent.toFixed(0)}%</strong> {gameText("equity stake ·")} <strong>{votingPercent.toFixed(0)}%</strong> {gameText("voting rights")}</span><i /></div>
+        <div className="pop-corp-ownership-link"><i /><span><strong>{ownershipPercent.toFixed(0)}%</strong> equity stake · <strong>{votingPercent.toFixed(0)}%</strong> {gameText("voting rights")}</span><i /></div>
         <article className="pop-corp-entity-card is-child">
-          <div className="pop-corp-entity-head"><EntityMark /><div><span>{gameText("OPERATING SUBSIDIARY")}</span><h3>{subsidiary?.name ?? 'NodeWorks'}</h3><small>{gameText("Compute infrastructure · Customer delivery · Operations")}</small></div><span className="pop-corp-entity-code">{gameText("NW / 01")}</span></div>
+          <div className="pop-corp-entity-head"><EntityMark /><div><span>{gameText("OPERATING SUBSIDIARY")}</span><h3>{subsidiary?.name ?? 'NodeWorks'}</h3><small>{gameText("Compute infrastructure · Customer delivery · Operations")}</small></div><span className="pop-corp-entity-code">NW / 01</span></div>
           <div className="pop-corp-entity-finance">
             <div><span>{gameText("Available cash")}</span><strong>{formatMoney(subsidiary?.cashCents ?? 0, true)}</strong></div>
             <div><span>{gameText("Outstanding debt")}</span><strong>{formatMoney(debtTotal(subsidiaryDebt), true)}</strong></div>
