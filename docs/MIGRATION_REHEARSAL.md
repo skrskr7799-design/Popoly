@@ -36,9 +36,9 @@
 | `docker-publish.yml` | Existing workflow is present on both branches and remains unchanged | Main push continues publishing the image |
 | `game-engine-ci.yml` | Added on source branch; validates pushes and PRs to `main` | Keep as pre-merge gate |
 
-The Docker build install command is aligned with CI's legacy-peer-dependency install flags. The workflow builds the production image, starts the container, and checks that the root HTML and compiled JS asset are served. The full push and PR workflows passed on candidate commit `0eea3ca`:
-- [Push CI run 43588897995](https://github.com/skrskr7799-design/Popoly/actions/runs/43588897995)
-- [PR CI run 43588902089](https://github.com/skrskr7799-design/Popoly/actions/runs/43588902089)
+The Docker build install command is aligned with CI's legacy-peer-dependency install flags. The workflow builds the production image, starts the container, and checks that the root HTML and compiled JS asset are served. The full push and PR workflows passed on candidate commit `ae46c48`:
+- [Push CI run 43589058144](https://github.com/skrskr7799-design/Popoly/actions/runs/43589058144)
+- [PR CI run 43589061401](https://github.com/skrskr7799-design/Popoly/actions/runs/43589061401)
 
 ## 4. Validation already completed
 
