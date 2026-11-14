@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { initializeGame } from '../engine/initialize';
 import { CampaignSession } from '../campaign/session';
 import { validateGameState } from '../domain/invariants';
+import { moneyFromCents } from '../domain/money';
 import { buildQuarterReport } from '../systems/quarterReport';
 import { advanceQuarter } from '../engine/advanceQuarter';
 import { advanceCreditorWorkouts, proposeCreditorWorkout } from '../systems/creditorWorkout';
@@ -36,7 +37,7 @@ describe('coordinated creditor workouts', () => {
       ...opening,
       operatingPayables: [{
         id: 'nodeworks-energy-q1', entityId: 'nodeworks', creditorClass: 'energy' as const,
-        originalAmountCents: 1_000_000, outstandingAmountCents: 1_000_000,
+        originalAmountCents: moneyFromCents(1_000_000), outstandingAmountCents: moneyFromCents(1_000_000),
         incurredQuarter: 1, dueQuarter: 1, priority: 2,
       }],
     };
