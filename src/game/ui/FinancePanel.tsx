@@ -220,10 +220,10 @@ export function FinancePanel({
             <input type="checkbox" checked={applied || selected} disabled={applied}
               onChange={() => onToggleTurnaroundAction(action.id)} />
             <span className="pop-turnaround-copy">
-              <strong>{action.name}</strong>
-              <small>{action.description}</small>
+              <strong>{gameText(action.name)}</strong>
+              <small>{gameText(action.description)}</small>
               <em>{savings}</em>
-              <small className="pop-turnaround-tradeoff">Trade-off: {action.tradeoff}</small>
+              <small className="pop-turnaround-tradeoff">Trade-off: {gameText(action.tradeoff)}</small>
             </span>
             <span className="pop-turnaround-state">{applied ? 'Implemented' : selected ? 'Selected' : 'Available'}</span>
           </label>;
@@ -338,7 +338,7 @@ export function FinancePanel({
         </label>
         <label><span>{gameText("Requested principal · USD")}</span>
           <input type="number" min="1" step="100000" disabled={!requestAllowed} value={creditRequest.amountDollars}
-            onChange={(event) => onCreditRequestChange({ ...creditRequest, amountDollars: event.target.value })} placeholder="e.g. 1500000" />
+            onChange={(event) => onCreditRequestChange({ ...creditRequest, amountDollars: event.target.value })} placeholder={gameText("e.g. 1500000")} />
         </label>
         <label><span>{gameText("Term")}</span>
           <select disabled={!requestAllowed} value={creditRequest.termQuarters} onChange={(event) => onCreditRequestChange({ ...creditRequest, termQuarters: event.target.value })}>
@@ -347,7 +347,7 @@ export function FinancePanel({
         </label>
         <label className="pop-credit-collateral"><span>{gameText("Collateral description · optional")}</span>
           <input type="text" maxLength={160} disabled={!requestAllowed} value={creditRequest.collateral}
-            onChange={(event) => onCreditRequestChange({ ...creditRequest, collateral: event.target.value })} placeholder="Equipment, receivables…" />
+            onChange={(event) => onCreditRequestChange({ ...creditRequest, collateral: event.target.value })} placeholder={gameText("Equipment, receivables…")} />
         </label>
       </div>
       {!requestAllowed && <p className="pop-finance-alert">{gameText("This borrower is currently restricted from requesting additional credit by an uncured default or covenant breach.")}</p>}
