@@ -222,6 +222,7 @@ export default function CampaignApp() {
         setSession(result.value.session);
         setActiveView('command');
         setSelected([]);
+        setSelectedTurnaroundActions([]);
         setRenewalDrafts({});
         setSelectedLoanOffers([]);
         setCreditRequest({ borrowerId: 'nodeworks', amountDollars: '', termQuarters: '4', collateral: '' });
@@ -368,6 +369,7 @@ export default function CampaignApp() {
     }
     setReport(result.report);
     setSelected([]);
+    setSelectedTurnaroundActions([]);
     setRenewalDrafts({});
     setSelectedLoanOffers([]);
     setCreditRequest({ borrowerId: 'nodeworks', amountDollars: '', termQuarters: '4', collateral: '' });
