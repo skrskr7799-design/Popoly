@@ -43,12 +43,12 @@ function metricLabel(metric: string) {
     computeDemandMW: 'Compute demand',
     contractRenewalRisk: 'Contract renewal risk',
   };
+  if (metric.startsWith('contractRenewalRisk:')) return 'Contract renewal risk';
   return labels[metric] ?? metric.replaceAll(/([A-Z])/g, ' $1').replaceAll('MW', ' MW').trim();
 }
 
 function IntelCard({ item, quarter }: { item: IntelligenceEstimate; quarter: number }) {
   const age = Math.max(0, quarter - item.observedQuarter);
-  const subject = SUBJECTS[item.subjectId];
   return <article className="pop-market-intel-row">
     <div className="pop-market-intel-main">
       <div className="pop-market-intel-title">
