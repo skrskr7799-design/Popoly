@@ -9,6 +9,7 @@ describe('liquidation waterfall', () => {
     const debt = opening.debts.find((item) => item.id === 'nodeworks-infrastructure-debt')!;
     const state = {
       ...opening,
+      organizations: opening.organizations.map((item) => item.id === 'nodeworks' ? { ...item, cashCents: moneyFromCents(0) } : item),
       assets: [
         { id: 'secured-compute', ownerId: 'nodeworks', assetClass: 'compute-equipment' as const,
           bookValueCents: moneyFromCents(1_200), realizableValueCents: moneyFromCents(1_000),
@@ -54,6 +55,7 @@ describe('liquidation waterfall', () => {
     const opening = initializeGame(2035);
     const state = {
       ...opening,
+      organizations: opening.organizations.map((item) => item.id === 'nodeworks' ? { ...item, cashCents: moneyFromCents(0) } : item),
       assets: [{ id: 'estate', ownerId: 'nodeworks', assetClass: 'facility' as const,
         bookValueCents: moneyFromCents(1_000), realizableValueCents: moneyFromCents(1_000) }],
       debts: opening.debts.filter((debt) => debt.borrowerId !== 'nodeworks'),
@@ -71,6 +73,17 @@ describe('liquidation waterfall', () => {
     expect(result.distributions.find((item) => item.claimId === 'vendor-a')?.recoveryCents).toBe(500);
     expect(result.distributions.find((item) => item.claimId === 'vendor-b')?.recoveryCents).toBe(500);
     expect(result.distributions.reduce((sum, item) => sum + item.recoveryCents, 0)).toBe(1_000);
+  });
+
+  it('adds only the named subsidiary cash to its liquidation estate', () => {
+    const opening = initializeGame(2035);
+    const nodeworksCash = opening.organizations.find((item) => item.id === 'nodeworks')!.cashCents;
+    const result = calculateLiquidationWaterfall(opening, 'nodeworks', 0);
+    expect(result.cashRealizedCents).toBe(nodeworksCash);
+    expect(result.unsecuredEstateCents).toBe(nodeworksCash +
+      result.assetRealizations.reduce((sum, item) => sum + item.estateContributionCents, 0));
+    expect(result.cashRealizedCents).not.toBe(
+      opening.organizations.find((item) => item.id === 'meridian-group')!.cashCents);
   });
 
   it('rejects unknown entities and invalid administration costs', () => {
