@@ -1,10 +1,10 @@
 # Legacy Prototype Migration Map
 
-**Status:** Planning document for the first implementation pass.  
+**Status:** The initial engine migration is implemented. Final release preservation and cutover steps are tracked in [MIGRATION_REHEARSAL.md](MIGRATION_REHEARSAL.md).  
 **Branch:** `docs/game-foundation`  
 **Rule:** Do not rewrite the whole client in one pass. Establish the new simulation core alongside the legacy UI, then replace the old flow deliberately.
 
-## 1. Current code shape observed
+## 1. Original legacy code shape\n\nThe following describes the pre-foundation prototype that currently lives on `main` and is still retained in the source branch for archival purposes.
 
 The existing client is a compact React/TypeScript/Vite application. Current gameplay state is centered on:
 - `src/entities/types.ts`: `Player`, `Company`, `ShareHolding`, `Loan`, `GameState`, `EconomyPhase`;
@@ -55,7 +55,7 @@ Recommended first implementation modules:
 - `src/game/persistence/`: save schema, validation, migrations.
 - `src/state/`: Zustand adapter for UI consumption.
 
-The actual tree may be adjusted after inspecting all imports and tests. This is a boundary proposal, not a requirement to move every existing file before the first engine test.
+The active source branch now implements these boundaries under `src/game/`. The application entry `src/main.tsx` mounts `CampaignApp`; the old `src/App.tsx` and its supporting `store`, `entities`, and `data` modules remain in the tree but are no longer the mounted application. They have not yet been moved to `legacy/`.
 
 ## 4. First implementation sequence
 
