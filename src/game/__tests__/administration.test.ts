@@ -3,6 +3,7 @@ import { initializeGame } from '../engine/initialize';
 import { validateGameState } from '../domain/invariants';
 import { moneyFromCents } from '../domain/money';
 import { openAdministration, reorganizeAdministration } from '../systems/administration';
+import { advanceQuarter } from '../engine/advanceQuarter';
 
 describe('formal administration transitions', () => {
   it('opens a legal-entity-scoped case without moving cash or changing creditor claims', () => {
@@ -37,6 +38,22 @@ describe('formal administration transitions', () => {
     expect(openAdministration(opening, 'unknown')).toMatchObject({
       ok: false, code: 'administration.company_unknown',
     });
+  });
+
+  it('suspends workload changes and new borrowing while administration is active', () => {
+    const filed = openAdministration(initializeGame(2035), 'nodeworks');
+    expect(filed.ok).toBe(true);
+    if (!filed.ok) return;
+    const workload = advanceQuarter(filed.state, {
+      workloadDecisions: [{ companyId: 'nodeworks', desiredWorkloadMW: 8 }],
+    });
+    expect(workload.ok).toBe(false);
+    if (!workload.ok) expect(workload.issues.some((item) => item.code === 'administration.workload_restricted')).toBe(true);
+    const credit = advanceQuarter(filed.state, {
+      requestCredit: [{ borrowerId: 'nodeworks', requestedPrincipalCents: 100_000, termQuarters: 4 }],
+    });
+    expect(credit.ok).toBe(false);
+    if (!credit.ok) expect(credit.issues.some((item) => item.code === 'administration.new_borrowing_restricted')).toBe(true);
   });
 
   it('records reorganization without forgiving debt or operating payables', () => {
