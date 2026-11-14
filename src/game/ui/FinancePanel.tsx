@@ -17,6 +17,7 @@ const statusLabel = (status: string | undefined) => {
 export function FinancePanel({
   state, report, selectedOfferIds, onToggleOffer,
   creditRequest, onCreditRequestChange, selectedTurnaroundActionIds, onToggleTurnaroundAction,
+  onFileAdministration, onReorganizeAdministration,
 }: {
   state: GameState;
   report: QuarterReport;
@@ -26,6 +27,8 @@ export function FinancePanel({
   onCreditRequestChange: (next: { borrowerId: string; amountDollars: string; termQuarters: string; collateral: string }) => void;
   selectedTurnaroundActionIds: TurnaroundActionId[];
   onToggleTurnaroundAction: (actionId: TurnaroundActionId) => void;
+  onFileAdministration: () => void;
+  onReorganizeAdministration: (caseId: string) => void;
 }) {
   const organizations = state.organizations;
   const organizationName = (id: string) => organizations.find((item) => item.id === id)?.name ?? id;
@@ -55,6 +58,8 @@ export function FinancePanel({
     offer.status === 'available' && state.quarter <= offer.expiresAfterQuarter);
   const operatingHealth = operatingCompany ? assessFinancialHealth(state, report, operatingCompany.organizationId) : undefined;
   const creditorPressure = report.companies.find((item) => item.companyId === operatingCompany?.organizationId)?.creditorPressure;
+  const administrationCase = (state.administrationCases ?? []).find((item) => item.entityId === operatingCompany?.organizationId && item.status === 'active');
+  const reorganizationReady = !!operatingHealth && operatingHealth.status !== 'distressed' && operatingHealth.operatingPayablesCents === 0 && operatingHealth.debtArrearsCents === 0 && operatingHealth.defaultedDebtCount === 0 && operatingHealth.covenantBreachCount === 0;
   const totalCash = borrowerIds.reduce((sum, id) =>
     sum + (organizations.find((item) => item.id === id)?.cashCents ?? 0), 0);
   const lenderResources = new Map(state.lenders.map((lender) => [
@@ -133,6 +138,20 @@ export function FinancePanel({
         : <p className="pop-muted">No material liquidity or creditor warning signals are currently detected.</p>}
     </div>}
 
+
+    {operatingCompany?.status === 'administration' && administrationCase && <div className="pop-finance-subsection pop-administration">
+      <div className="pop-finance-subtitle"><strong>Formal administration</strong><span className="pop-pill pop-pill-warn">Active · {formatQuarter(administrationCase.openedQuarter)}</span></div>
+      <p>The company is under administrator control. New borrowing and discretionary workload changes are suspended; essential operations and approved turnaround work continue.</p>
+      <div className="pop-administration-meta"><span>Filing basis</span><strong>{administrationCase.trigger.replaceAll('-', ' ')}</strong></div>
+      {reorganizationReady
+        ? <button type="button" className="pop-button pop-button-primary" onClick={() => onReorganizeAdministration(administrationCase.id)}>Complete creditor reorganization</button>
+        : <p className="pop-muted">Reorganization is not yet viable. Clear operating payables and debt arrears, restore operating cash flow, and resolve defaults or covenant breaches.</p>}
+    </div>}
+    {operatingCompany?.status !== 'administration' && operatingCompany?.status !== 'liquidated' && operatingHealth?.status === 'distressed' && !administrationCase && <div className="pop-finance-subsection pop-administration pop-administration-warning">
+      <div className="pop-finance-subtitle"><strong>Creditor protection may be required</strong><span className="pop-pill pop-pill-warn">Distressed</span></div>
+      <p>NodeWorks is in financial distress. Filing opens a formal administration case; it does not erase debt or transfer Meridian Group's cash to the subsidiary.</p>
+      <button type="button" className="pop-button pop-button-danger" onClick={onFileAdministration}>File for administration</button>
+    </div>}
     {ownedAssets.length > 0 && <div className="pop-finance-subsection pop-asset-position">
       <div className="pop-finance-subtitle"><strong>NodeWorks asset base</strong><small>Indicative scenario valuations</small></div>
       <div className="pop-finance-summary">
