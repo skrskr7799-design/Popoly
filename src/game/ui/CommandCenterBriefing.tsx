@@ -1,3 +1,4 @@
+import { gameText } from '../../i18n/game';
 import {
   Activity, AlertTriangle, ArrowRight, Banknote, CalendarDays,
   Cpu, Gauge, RadioTower, ShieldCheck, Zap,
@@ -83,8 +84,8 @@ export function CommandCenterBriefing({
     <section className="pop-command-briefing" aria-label="Executive situation briefing">
       <div className="pop-command-briefing-heading">
         <div>
-          <span className="pop-eyebrow"><i className="pop-eyebrow-pulse" /> EXECUTIVE SITUATION ROOM</span>
-          <h2>What matters this quarter</h2>
+          <span className="pop-eyebrow"><i className="pop-eyebrow-pulse" /> {gameText("EXECUTIVE SITUATION ROOM")}</span>
+          <h2>{gameText("What matters this quarter")}</h2>
         </div>
         <span className="pop-command-quarter"><CalendarDays size={14} /> {formatQuarter(state.quarter)}</span>
       </div>
@@ -92,8 +93,8 @@ export function CommandCenterBriefing({
       <div className="pop-command-briefing-grid">
         <article className={`pop-command-situation ${defaultedDebts > 0 ? 'is-critical' : arrears > 0 ? 'is-warning' : ''}`}>
           <div className="pop-command-situation-top">
-            <span className="pop-command-kicker">STRATEGIC READOUT</span>
-            <span className="pop-command-live"><i /> LIVE POSITION</span>
+            <span className="pop-command-kicker">{gameText("STRATEGIC READOUT")}</span>
+            <span className="pop-command-live"><i /> {gameText("LIVE POSITION")}</span>
           </div>
           <div className="pop-command-situation-body">
             <div className="pop-command-situation-mark"><RadioTower size={22} /></div>
@@ -104,7 +105,7 @@ export function CommandCenterBriefing({
           </div>
           <div className="pop-command-situation-footer">
             <span>{activeProjects} strategic project(s) in progress</span>
-            <button type="button" onClick={onOpenStrategy}>Review priorities <ArrowRight size={14} /></button>
+            <button type="button" onClick={onOpenStrategy}>{gameText("Review priorities")} <ArrowRight size={14} /></button>
           </div>
         </article>
 
@@ -142,7 +143,7 @@ export function CommandCenterBriefing({
       <div className="pop-command-lower">
         <div className="pop-command-timeline">
           <div className="pop-command-lower-heading">
-            <div><span className="pop-command-kicker">CAMPAIGN ARC</span><strong>The first eight quarters</strong></div>
+            <div><span className="pop-command-kicker">{gameText("CAMPAIGN ARC")}</span><strong>{gameText("The first eight quarters")}</strong></div>
             <span>{Math.min(completedQuarters, OPENING_QUARTERS)} / {OPENING_QUARTERS} complete</span>
           </div>
           <div className="pop-quarter-track" aria-label={`${Math.min(completedQuarters, OPENING_QUARTERS)} of eight opening quarters complete`}>
@@ -159,19 +160,19 @@ export function CommandCenterBriefing({
           </div>
           <div className="pop-command-timeline-foot">
             <span>{completedQuarters >= OPENING_QUARTERS ? 'Opening scenario complete · sandbox continues' : `${OPENING_QUARTERS - completedQuarters} quarter(s) until the opening scenario concludes`}</span>
-            <span><ShieldCheck size={13} /> Simulation state preserved</span>
+            <span><ShieldCheck size={13} /> {gameText("Simulation state preserved")}</span>
           </div>
         </div>
 
         <div className="pop-command-world">
           <div className="pop-command-lower-heading">
-            <div><span className="pop-command-kicker">WORLD INTELLIGENCE</span><strong>Signals beyond the group</strong></div>
-            <button type="button" onClick={onOpenMarkets}>Open intelligence <ArrowRight size={13} /></button>
+            <div><span className="pop-command-kicker">{gameText("WORLD INTELLIGENCE")}</span><strong>{gameText("Signals beyond the group")}</strong></div>
+            <button type="button" onClick={onOpenMarkets}>{gameText("Open intelligence")} <ArrowRight size={13} /></button>
           </div>
           <div className="pop-command-world-stats">
-            <div><strong>{state.playerIntelligence.length}</strong><span>known estimates</span></div>
-            <div><strong>{staleIntel}</strong><span>stale signals</span></div>
-            <div><strong>{actorActions.length}</strong><span>reported actor actions</span></div>
+            <div><strong>{state.playerIntelligence.length}</strong><span>{gameText("known estimates")}</span></div>
+            <div><strong>{staleIntel}</strong><span>{gameText("stale signals")}</span></div>
+            <div><strong>{actorActions.length}</strong><span>{gameText("reported actor actions")}</span></div>
           </div>
           <div className="pop-command-world-note">
             <Activity size={14} />
