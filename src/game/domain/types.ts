@@ -74,6 +74,17 @@ export interface OperatingCostProfile {
 }
 export type TurnaroundActionId = 'workforce-reset' | 'maintenance-deferral' | 'vendor-renegotiation' | 'facility-consolidation';
 export type OperatingPayableClass = 'energy' | 'payroll' | 'maintenance' | 'network-vendor' | 'tax-overhead';
+export type CorporateAssetClass = 'compute-equipment' | 'power-infrastructure' | 'network-infrastructure' | 'facility';
+export interface CorporateAsset {
+  id: EntityId;
+  ownerId: EntityId;
+  assetClass: CorporateAssetClass;
+  bookValueCents: MoneyCents;
+  realizableValueCents: MoneyCents;
+  /** A secured lender can claim only proceeds from this asset, not unrelated group cash. */
+  securedDebtId?: EntityId;
+  disposedQuarter?: number;
+}
 export interface OperatingPayable {
   id: EntityId;
   entityId: EntityId;
@@ -154,6 +165,6 @@ export interface GameState {
   schemaVersion: 1; scenarioId: string; scenarioVersion: string; seed: number; quarter: number;
   organizations: Organization[]; ownership: OwnershipStake[]; debts: DebtInstrument[];
   holding: HoldingState; operatingCompanies: OperatingCompanyState[];
-  regionalMarkets: RegionalMarketState[]; operatingPayables?: OperatingPayable[]; actors: ActorState[]; playerIntelligence: IntelligenceEstimate[]; projects: StrategicProjectState[]; equipmentOrders: EquipmentOrderState[]; lenders: LenderState[]; loanOffers: LoanOfferState[];
+  regionalMarkets: RegionalMarketState[]; operatingPayables?: OperatingPayable[]; assets?: CorporateAsset[]; actors: ActorState[]; playerIntelligence: IntelligenceEstimate[]; projects: StrategicProjectState[]; equipmentOrders: EquipmentOrderState[]; lenders: LenderState[]; loanOffers: LoanOfferState[];
 }
 export interface ValidationIssue { code: string; message: string; entityId?: EntityId; }
