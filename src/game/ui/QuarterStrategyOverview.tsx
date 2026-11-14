@@ -65,15 +65,15 @@ export function QuarterStrategyOverview({
     <section className="pop-strategy-resource-grid">
       <article className="pop-strategy-resource">
         <div className="pop-strategy-resource-head"><span>{gameText("LEADERSHIP CAPACITY")}</span><Gauge size={16} /></div>
-        <strong>{Math.max(0, leadershipCapacity - leadershipUsed)} <small>/ {leadershipCapacity} units free</small></strong>
+        <strong>{Math.max(0, leadershipCapacity - leadershipUsed)} <small>/ {leadershipCapacity} {gameText('units free')}</small></strong>
         <div className="pop-strategy-meter"><i style={{ width: `${leadershipPct}%` }} /></div>
-        <p>{leadershipUsed} units assigned to selected initiatives</p>
+        <p>{leadershipUsed} {gameText('units assigned to selected initiatives')}</p>
       </article>
       <article className="pop-strategy-resource">
         <div className="pop-strategy-resource-head"><span>{gameText("CAPITAL ALLOCATION")}</span><span className="pop-strategy-currency">$</span></div>
         <strong>{formatMillions(Math.max(0, cashAvailable - capitalUsed))} <small>{gameText("available after plan")}</small></strong>
         <div className="pop-strategy-meter capital"><i style={{ width: `${capitalPct}%` }} /></div>
-        <p>{formatMillions(capitalUsed)} committed · {formatMillions(cashAvailable)} holding cash</p>
+        <p>{formatMillions(capitalUsed)} {gameText('committed')} · {formatMillions(cashAvailable)} {gameText('holding cash')}</p>
       </article>
       <article className="pop-strategy-resource">
         <div className="pop-strategy-resource-head"><span>{gameText("OPERATING CONSTRAINT")}</span><Zap size={16} /></div>
