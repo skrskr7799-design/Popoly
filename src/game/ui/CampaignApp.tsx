@@ -309,7 +309,7 @@ export default function CampaignApp() {
     busy={storageBusy} onLoad={(id) => void loadCampaign(id)} onExport={(id) => void exportCampaign(id)}
     onImport={(file) => void importCampaign(file)} onRefresh={() => void refreshCampaigns()} />;
 
-  if (!session) return <div className="pop-opening-shell"><OpeningScreen onStart={startCampaign} onOpenArchive={openArchive} />
+  if (!session) return <div className="pop-opening-shell" lang={locale}><OpeningScreen onStart={startCampaign} onOpenArchive={openArchive} />
     {showStorage && <div className="pop-opening-storage">{storagePanel}</div>}
   </div>;
 
@@ -433,7 +433,7 @@ export default function CampaignApp() {
     setRevision((value) => value + 1);
   };
 
-  return <div className="pop-app" data-revision={revision} data-view={activeView}>
+  return <div className="pop-app" lang={locale} data-revision={revision} data-view={activeView}>
     <aside className="pop-sidebar">
       <div className="pop-brand"><div className="pop-brand-mark">P</div><div><strong>{gameText("POPOLY")}</strong><small>{gameText("TECH DOMINION")}</small></div></div>
       <div className="pop-campaign-tag"><span className="pop-live-dot" /> {gameText("LIVE CAMPAIGN")}</div>
