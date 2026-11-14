@@ -45,7 +45,13 @@ describe('CampaignSession', () => {
     const accepted = session.advance({ launchInitiatives: ['commission-market-study'] });
     expect(accepted.ok).toBe(true);
     expect(session.state.quarter).toBe(2);
-    expect(session.currentReport.quarter).toBe(1);
+    expect(session.currentReport.quarter).toBe(session.state.quarter);
+    expect(session.currentReport.contractsInRenewalWindow).toEqual(
+      session.state.operatingCompanies.flatMap((company) => company.contracts
+        .filter((contract) => contract.flexibility === 'contracted' && contract.termEndQuarter !== undefined &&
+          contract.termEndQuarter - session.state.quarter <= (contract.renewalNoticeQuarters ?? 0))
+        .map((contract) => contract.id)),
+    );
     expect(session.completedQuarters).toBe(1);
   });
 
@@ -88,6 +94,8 @@ describe('CampaignSession', () => {
 
     expect(restored.value.recoveredFromPrevious).toBe(false);
     expect(restored.value.session.state).toEqual(session.state);
+    expect(restored.value.session.currentReport).toEqual(session.currentReport);
+    expect(restored.value.session.currentReport.quarter).toBe(session.state.quarter);
 
     const uninterrupted = session.advance();
     const resumed = restored.value.session.advance();
