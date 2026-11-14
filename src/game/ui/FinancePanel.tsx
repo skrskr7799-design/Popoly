@@ -145,7 +145,7 @@ export function FinancePanel({
             </div>)}
         </div>}
       {operatingHealth.reasons.length > 0
-        ? <ul className="pop-financial-health-reasons">{operatingHealth.reasons.map((reason) => <li key={reason}>{reason}</li>)}</ul>
+        ? <ul className="pop-financial-health-reasons">{operatingHealth.reasons.map((reason) => <li key={reason}>{gameText(reason)}</li>)}</ul>
         : <p className="pop-muted">{gameText("No material liquidity or creditor warning signals are currently detected.")}</p>}
     </div>}
 
@@ -259,7 +259,7 @@ export function FinancePanel({
         return <article className="pop-debt-card" key={debt.id}>
           <div className="pop-debt-heading">
             <div><strong>{organizationName(debt.borrowerId)}</strong><small>{debt.id}</small></div>
-            <span className={debt.paymentStatus === 'defaulted' || covenant === 'breached' ? 'pop-pill pop-pill-warn' : 'pop-pill'}>{statusLabel(debt.paymentStatus === 'defaulted' ? 'defaulted' : covenant)}</span>
+            <span className={debt.paymentStatus === 'defaulted' || covenant === 'breached' ? 'pop-pill pop-pill-warn' : 'pop-pill'}>{gameText(statusLabel(debt.paymentStatus === 'defaulted' ? 'defaulted' : covenant))}</span>
           </div>
           <div className="pop-debt-metrics">
             <span><small>{gameText("Principal")}</small><strong>{formatMoney(debt.principalCents, true)}</strong></span>
