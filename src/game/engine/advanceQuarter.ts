@@ -752,6 +752,12 @@ function resolveContractRenewals(
  * candidate state is built; the original state is never mutated.
  */
 export function advanceQuarter(state: GameState, commands: QuarterCommands = {}): AdvanceQuarterResult {
+  const liquidatedCompany = state.operatingCompanies.find((company) => company.status === 'liquidated');
+  if (liquidatedCompany) return { ok: false, issues: [issue(
+    'campaign.company_liquidated',
+    'The operating company has been liquidated. This campaign is complete; post-insolvency group play is not yet available.',
+    liquidatedCompany.organizationId,
+  )] };
   const initialIssues = validateGameState(state);
   if (initialIssues.length > 0) return { ok: false, issues: initialIssues };
   const commandIssues = validateCommands(state, commands);
