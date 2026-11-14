@@ -2,11 +2,13 @@ import type { GameState, MoneyCents, OperatingPayable } from '../domain/types';
 import { calculateOperatingQuarter, type OperatingQuarterResult } from './economy';
 import { calculateScenarioDebtService, calculateEntityCashBridge, type EntityCashBridge } from './finance';
 import { moneyFromCents } from '../domain/money';
+import { applyOperatingCreditorPressure, type OperatingCreditorPressure } from './operatingPayables';
 
 export interface CompanyQuarterReport {
   companyId: string;
   operations: OperatingQuarterResult;
   cashBridge: EntityCashBridge;
+  creditorPressure: OperatingCreditorPressure;
 }
 
 export interface ContractNegotiationResult {
@@ -163,12 +165,14 @@ export function buildQuarterReport(state: GameState): QuarterReport {
   const companies = state.operatingCompanies.map((company) => {
     const market = state.regionalMarkets[0];
     if (!market) throw new Error('Scenario has no regional market for operating company.');
-    const operations = calculateOperatingQuarter(company, market);
+    const pressureResult = applyOperatingCreditorPressure(company, state.operatingPayables ?? [], state.quarter);
+    const operations = calculateOperatingQuarter(pressureResult.company, market);
     const organization = state.organizations.find((item) => item.id === company.organizationId);
     if (!organization) throw new Error(`Missing organization: ${company.organizationId}`);
     return {
       companyId: company.organizationId,
       operations,
+      creditorPressure: pressureResult.pressure,
       cashBridge: calculateEntityCashBridge(organization, debtService, operations.operatingCashContributionCents),
     };
   });
