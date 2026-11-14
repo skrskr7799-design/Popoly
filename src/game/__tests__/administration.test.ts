@@ -144,5 +144,8 @@ describe('formal administration transitions', () => {
     expect(reorganizeAdministration(reorganized.state, filed.administrationCase.id)).toMatchObject({
       ok: false, code: 'administration.case_not_active',
     });
+    const laterFiling = openAdministration({ ...reorganized.state, quarter: 2 }, 'nodeworks');
+    expect(laterFiling.ok).toBe(true);
+    if (laterFiling.ok) expect(laterFiling.administrationCase.id).not.toBe(filed.administrationCase.id);
   });
 });
