@@ -206,7 +206,10 @@ export function validateGameState(state: GameState): ValidationIssue[] {
         (administrationCase.status === 'active' && (administrationCase.resolvedQuarter !== undefined || resolution !== undefined)) ||
         (administrationCase.status !== 'active' && (!Number.isInteger(administrationCase.resolvedQuarter) ||
           administrationCase.resolvedQuarter! < administrationCase.openedQuarter ||
-          administrationCase.resolvedQuarter! > state.quarter || !resolution ||
+          administrationCase.resolvedQuarter! > state.quarter ||
+          (administrationCase.status === 'liquidated' && !resolution) ||
+          (administrationCase.status === 'reorganized' && resolution !== undefined) ||
+          (resolution !== undefined && (
           resolution.resolvedQuarter !== administrationCase.resolvedQuarter ||
           !Number.isSafeInteger(resolution.grossAssetProceedsCents) || resolution.grossAssetProceedsCents < 0 ||
           !Number.isSafeInteger(resolution.administrationCostsCents) || resolution.administrationCostsCents < 0 ||
@@ -220,7 +223,7 @@ export function validateGameState(state: GameState): ValidationIssue[] {
             Number.isSafeInteger(item.claimAmountCents) && item.claimAmountCents >= 0 &&
             Number.isSafeInteger(item.recoveryCents) && item.recoveryCents >= 0 &&
             Number.isSafeInteger(item.shortfallCents) && item.shortfallCents >= 0 &&
-            item.recoveryCents + item.shortfallCents === item.claimAmountCents)))) {
+            item.recoveryCents + item.shortfallCents === item.claimAmountCents)))))) {
       issues.push({ code: 'administration.case_invalid', message: 'Administration case, status, dates, or resolution ledger is invalid.', entityId: administrationCase.id });
     }
     if ((administrationCase.status === 'active' && company?.status !== 'administration') ||
