@@ -363,6 +363,9 @@ export function advanceAutonomousActors(
       actorId: item.contract.customerId, kind: 'contract-expired',
       summary: 'A fixed-term compute agreement expired without a completed renewal; the customer began reallocating the uncovered workload.',
     });
+    // The allocation pass reads actor state through actorState; refresh it after
+    // expiry transfers so it cannot reuse the just-expired fixed commitments.
+    actorState.actors = actors;
   }
 
   const asterion = actors.find((actor) => actor.organizationId === 'asterion-ai');
