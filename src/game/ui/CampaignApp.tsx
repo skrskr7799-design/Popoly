@@ -378,10 +378,10 @@ export default function CampaignApp() {
       <div className="pop-campaign-tag"><span className="pop-live-dot" /> LIVE CAMPAIGN</div>
       <div className="pop-side-nav">
         <span className="pop-nav-label">STRATEGIC OFFICE</span>
-        <button type="button" className={`pop-nav-item ${activeView === 'command' ? 'active' : ''}`} onClick={() => setActiveView('command')}><Activity size={17} /> Command center</button>
-        <button type="button" className={`pop-nav-item ${activeView === 'corporation' ? 'active' : ''}`} onClick={() => setActiveView('corporation')}><Building2 size={17} /> Corporation</button>
-        <button type="button" className={`pop-nav-item ${activeView === 'markets' ? 'active' : ''}`} onClick={() => setActiveView('markets')}><Globe2 size={17} /> Markets & intel</button>
-        <button type="button" className={`pop-nav-item ${activeView === 'strategy' ? 'active' : ''}`} onClick={() => setActiveView('strategy')}><Radar size={17} /> Quarter strategy</button>
+        <button type="button" className={`pop-nav-item ${activeView === 'command' ? 'active' : ''}`} aria-current={activeView === 'command' ? 'page' : undefined} onClick={() => setActiveView('command')}><Activity size={17} /> Command center</button>
+        <button type="button" className={`pop-nav-item ${activeView === 'corporation' ? 'active' : ''}`} aria-current={activeView === 'corporation' ? 'page' : undefined} onClick={() => setActiveView('corporation')}><Building2 size={17} /> Corporation</button>
+        <button type="button" className={`pop-nav-item ${activeView === 'markets' ? 'active' : ''}`} aria-current={activeView === 'markets' ? 'page' : undefined} onClick={() => setActiveView('markets')}><Globe2 size={17} /> Markets & intel</button>
+        <button type="button" className={`pop-nav-item ${activeView === 'strategy' ? 'active' : ''}`} aria-current={activeView === 'strategy' ? 'page' : undefined} onClick={() => setActiveView('strategy')}><Radar size={17} /> Quarter strategy</button>
       </div>
       <div className="pop-sidebar-bottom"><span>THE COMPUTE BOTTLENECK</span><small>Scenario v0.1.0</small><small>Campaign {session.campaignId.slice(0, 8)}</small></div>
     </aside>
@@ -391,10 +391,10 @@ export default function CampaignApp() {
         <div className="pop-topbar-right"><span className="pop-quarter-chip">{formatQuarter(state.quarter)}</span><span className="pop-status"><i /> {session.stage === 'guided' ? 'Guided campaign' : 'Sandbox mode'}</span><button className="pop-secondary-button" onClick={() => void saveCurrentCampaign()} disabled={storageBusy}><Banknote size={14} /> Save</button><button className="pop-quiet-button" onClick={() => showStorage ? setShowStorage(false) : openArchive()}><FolderOpen size={14} /> Archive</button></div>
       </header>
       <nav className="pop-mobile-nav" aria-label="Game navigation">
-        <button className={activeView === 'command' ? 'active' : ''} onClick={() => setActiveView('command')}><Activity size={16} /><span>Command</span></button>
-        <button className={activeView === 'corporation' ? 'active' : ''} onClick={() => setActiveView('corporation')}><Building2 size={16} /><span>Group</span></button>
-        <button className={activeView === 'markets' ? 'active' : ''} onClick={() => setActiveView('markets')}><Globe2 size={16} /><span>Markets</span></button>
-        <button className={activeView === 'strategy' ? 'active' : ''} onClick={() => setActiveView('strategy')}><Radar size={16} /><span>Strategy</span></button>
+        <button className={activeView === 'command' ? 'active' : ''} aria-current={activeView === 'command' ? 'page' : undefined} onClick={() => setActiveView('command')}><Activity size={16} /><span>Command</span></button>
+        <button className={activeView === 'corporation' ? 'active' : ''} aria-current={activeView === 'corporation' ? 'page' : undefined} onClick={() => setActiveView('corporation')}><Building2 size={16} /><span>Group</span></button>
+        <button className={activeView === 'markets' ? 'active' : ''} aria-current={activeView === 'markets' ? 'page' : undefined} onClick={() => setActiveView('markets')}><Globe2 size={16} /><span>Markets</span></button>
+        <button className={activeView === 'strategy' ? 'active' : ''} aria-current={activeView === 'strategy' ? 'page' : undefined} onClick={() => setActiveView('strategy')}><Radar size={16} /><span>Strategy</span></button>
       </nav>
 
       {activeView === 'corporation' ? <CorporationOverview
