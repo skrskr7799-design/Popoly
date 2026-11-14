@@ -26,6 +26,18 @@ export function createComputeBottleneckState(seed = 2035): GameState {
       { ownerId: 'founders-employees', companyId: 'nodeworks', shares: 1_800_000, votingShares: 1_800_000 },
       { ownerId: 'regional-infrastructure-fund', companyId: 'nodeworks', shares: 1_000_000, votingShares: 1_000_000 },
     ],
+    assets: [
+      { id: 'nodeworks-compute-fleet', ownerId: 'nodeworks', assetClass: 'compute-equipment',
+        bookValueCents: moneyFromDollars(8_500_000), realizableValueCents: moneyFromDollars(5_600_000),
+        securedDebtId: 'nodeworks-infrastructure-debt' },
+      { id: 'nodeworks-power-systems', ownerId: 'nodeworks', assetClass: 'power-infrastructure',
+        bookValueCents: moneyFromDollars(3_600_000), realizableValueCents: moneyFromDollars(2_200_000),
+        securedDebtId: 'nodeworks-infrastructure-debt' },
+      { id: 'nodeworks-network-core', ownerId: 'nodeworks', assetClass: 'network-infrastructure',
+        bookValueCents: moneyFromDollars(1_700_000), realizableValueCents: moneyFromDollars(850_000) },
+      { id: 'nodeworks-facility-interest', ownerId: 'nodeworks', assetClass: 'facility',
+        bookValueCents: moneyFromDollars(1_400_000), realizableValueCents: moneyFromDollars(650_000) },
+    ],
     debts: [
       { id: 'meridian-revolver', borrowerId: 'meridian-group', lenderId: 'northstar-commercial-bank', principalCents: moneyFromDollars(3_000_000), quarterlyInterestRate: 0.02, facilityLimitCents: moneyFromDollars(8_000_000) },
       { id: 'nodeworks-infrastructure-debt', borrowerId: 'nodeworks', lenderId: 'frontier-development-bank', principalCents: moneyFromDollars(14_000_000), quarterlyInterestRate: 0.0225 },
