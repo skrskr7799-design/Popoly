@@ -159,7 +159,7 @@ export function FinancePanel({
         <div><span>Creditor recovery</span><b>{formatMoney(liquidationPreview.totalCreditorRecoveryCents, true)}</b></div>
         <div><span>Unpaid creditor claims</span><b>{formatMoney(liquidationPreview.totalCreditorClaimsCents - liquidationPreview.totalCreditorRecoveryCents, true)}</b></div>
         <div><span>Shareholder residual</span><b>{formatMoney(liquidationPreview.shareholderResidualCents, true)}</b></div>
-      </div>
+      </div>}
       <p className="pop-administration-warning-copy">Liquidation is irreversible. Assets are sold, the company stops operating, and any unpaid creditor claims remain recorded against the failed entity.</p>
       <button type="button" className="pop-secondary-button pop-admin-danger" onClick={() => onLiquidateAdministration(administrationCase.id)}>Liquidate NodeWorks</button>
     </div>}
