@@ -81,7 +81,7 @@ export function CorporationOverview({
     { label: 'Commissioned equipment', value: capacity?.commissionedEquipmentMW ?? 0, icon: HardDrive, color: 'equipment' },
     { label: 'Operational limit', value: capacity?.operationalLimitMW ?? 0, icon: Gauge, color: 'limit' },
   ];
-  const bottleneck = capacityRows.reduce((lowest, item) => {gameText("item.value")} < lowest.value ? item : lowest, capacityRows[0]);
+  const bottleneck = capacityRows.reduce((lowest, item) => item.value < lowest.value ? item : lowest, capacityRows[0]);
   const reservedOrders = state.equipmentOrders.filter((item) => item.buyerId === operatingId && item.status === 'reserved');
   const deliveredOrders = state.equipmentOrders.filter((item) => item.buyerId === operatingId && item.status === 'delivered');
   const reservedMW = reservedOrders.reduce((sum, item) => sum + item.quantityMWEquivalent, 0);
