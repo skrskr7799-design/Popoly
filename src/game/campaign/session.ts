@@ -3,6 +3,9 @@ import { advanceQuarter as resolveQuarter, type AdvanceQuarterResult, type Quart
 import { initializeGame } from '../engine/initialize';
 import { COMPUTE_BOTTLENECK_SCENARIO_ID, COMPUTE_BOTTLENECK_SCENARIO_VERSION } from '../scenario/computeBottleneck';
 import { buildQuarterReport, type QuarterReport } from '../systems/quarterReport';
+import { validateGameState } from '../domain/invariants';
+import { assessFinancialHealth } from '../systems/financialHealth';
+import { openAdministration as fileAdministration, reorganizeAdministration as completeReorganization, type AdministrationTrigger, type AdministrationTransitionResult } from '../systems/administration';
 import { createCampaignSave } from '../persistence/save';
 import { restoreCampaign } from '../persistence/restore';
 import type { CampaignSaveRepository } from '../persistence/repository';
@@ -151,6 +154,46 @@ export class CampaignSession {
       state: clone(result.state),
       report: clone(result.report),
     };
+  }
+
+  /** Open a formal administration case without changing cash or creditor balances. */
+  openAdministration(entityId: string, trigger: AdministrationTrigger = 'voluntary'): AdministrationTransitionResult {
+    const result = fileAdministration(this.stateValue, entityId, trigger);
+    if (!result.ok) return result;
+    const issues = validateGameState(result.state);
+    if (issues.length > 0) return {
+      ok: false, code: 'administration.state_invalid',
+      message: issues.map((item) => item.message).join(' '),
+    };
+    this.stateValue = clone(result.state);
+    this.reportValue = buildQuarterReport(this.stateValue);
+    return { ...result, state: clone(result.state) };
+  }
+
+  /** Exit administration only after operating liquidity and creditor arrears are back under control. */
+  reorganizeAdministration(caseId: string): AdministrationTransitionResult {
+    const administrationCase = this.stateValue.administrationCases?.find((item) => item.id === caseId);
+    if (!administrationCase || administrationCase.status !== 'active') {
+      return { ok: false, code: 'administration.case_not_active', message: 'Only an active administration case can be reorganized.' };
+    }
+    const health = assessFinancialHealth(this.stateValue, this.reportValue, administrationCase.entityId);
+    if (!health || health.status === 'distressed' || health.operatingPayablesCents > 0 ||
+        health.debtArrearsCents > 0 || health.defaultedDebtCount > 0 || health.covenantBreachCount > 0) {
+      return {
+        ok: false, code: 'administration.reorganization_not_viable',
+        message: 'Reorganization requires non-distressed operations, cleared trade payables and debt arrears, and no active debt default or covenant breach.',
+      };
+    }
+    const result = completeReorganization(this.stateValue, caseId);
+    if (!result.ok) return result;
+    const issues = validateGameState(result.state);
+    if (issues.length > 0) return {
+      ok: false, code: 'administration.state_invalid',
+      message: issues.map((item) => item.message).join(' '),
+    };
+    this.stateValue = clone(result.state);
+    this.reportValue = buildQuarterReport(this.stateValue);
+    return { ...result, state: clone(result.state) };
   }
 
   /** Persist the current stable quarter boundary; no autosave occurs implicitly. */
