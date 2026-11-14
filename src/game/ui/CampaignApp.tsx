@@ -214,6 +214,7 @@ export default function CampaignApp() {
       if (!result.ok) setStorageMessage(result.error.message);
       else {
         setSession(result.value.session);
+        setActiveView('command');
         setSelected([]);
         setRenewalDrafts({});
         setSelectedLoanOffers([]);
@@ -272,6 +273,7 @@ export default function CampaignApp() {
         setStorageMessage(restored.error.message);
       } else {
         setSession(restored.value.session);
+        setActiveView('command');
         setSelected([]);
         setRenewalDrafts({});
         setSelectedLoanOffers([]);
