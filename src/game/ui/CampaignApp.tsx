@@ -21,6 +21,7 @@ import { FinancePanel } from './FinancePanel';
 import { RegionalCommandMap } from './RegionalCommandMap';
 import { CommandCenterBriefing } from './CommandCenterBriefing';
 import { CorporationOverview } from './CorporationOverview';
+import { MarketsOverview } from './MarketsOverview';
 
 const money = (cents: number) => formatMillions(cents);
 const campaignRepository = new IndexedDbCampaignSaveRepository();
@@ -405,7 +406,12 @@ export default function CampaignApp() {
           current.includes(offerId) ? current.filter((id) => id !== offerId) : [...current, offerId])}
         creditRequest={creditRequest}
         onCreditRequestChange={setCreditRequest}
-      /> : <>
+      /> : activeView === 'markets' ? <>
+      <MarketsOverview state={state} report={currentReport} />
+      {storageMessage && <div className="pop-storage-message">{storageMessage}<button onClick={() => setStorageMessage(null)}>Dismiss</button></div>}
+      {showStorage && storagePanel}
+      <footer className="pop-footer"><span>POPOLY / THE COMPUTE BOTTLENECK</span><span>MARKET INTELLIGENCE · {formatQuarter(state.quarter)}</span><button onClick={restartCampaign}>Restart campaign</button></footer>
+      </> : <>
       <section className="pop-hero pop-command-hero">
         <div className="pop-hero-copy"><span className="pop-eyebrow"><i className="pop-eyebrow-pulse" /> STRATEGIC POSITION · NORTH REGION · 2035</span><h2>The future is<br /><em>under construction.</em></h2>
           <p>Meridian Group is building the infrastructure behind the next compute economy. Power, equipment, capacity and demand are converging into one strategic contest.</p>
@@ -520,6 +526,7 @@ export default function CampaignApp() {
       </div>
 
       <footer className="pop-footer"><span>POPOLY / THE COMPUTE BOTTLENECK</span><span>SIMULATION BUILD 0.1.0</span><button onClick={restartCampaign}>Restart campaign</button></footer>
+      </> : <> 
       </>}
     </main>
   </div>;
