@@ -20,6 +20,8 @@ jobs:
           node-version: 22
       - name: Install dependencies
         run: npm install --legacy-peer-deps --no-audit --no-fund
+      - name: Lint
+        run: npm run lint
       - name: TypeScript and production build
         run: npm run build
       - name: Game engine tests
