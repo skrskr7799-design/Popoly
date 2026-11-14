@@ -155,7 +155,9 @@ Avoid changing the game-state schema version until the exact migration/defaultin
 - [x] Require stable financial health and cleared creditor arrears before reorganization.
 - [x] Cover administration case and company status in save-shape round-trip tests.
 - [ ] Add distress-based filing eligibility and player-facing administration choices.
-- [ ] Add atomic asset realization, creditor distributions and liquidation outcome.
+- [x] Add atomic asset realization, creditor distributions, debt/payable recovery accounting, and a recorded liquidation outcome.
+- [x] Include the subsidiary's own cash in the estate and distribute any residual to shareholders by ownership shares.
+- [x] Stop ordinary quarter progression after the operating subsidiary is liquidated; post-insolvency group play remains a later campaign feature.
 - [ ] Restrict ordinary investment and new commitments while administration is active.
 - [ ] Define campaign continuation after subsidiary failure.
 - Implement claims, asset realization and priority waterfall.
