@@ -12,6 +12,11 @@ export interface WorkloadDecision {
   desiredWorkloadMW: number;
 }
 
+export interface TurnaroundActionCommand {
+  companyId: string;
+  actionId: TurnaroundActionId;
+}
+
 export interface ContractOfferCommand {
   contractId: string;
   offeredPriceCentsPerMWQuarter: number;
