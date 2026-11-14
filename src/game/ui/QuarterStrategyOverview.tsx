@@ -51,7 +51,7 @@ export function QuarterStrategyOverview({
         <span className="pop-eyebrow"><i className="pop-eyebrow-pulse" /> EXECUTIVE PLANNING · {formatQuarter(state.quarter)}</span>
         <h2>{gameText("Shape the next")}<br /><em>{gameText("quarter of growth.")}</em></h2>
         <p>{gameText("Every initiative competes for capital, leadership attention and a narrow window of opportunity. Build a coherent portfolio before committing the group.")}</p>
-        <div className="pop-strategy-hero-meta"><span><b /> {gameText("DECISION WINDOW OPEN")}</span><span>{gameText("MERIDIAN GROUP")}</span><span>{gameText("NORTH REGION · 2035")}</span></div>
+        <div className="pop-strategy-hero-meta"><span><b /> {gameText("DECISION WINDOW OPEN")}</span><span>{gameText("MERIDIAN GROUP")}</span><span>NORTH REGION · 2035</span></div>
       </div>
       <div className="pop-strategy-hero-art" aria-hidden="true">
         <div className="pop-strategy-orbit orbit-a" /><div className="pop-strategy-orbit orbit-b" />
@@ -94,7 +94,7 @@ export function QuarterStrategyOverview({
             const canAfford = isSelected || (otherLeadership + initiative.leadershipCost <= leadershipCapacity && otherCapital + initiative.upfrontCostCents <= cashAvailable);
             return <button type="button" key={initiative.id} className={`pop-strategy-card ${isSelected ? 'is-selected' : ''} ${isActive ? 'is-active' : ''}`}
               onClick={() => onToggle(initiative)} disabled={isActive || !canAfford} aria-pressed={isSelected}>
-              <div className="pop-strategy-card-top"><span className="pop-strategy-index">0{index + 1}</span><span className="pop-strategy-glyph"><InitiativeGlyph type={initiative.effect.type} /></span>{isActive ? <span className="pop-strategy-status">{gameText("IN PROGRESS")}</span> {gameText(": isSelected ?")} <span className="pop-strategy-status selected"><Check size={11} /> {gameText("SELECTED")}</span> : <span className="pop-strategy-add">＋</span>}</div>
+              <div className="pop-strategy-card-top"><span className="pop-strategy-index">0{index + 1}</span><span className="pop-strategy-glyph"><InitiativeGlyph type={initiative.effect.type} /></span>{isActive ? <span className="pop-strategy-status">{gameText("IN PROGRESS")}</span> : isSelected ? <span className="pop-strategy-status selected"><Check size={11} /> {gameText("SELECTED")}</span> : <span className="pop-strategy-add">＋</span>}</div>
               <h4>{initiative.name}</h4><p>{initiative.description}</p>
               <div className="pop-strategy-effect"><span>{gameText("PROJECTED EFFECT")}</span><strong>{effectLabel(initiative)}</strong></div>
               <div className="pop-strategy-card-foot"><span>{initiative.leadershipCost} leadership</span><span>{formatMillions(initiative.upfrontCostCents)}</span><span>{initiative.durationQuarters} qtrs</span></div>
