@@ -4,6 +4,8 @@ import { validateGameState } from '../domain/invariants';
 import { buildQuarterReport } from '../systems/quarterReport';
 import { advanceQuarter } from '../engine/advanceQuarter';
 import { advanceCreditorWorkouts, proposeCreditorWorkout } from '../systems/creditorWorkout';
+import { createCampaignSave, serializeCampaignSave } from '../persistence/save';
+import { loadCampaignSave } from '../persistence/load';
 
 const plan = {
   entityId: 'nodeworks', standstillQuarters: 1, maturityExtensionQuarters: 1,
@@ -33,10 +35,9 @@ describe('coordinated creditor workouts', () => {
     const result = proposeCreditorWorkout(opening, { ...plan, principalWriteDownBps: 2_500, tradePayableWriteDownBps: 1_500 });
     expect(result.ok).toBe(true);
     if (!result.ok) return;
-    if (result.workout.status === 'rejected') {
-      expect(result.state.debts.map((item) => [item.id, item.principalCents, item.quarterlyInterestRate])).toEqual(debtBefore);
-      expect(result.state.operatingPayables).toEqual(opening.operatingPayables);
-    }
+    expect(result.workout.status).toBe('rejected');
+    expect(result.state.debts.map((item) => [item.id, item.principalCents, item.quarterlyInterestRate])).toEqual(debtBefore);
+    expect(result.state.operatingPayables).toEqual(opening.operatingPayables);
   });
 
   it('honours an approved standstill without creating a new payment default', () => {
@@ -71,6 +72,32 @@ describe('coordinated creditor workouts', () => {
     expect(workout?.status).toBe('completed');
     expect(workout?.milestones.every((item) => item.status === 'met')).toBe(true);
     expect(validateGameState(next)).toEqual([]);
+  });
+
+  it('round-trips an active creditor workout through the campaign save format', async () => {
+    const opening = initializeGame(2035);
+    const proposed = proposeCreditorWorkout(opening, plan);
+    expect(proposed.ok).toBe(true);
+    if (!proposed.ok || proposed.workout.status !== 'active') return;
+    const metadata = {
+      campaignId: 'creditor-workout-save',
+      createdAt: '2035-01-01T00:00:00.000Z',
+      updatedAt: '2035-01-01T00:00:00.000Z',
+      simulationVersion: '0.1.0',
+    };
+    const digest = async () => 'stable-workout-test-digest';
+    const created = await createCampaignSave(proposed.state, metadata, digest);
+    expect(created.ok).toBe(true);
+    if (!created.ok) return;
+    const loaded = await loadCampaignSave(serializeCampaignSave(created.value), {
+      isSimulationCompatible: (version) => version === '0.1.0',
+      isScenarioCompatible: (id, version) => id === opening.scenarioId && version === opening.scenarioVersion,
+    }, digest);
+    expect(loaded.ok).toBe(true);
+    if (!loaded.ok) return;
+    expect(loaded.value.state.creditorWorkouts).toEqual(proposed.state.creditorWorkouts);
+    expect(loaded.value.state.debts).toEqual(proposed.state.debts);
+    expect(validateGameState(loaded.value.state)).toEqual([]);
   });
 
   it('keeps creditor claims scoped to the borrower entity', () => {
