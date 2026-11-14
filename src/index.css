@@ -1480,3 +1480,59 @@ body,.pop-app { background:var(--pop-color-canvas); color:var(--pop-color-text);
     grid-column: 1 / -1;
   }
 }
+
+
+.pop-administration {
+  position:relative;
+  overflow:hidden;
+  border:1px solid rgba(240,183,131,.28);
+  border-radius:11px;
+  padding:15px;
+  background:
+    radial-gradient(circle at 100% 0,rgba(183,111,63,.12),transparent 42%),
+    linear-gradient(145deg,rgba(64,39,31,.24),rgba(14,23,33,.84));
+}
+.pop-administration::before {
+  content:"";
+  position:absolute;
+  inset:0 auto 0 0;
+  width:2px;
+  background:linear-gradient(180deg,#f0b783,rgba(240,183,131,.08));
+}
+.pop-administration>p {
+  margin:10px 0;
+  color:var(--pop-color-text-soft);
+  font-size:12px;
+  line-height:1.6;
+}
+.pop-administration-meta {
+  display:flex;
+  justify-content:space-between;
+  gap:12px;
+  padding:10px 0 13px;
+  color:var(--pop-color-muted);
+  font-size:11px;
+  text-transform:uppercase;
+  letter-spacing:.06em;
+}
+.pop-administration-meta strong {
+  color:var(--pop-color-text);
+  font-size:11px;
+  font-weight:650;
+}
+.pop-administration .pop-primary,.pop-administration .pop-secondary-button {
+  min-height:37px;
+  margin-top:3px;
+}
+.pop-admin-danger {
+  border-color:rgba(240,183,131,.38);
+  color:#f2c49d;
+  background:rgba(132,74,45,.16);
+}
+.pop-admin-danger:hover {
+  border-color:rgba(240,183,131,.62);
+  background:rgba(132,74,45,.25);
+}
+@media (prefers-reduced-motion:reduce) {
+  .pop-administration { animation:none; transition:none; }
+}
