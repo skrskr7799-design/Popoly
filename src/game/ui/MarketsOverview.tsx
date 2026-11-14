@@ -24,7 +24,7 @@ function knowledgeLabel(value: KnowledgeClass) {
 function freshnessLabel(age: number) {
   if (age === 0) return 'Current';
   if (age === 1) return 'One quarter old';
-  return `${age} quarters old`;
+  return `${age} ${gameText('quarters old')}`;
 }
 
 function estimateValue(item: IntelligenceEstimate) {
@@ -120,7 +120,7 @@ export function MarketsOverview({ state, report, activityReport }: Props) {
         <div className="pop-markets-hero-tags">
           <span><Globe2 size={13} /> {gameText("NORTH REGION")}</span>
           <span><Network size={13} /> {gameText("INTERDEPENDENT SUPPLY")}</span>
-          <span><Signal size={13} /> {state.playerIntelligence.length} INTELLIGENCE SIGNALS</span>
+          <span><Signal size={13} /> {state.playerIntelligence.length} {gameText('INTELLIGENCE SIGNALS')}</span>
         </div>
       </div>
       <div className="pop-markets-hero-visual" aria-label={gameText("Regional compute market supply network")}>
