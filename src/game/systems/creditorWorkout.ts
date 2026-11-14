@@ -1,4 +1,4 @@
-import type { CreditorWorkout, CreditorWorkoutMilestone, GameState, MoneyCents, OperatingPayableClass } from '../domain/types';
+import type { CreditorWorkout, CreditorWorkoutMilestone, GameState, OperatingPayableClass } from '../domain/types';
 import { moneyFromCents } from '../domain/money';
 import type { QuarterReport } from './quarterReport';
 

@@ -33,7 +33,7 @@ export function FinancePanel({
   onFileAdministration: () => void;
   onReorganizeAdministration: (caseId: string) => void;
   onLiquidateAdministration: (caseId: string) => void;
-  onProposeWorkout: (proposal: CreditorWorkoutProposal) => void;
+  onProposeWorkout?: (proposal: CreditorWorkoutProposal) => void;
 }) {
   const organizations = state.organizations;
   const organizationName = (id: string) => organizations.find((item) => item.id === id)?.name ?? id;
@@ -100,7 +100,7 @@ export function FinancePanel({
       <span className="pop-pill">Legal-entity cash kept separate</span>
     </div>
     <p className="pop-panel-intro">Debt belongs to the named borrower. Meridian's cash is not automatically available to NodeWorks, and subsidiary cash is not pooled at holding level.</p>
-    <CreditorWorkoutPanel state={state} onPropose={onProposeWorkout} />
+    {onProposeWorkout && <CreditorWorkoutPanel state={state} onPropose={onProposeWorkout} />}
 
     <div className="pop-finance-summary">
       <div><span>Outstanding principal</span><strong>{formatMoney(totalDebt, true)}</strong></div>
