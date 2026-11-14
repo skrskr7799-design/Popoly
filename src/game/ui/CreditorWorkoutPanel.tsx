@@ -71,14 +71,14 @@ export function CreditorWorkoutPanel({ state, onPropose, onFileAdministration }:
       </div>)}
       {workout.milestones.map((milestone) => <div className="pop-operating-payable" key={milestone.id}>
         <span>{gameText(milestone.metric.replaceAll('-', ' '))}</span><strong>{gameText(milestone.status)}</strong>
-        <small>{milestone.measuredCents === undefined ? 'Awaiting review' : formatMoney(milestone.measuredCents, true)}</small>
+        <small>{milestone.measuredCents === undefined ? gameText('Awaiting review') : formatMoney(milestone.measuredCents, true)}</small>
       </div>)}
       {workout.resolutionNote && <p className="pop-muted">{gameText(workout.resolutionNote)}</p>}
       {workout.status === 'breached' && company?.status !== 'administration' && company?.status !== 'liquidated' && <button type="button" className="pop-primary" onClick={() => onFileAdministration('creditor-workout-breach')}>{gameText("Escalate to administration")}</button>}
     </article>)}
     {!active && company?.status !== 'liquidated' && <div className="pop-credit-request">
       <label><span>{gameText("Payment standstill")}</span><select value={draft.standstill} onChange={(e) => update('standstill', e.target.value)}>{[0,1,2,3,4].map((n) => <option key={n} value={n}>{n} {gameText('quarters')}</option>)}</select></label>
-      <label><span>Maturity extension (existing dates only)</span><select value={draft.extension} onChange={(e) => update('extension', e.target.value)}>{[0,1,2,3,4,6,8,12].map((n) => <option key={n} value={n}>{n} {gameText('quarters')}</option>)}</select></label>
+      <label><span>{gameText('Maturity extension (existing dates only)')}</span><select value={draft.extension} onChange={(e) => update('extension', e.target.value)}>{[0,1,2,3,4,6,8,12].map((n) => <option key={n} value={n}>{n} {gameText('quarters')}</option>)}</select></label>
       <label><span>{gameText("Interest reduction · bps")}</span><input type="number" min="0" max="500" step="25" value={draft.rate} onChange={(e) => update('rate', e.target.value)}/></label>
       <label><span>{gameText("Unsecured principal write-down · bps")}</span><input type="number" min="0" max="2500" step="100" value={draft.debtHaircut} onChange={(e) => update('debtHaircut', e.target.value)}/></label>
       <label><span>{gameText("Trade payable write-down · bps")}</span><input type="number" min="0" max="1500" step="100" value={draft.tradeHaircut} onChange={(e) => update('tradeHaircut', e.target.value)}/></label>
