@@ -100,7 +100,7 @@ function OpeningScreen({ onStart, onOpenArchive }: { onStart: () => void; onOpen
     <h1>{gameText("The Compute")}<br /><em>{gameText("Bottleneck")}</em></h1>
     <p>{gameText("Lead Meridian Group through eight decisive quarters. Control the dependencies that shape the future of regional compute infrastructure.")}</p>
     <div className="pop-opening-facts">
-      <span><Landmark size={16} /> {gameText("Meridian Group")}</span><span><Cpu size={16} /> {gameText("NodeWorks")}</span><span><Globe2 size={16} /> North Region · 2035</span>
+      <span><Landmark size={16} /> {gameText("Meridian Group")}</span><span><Cpu size={16} /> {gameText("NodeWorks")}</span><span><Globe2 size={16} /> {gameText('North Region · 2035')}</span>
     </div>
     <button className="pop-primary pop-start" onClick={onStart}>{gameText("Establish command")} <ChevronRight size={17} /></button>
     <button className="pop-opening-archive" onClick={onOpenArchive}><FolderOpen size={15} /> {gameText("Resume a saved campaign")}</button>
@@ -444,7 +444,7 @@ export default function CampaignApp() {
         <button type="button" className={`pop-nav-item ${activeView === 'markets' ? 'active' : ''}`} aria-current={activeView === 'markets' ? 'page' : undefined} onClick={() => setActiveView('markets')}><Globe2 size={17} /> {gameText("Markets & intel")}</button>
         <button type="button" className={`pop-nav-item ${activeView === 'strategy' ? 'active' : ''}`} aria-current={activeView === 'strategy' ? 'page' : undefined} onClick={() => setActiveView('strategy')}><Radar size={17} /> {gameText("Quarter strategy")}</button>
       </div>
-      <div className="pop-sidebar-bottom"><span>{gameText("THE COMPUTE BOTTLENECK")}</span><small>Scenario v0.1.0</small><small>Campaign {session.campaignId.slice(0, 8)}</small></div>
+      <div className="pop-sidebar-bottom"><span>{gameText("THE COMPUTE BOTTLENECK")}</span><small>{gameText('Scenario v0.1.0')}</small><small>Campaign {session.campaignId.slice(0, 8)}</small></div>
     </aside>
 
     <main className="pop-main">
