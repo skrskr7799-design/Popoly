@@ -60,7 +60,7 @@ export function FinancePanel({
   const requestAmount = Number(creditRequest.amountDollars);
   const validRequest = Number.isFinite(requestAmount) && Number.isSafeInteger(Math.round(requestAmount * 100)) &&
     requestAmount > 0 && Number.isInteger(Number(creditRequest.termQuarters)) &&
-    Number(creditRequest.termQuarters) >{gameText("= 2 && Number(creditRequest.termQuarters)")} <= 12;
+    Number(creditRequest.termQuarters) >= 2 && Number(creditRequest.termQuarters) <= 12;
   const availableOffers = state.loanOffers.filter((offer) =>
     offer.status === 'available' && state.quarter <= offer.expiresAfterQuarter);
   const operatingHealth = operatingCompany ? assessFinancialHealth(state, report, operatingCompany.organizationId) : undefined;
@@ -275,7 +275,7 @@ export function FinancePanel({
             <span>Leverage maximum {debt.covenantTerms.maximumDebtToAnnualCashFlow?.toFixed(2) ?? '—'}×</span>
             <span>{debt.covenantTerms.restrictAdditionalBorrowing ? 'Borrowing restriction applies' : 'No borrowing restriction'}</span>
           </div>}
-          {(arrears > {gameText("0 || dueNow || debt.crossDefaultedByDebtId) &&")} <div className="pop-debt-warning">
+          {(arrears > 0 || dueNow || debt.crossDefaultedByDebtId) && <div className="pop-debt-warning">
             {arrears > 0 ? `Arrears ${formatMoney(arrears, true)} · ${debt.overdueQuarters ?? 0} overdue quarter(s)` : dueNow ? 'Principal maturity / acceleration is due this quarter.' : `Cross-default linked to ${debt.crossDefaultedByDebtId}`}
           </div>}
         </article>;
