@@ -235,26 +235,23 @@ describe('financial health assessment', () => {
 });
 
 describe('long-horizon economic stress boundary', () => {
-  it('detects unattended operating-company insolvency before the seventh year without corrupting prior quarters', () => {
+  it('detects unattended operating-company distress and trade-creditor arrears before the seventh year', () => {
     let state = initializeGame(2035);
     const openingQuarter = state.quarter;
     const observedEnergyPrices: number[] = [];
     const observedDemand: number[] = [];
-    let distress: ReturnType<typeof advanceQuarter> | undefined;
+    let firstPayableQuarter: number | undefined;
 
     for (let turn = 0; turn < 48; turn += 1) {
       const result = advanceQuarter(state);
-      if (!result.ok) {
-        distress = result;
-        break;
-      }
-
+      expect(result.ok, result.ok ? undefined : `quarter ${state.quarter}: ${JSON.stringify(result.issues)}`).toBe(true);
+      if (!result.ok) return;
       state = result.state;
       expect(state.quarter).toBe(openingQuarter + turn + 1);
       expect(validateGameState(state)).toEqual([]);
       expect(state.organizations.every((item) =>
         Number.isFinite(item.cashCents) && Number.isFinite(item.debtCents) &&
-        Math.abs(item.cashCents) < 1e15 && item.debtCents >= 0,
+        item.cashCents >= 0 && item.debtCents >= 0,
       )).toBe(true);
       expect(state.debts.every((item) =>
         Number.isFinite(item.principalCents) && item.principalCents >= 0 &&
@@ -269,22 +266,25 @@ describe('long-horizon economic stress boundary', () => {
 
       observedEnergyPrices.push(state.regionalMarkets[0]!.referenceEnergyPriceCentsPerMWh);
       observedDemand.push(state.actors.find((item) => item.organizationId === 'asterion-ai')!.hiddenMetrics.demandMW ?? 0);
+      const unpaidNodeWorks = (state.operatingPayables ?? []).some((payable) =>
+        payable.entityId === 'nodeworks' && payable.outstandingAmountCents > 0);
+      if (unpaidNodeWorks) {
+        firstPayableQuarter = state.quarter;
+        break;
+      }
     }
 
-    expect(distress?.ok).toBe(false);
-    if (!distress || distress.ok) return;
-    expect(distress.issues).toContainEqual(expect.objectContaining({
-      code: 'finance.cash_negative', entityId: 'nodeworks',
-    }));
-    expect(state.quarter).toBe(25);
-    expect(observedEnergyPrices).toHaveLength(24);
+    expect(firstPayableQuarter).toBeDefined();
+    expect(firstPayableQuarter).toBeLessThan(29);
     expect(observedEnergyPrices.every((value) => Number.isFinite(value) && value > 0)).toBe(true);
-    expect(observedDemand[23]).toBeGreaterThan(observedDemand[0]!);
-
+    expect(observedDemand.at(-1)).toBeGreaterThan(observedDemand[0]!);
     const report = buildQuarterReport(state);
     const operations = report.companies.find((item) => item.companyId === 'nodeworks')!.operations;
+    const health = assessFinancialHealth(state, report, 'nodeworks')!;
     expect(operations.operatingCashContributionCents).toBeLessThan(0);
     expect(operations.totalOperatingCostCents).toBeGreaterThan(operations.revenueCents);
+    expect(health.overdueOperatingPayablesCents).toBeGreaterThan(0);
+    expect(health.status).toBe('distressed');
     expect(validateGameState(state)).toEqual([]);
   });
 });
