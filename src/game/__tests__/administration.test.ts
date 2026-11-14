@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { initializeGame } from '../engine/initialize';
 import { validateGameState } from '../domain/invariants';
 import { moneyFromCents } from '../domain/money';
-import { openAdministration, reorganizeAdministration } from '../systems/administration';
+import { liquidateAdministration, openAdministration, reorganizeAdministration } from '../systems/administration';
 import { advanceQuarter } from '../engine/advanceQuarter';
 import { calculateLiquidationWaterfall } from '../systems/liquidation';
 
@@ -75,8 +75,41 @@ describe('formal administration transitions', () => {
     const entityDebtBefore = filed.state.debts.filter((item) => item.borrowerId === 'nodeworks');
     const payableBefore = filed.state.operatingPayables ?? [];
 
-    const result = (awaitLiquidation => awaitLiquidation)(undefined);
-    void result;
+    const result = liquidateAdministration(filed.state, filed.administrationCase.id);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.administrationCase.status).toBe('liquidated');
+    expect(result.administrationCase.resolution?.cashRealizedCents).toBe(preview.cashRealizedCents);
+    expect(result.state.operatingCompanies.find((item) => item.organizationId === 'nodeworks')?.status).toBe('liquidated');
+    expect(result.state.organizations.find((item) => item.id === 'nodeworks')?.cashCents).toBe(0);
+    expect(result.state.assets?.filter((item) => item.ownerId === 'nodeworks' && item.disposedQuarter === undefined)).toHaveLength(0);
+    expect(result.state.operatingCompanies.find((item) => item.organizationId === 'nodeworks')?.contracts).toHaveLength(0);
+    expect(result.state.organizations.find((item) => item.id === 'meridian-group')?.cashCents)
+      .toBe((parentCashBefore ?? 0) + Math.floor(preview.shareholderResidualCents * 7_200_000 / 10_000_000));
+    expect(result.state.debts.filter((item) => item.borrowerId === 'meridian-group')
+      .map((item) => [item.id, item.principalCents])).toEqual(parentDebtBefore);
+
+    for (const debt of entityDebtBefore) {
+      const remaining = result.state.debts.find((item) => item.id === debt.id)!;
+      const recovery = preview.distributions.filter((item) => item.claimId === debt.id)
+        .reduce((sum, item) => sum + item.recoveryCents, 0);
+      expect(remaining.principalCents + (remaining.arrearsInterestCents ?? 0))
+        .toBe(debt.principalCents + (debt.arrearsInterestCents ?? 0) - recovery);
+    }
+    for (const payable of payableBefore) {
+      const remaining = result.state.operatingPayables?.find((item) => item.id === payable.id);
+      const recovery = preview.distributions.find((item) => item.claimId === payable.id)?.recoveryCents ?? 0;
+      expect(remaining?.outstandingAmountCents).toBe(payable.outstandingAmountCents - recovery);
+    }
+    expect(result.administrationCase.resolution?.distributions.every((item) =>
+      item.recoveryCents + item.shortfallCents === item.claimAmountCents)).toBe(true);
+    expect(validateGameState(result.state)).toEqual([]);
+    expect(liquidateAdministration(result.state, filed.administrationCase.id)).toMatchObject({
+      ok: false, code: 'administration.case_not_active',
+    });
+    const nextTurn = advanceQuarter(result.state);
+    expect(nextTurn.ok).toBe(false);
+    if (!nextTurn.ok) expect(nextTurn.issues.some((item) => item.code === 'campaign.company_liquidated')).toBe(true);
   });
 
   it('records reorganization without forgiving debt or operating payables', () => {
