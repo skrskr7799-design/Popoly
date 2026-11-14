@@ -100,7 +100,6 @@ export function calculateLiquidationWaterfall(
   const securedDebts = debts.filter((debt) => assets.some((asset) =>
     asset.securedDebtId === debt.id));
   for (const debt of securedDebts) {
-    const originalClaim = debt.principalCents + (debt.arrearsInterestCents ?? 0);
     const recovered = securedDebtRecoveryCentsForDebt(assetRealizations, debt.id);
     distributions.push({
       claimId: debt.id,
