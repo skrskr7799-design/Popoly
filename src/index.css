@@ -1349,3 +1349,83 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .pop-strategy,.pop-strategy-card,.pop-strategy-meter i,.pop-strategy-quarter>div i,.pop-strategy-resolve { animation:none; transition:none; }
 }
+
+
+/* Popoly UI foundation — shared tokens and cross-screen interaction rules */
+:root {
+  color-scheme: dark;
+  --pop-color-canvas: #080d16;
+  --pop-color-sidebar: #0b121e;
+  --pop-color-surface: #101925;
+  --pop-color-surface-raised: #14212e;
+  --pop-color-surface-inset: #0c1520;
+  --pop-color-border: #263746;
+  --pop-color-border-strong: #38515e;
+  --pop-color-text: #e8edf5;
+  --pop-color-text-soft: #a1b2c0;
+  --pop-color-muted: #7f93a4;
+  --pop-color-dim: #607486;
+  --pop-color-accent: #9de0c4;
+  --pop-color-accent-strong: #b3efd8;
+  --pop-color-accent-blue: #91b8df;
+  --pop-color-warning: #f0b783;
+  --pop-radius-control: 7px;
+  --pop-radius-card: 10px;
+  --pop-radius-panel: 11px;
+  --pop-radius-hero: 12px;
+  --pop-space-1: 4px;
+  --pop-space-2: 8px;
+  --pop-space-3: 12px;
+  --pop-space-4: 16px;
+  --pop-space-5: 20px;
+  --pop-space-6: 24px;
+  --pop-motion-fast: 140ms;
+  --pop-motion-normal: 190ms;
+  --pop-motion-enter: 360ms;
+  --pop-ease-standard: cubic-bezier(.2,.7,.2,1);
+}
+html { background:var(--pop-color-canvas); }
+body,.pop-app { background:var(--pop-color-canvas); color:var(--pop-color-text); }
+.pop-sidebar { background:var(--pop-color-sidebar); border-color:#1d2939; }
+.pop-brand-mark { border:1px solid rgba(142,244,218,.42); box-shadow:0 0 24px rgba(91,220,190,.1); }
+.pop-nav-item { min-height:39px; border:1px solid transparent; transition:color var(--pop-motion-fast) ease,background var(--pop-motion-fast) ease,border-color var(--pop-motion-fast) ease; }
+.pop-nav-item.active { border-color:rgba(111,223,198,.12); }
+.pop-main { min-width:0; }
+.pop-topbar { min-height:52px; }
+.pop-topbar h1 { color:var(--pop-color-text); }
+.pop-quarter-chip { border-color:var(--pop-color-border-strong); background:rgba(17,31,43,.55); font-variant-numeric:tabular-nums; }
+.pop-eyebrow { color:#8299aa; }
+.pop-section-title h2 { color:var(--pop-color-text); }
+.pop-panel,.pop-corp-section,.pop-market-condition,.pop-market-actors,.pop-market-intelligence,.pop-market-activity,.pop-strategy-catalog,.pop-strategy-plan {
+  border-radius:var(--pop-radius-panel);
+  border-color:rgba(128,167,186,.17);
+}
+.pop-panel { background:linear-gradient(155deg,rgba(15,28,41,.96),rgba(10,19,29,.96)); }
+.pop-pill { border-radius:5px; }
+.pop-primary,.pop-secondary-button,.pop-quiet-button,.pop-strategy-resolve { transition-duration:var(--pop-motion-normal); transition-timing-function:var(--pop-ease-standard); }
+.pop-primary { color:#081b18; background:var(--pop-color-accent); }
+.pop-primary:hover { background:var(--pop-color-accent-strong); }
+.pop-secondary-button { border-radius:var(--pop-radius-control); }
+.pop-mobile-nav { border-color:rgba(128,167,186,.2); border-radius:var(--pop-radius-card); box-shadow:0 8px 24px rgba(0,0,0,.18); }
+.pop-mobile-nav button { min-height:38px; border-radius:6px; transition:color var(--pop-motion-fast) ease,background var(--pop-motion-fast) ease,border-color var(--pop-motion-fast) ease; }
+.pop-mobile-nav button.active { border-color:rgba(111,223,198,.24); }
+.pop-app :is(button,a,input,select,textarea,[tabindex]):focus-visible {
+  outline:2px solid #8cebd5;
+  outline-offset:3px;
+}
+.pop-app button:disabled { cursor:not-allowed; }
+.pop-app :is(input,select,textarea) { accent-color:var(--pop-color-accent); }
+.pop-app ::selection { color:#071b18; background:#9de0c4; }
+.pop-footer { border-top:1px solid rgba(128,167,186,.12); }
+.pop-stat,.pop-strategy-resource { border-color:rgba(128,167,186,.16); }
+.pop-corp-intro,.pop-markets-hero,.pop-strategy-hero,.pop-hero { border-radius:var(--pop-radius-hero); }
+.pop-corp-intro h2,.pop-markets-hero h2,.pop-strategy-hero-copy h2,.pop-hero h2 { text-wrap:balance; }
+.pop-corp-intro-copy>p,.pop-markets-hero-copy>p,.pop-strategy-hero-copy p,.pop-hero p { text-wrap:pretty; }
+@media (prefers-reduced-motion: reduce) {
+  .pop-app *, .pop-app *::before, .pop-app *::after {
+    scroll-behavior:auto !important;
+    animation-duration:.01ms !important;
+    animation-iteration-count:1 !important;
+    transition-duration:.01ms !important;
+  }
+}
