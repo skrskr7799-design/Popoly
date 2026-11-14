@@ -13,6 +13,8 @@ export interface FinancialHealthAssessment {
   overdueDebtCount: number;
   defaultedDebtCount: number;
   covenantBreachCount: number;
+  operatingPayablesCents: number;
+  overdueOperatingPayablesCents: number;
   reasons: string[];
 }
 
@@ -43,19 +45,27 @@ export function assessFinancialHealth(
   const defaultedDebtCount = debts.filter((debt) => debt.paymentStatus === 'defaulted').length;
   const covenantBreachCount = debts.filter((debt) => debt.covenantStatus === 'breached').length;
   const covenantGraceCount = debts.filter((debt) => debt.covenantStatus === 'grace').length;
+  const operatingPayables = (state.operatingPayables ?? []).filter((payable) =>
+    payable.entityId === entityId && payable.outstandingAmountCents > 0);
+  const operatingPayablesCents = operatingPayables.reduce((sum, payable) => sum + payable.outstandingAmountCents, 0);
+  const overdueOperatingPayablesCents = operatingPayables
+    .filter((payable) => payable.dueQuarter < state.quarter)
+    .reduce((sum, payable) => sum + payable.outstandingAmountCents, 0);
   const reasons: string[] = [];
 
   if (operatingCashContributionCents < 0) reasons.push('Core operations are consuming cash this quarter.');
   if (closingCashCents < 0) reasons.push('Projected closing liquidity is below zero before a recovery action.');
   if (cashRunwayQuarters !== null && cashRunwayQuarters < 2) reasons.push('Available cash covers fewer than two quarters at the current operating deficit.');
   if (debtArrearsCents > 0) reasons.push('Contractual debt service is already in arrears.');
+  if (operatingPayablesCents > 0) reasons.push('Some operating obligations remain unpaid.');
+  if (overdueOperatingPayablesCents > 0) reasons.push('Trade creditors are overdue and may restrict or interrupt essential services.');
   if (defaultedDebtCount > 0) reasons.push('At least one debt instrument is in default.');
   if (covenantBreachCount > 0) reasons.push('At least one lender covenant is breached.');
   else if (covenantGraceCount > 0) reasons.push('At least one lender covenant is in its grace period.');
 
   const distressed = closingCashCents < 0 || defaultedDebtCount > 0 || covenantBreachCount > 0 ||
-    debtArrearsCents > 0 || (operatingCashContributionCents < 0 && cashRunwayQuarters !== null && cashRunwayQuarters < 2);
-  const watch = !distressed && (operatingCashContributionCents < 0 || covenantGraceCount > 0 ||
+    debtArrearsCents > 0 || overdueOperatingPayablesCents > 0 || (operatingCashContributionCents < 0 && cashRunwayQuarters !== null && cashRunwayQuarters < 2);
+  const watch = !distressed && (operatingPayablesCents > 0 || operatingCashContributionCents < 0 || covenantGraceCount > 0 ||
     (cashRunwayQuarters !== null && cashRunwayQuarters < 4));
 
   return {
@@ -68,6 +78,8 @@ export function assessFinancialHealth(
     overdueDebtCount,
     defaultedDebtCount,
     covenantBreachCount,
+    operatingPayablesCents,
+    overdueOperatingPayablesCents,
     reasons,
   };
 }
