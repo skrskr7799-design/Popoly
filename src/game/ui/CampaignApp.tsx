@@ -463,8 +463,7 @@ export default function CampaignApp() {
       {showStorage && storagePanel}
       <footer className="pop-footer"><span>POPOLY / THE COMPUTE BOTTLENECK</span><span>MARKET INTELLIGENCE · {formatQuarter(state.quarter)}</span><button onClick={restartCampaign}>Restart campaign</button></footer>
       </> : activeView === 'strategy' ? <>
-      <QuarterStrategyOverview state={state} selected={selected} active={active} issues={issues}
-        onToggle={toggle} onResolve={resolveQuarter} />
+      {company?.status === 'liquidated' ? <section className="pop-panel pop-administration pop-administration-closed"><div className="pop-finance-subtitle"><strong>Campaign concluded</strong><span className="pop-pill pop-pill-warn">Liquidation</span></div><p>NodeWorks has been liquidated. The subsidiary's assets and remaining creditor claims have been resolved through the administration waterfall. Post-insolvency group operations are not yet part of this campaign.</p><button className="pop-primary" onClick={restartCampaign}>Start a new campaign</button></section> : <QuarterStrategyOverview state={state} selected={selected} active={active} issues={issues} onToggle={toggle} onResolve={resolveQuarter} />}
       {storageMessage && <div className="pop-storage-message">{storageMessage}<button onClick={() => setStorageMessage(null)}>Dismiss</button></div>}
       {showStorage && storagePanel}
       <footer className="pop-footer"><span>POPOLY / THE COMPUTE BOTTLENECK</span><span>STRATEGIC PLANNING · {formatQuarter(state.quarter)}</span><button onClick={restartCampaign}>Restart campaign</button></footer>
@@ -472,7 +471,7 @@ export default function CampaignApp() {
       <section className="pop-hero pop-command-hero">
         <div className="pop-hero-copy"><span className="pop-eyebrow"><i className="pop-eyebrow-pulse" /> STRATEGIC POSITION · NORTH REGION · 2035</span><h2>The future is<br /><em>under construction.</em></h2>
           <p>Meridian Group is building the infrastructure behind the next compute economy. Power, equipment, capacity and demand are converging into one strategic contest.</p>
-          <div className="pop-hero-meta"><span><b className="pop-live-dot" /> LIVE CAMPAIGN</span><span>MERIDIAN GROUP</span><span>THE COMPUTE BOTTLENECK</span></div>
+          <div className="pop-hero-meta"><span><b className="pop-live-dot" /> {company?.status === 'liquidated' ? 'CAMPAIGN CONCLUDED' : 'LIVE CAMPAIGN'}</span><span>MERIDIAN GROUP</span><span>THE COMPUTE BOTTLENECK</span></div>
         </div>
         <div className="pop-hero-visual"><RegionalCommandMap market={market} company={company} /><div className="pop-map-caption"><span>NORTH REGION / INFRASTRUCTURE NETWORK</span><span>SCHEMATIC VIEW · NOT TO SCALE</span></div></div>
         <div className="pop-hero-progress"><span>CAMPAIGN PROGRESS</span><strong>{Math.min(session.completedQuarters, GUIDED_CAMPAIGN_QUARTERS)} <small>/ {GUIDED_CAMPAIGN_QUARTERS}</small></strong><div className="pop-progress"><i style={{ width: `${Math.min(100, session.completedQuarters / GUIDED_CAMPAIGN_QUARTERS * 100)}%` }} /></div><small>{session.stage === 'sandbox' ? 'Opening complete · Continue freely' : `${GUIDED_CAMPAIGN_QUARTERS - session.completedQuarters} quarters remaining`}</small></div>
@@ -511,7 +510,7 @@ export default function CampaignApp() {
               })}
             </div>
             <div className="pop-agenda-footer"><span>{selected.length ? `${selected.length} initiative(s) queued for resolution` : 'No strategic commitments selected'}</span>
-              <button className="pop-primary" onClick={resolveQuarter}>Resolve quarter <ArrowUpRight size={16} /></button>
+              <button className="pop-primary" onClick={resolveQuarter} disabled={company?.status === 'liquidated'}>{company?.status === 'liquidated' ? 'Campaign concluded' : 'Resolve quarter'} <ArrowUpRight size={16} /></button>
             </div>
             {issues.length > 0 && <div className="pop-issues"><div><CircleAlert size={16} /> Engine validation</div>{issues.map((item, index) => <p key={`${item.code}-${index}`}><strong>{item.code}</strong> — {item.message}</p>)}</div>}
           </section>
