@@ -1,3 +1,4 @@
+import { gameText } from '../../i18n/game';
 import type { RegionalMarketState, OperatingCompanyState } from '../domain/types';
 
 type Props = { market?: RegionalMarketState; company?: OperatingCompanyState };
@@ -30,31 +31,31 @@ export function RegionalCommandMap({ market, company }: Props) {
       <path d="M330 151Q390 235 455 190T555 255"/>
     </g>
     <g className="pop-map-node pop-map-energy" transform="translate(95 205)">
-      <circle r="25" fill="#122e36" stroke="#5ac9bb" strokeOpacity=".7"/><circle r="16" fill="none" stroke="#5ac9bb" strokeOpacity=".35"/><path d="m2-13-9 15h8l-2 12 11-17H2Z" fill="#8cebd8"/><text y="43">SOLARA GRID</text>
+      <circle r="25" fill="#122e36" stroke="#5ac9bb" strokeOpacity=".7"/><circle r="16" fill="none" stroke="#5ac9bb" strokeOpacity=".35"/><path d="m2-13-9 15h8l-2 12 11-17H2Z" fill="#8cebd8"/><text y="43">{gameText("SOLARA GRID")}</text>
     </g>
     <g className="pop-map-node pop-map-equipment" transform="translate(220 192)">
-      <circle r="20" fill="#202b3d" stroke="#7da7e9" strokeOpacity=".8"/><path d="M-10-7h20v14h-20zM-5-12v5m10-5v5M-5 7v5m10-5v5" fill="none" stroke="#a9c8ff" strokeWidth="1.6"/><text y="39">EQUIPMENT</text>
+      <circle r="20" fill="#202b3d" stroke="#7da7e9" strokeOpacity=".8"/><path d="M-10-7h20v14h-20zM-5-12v5m10-5v5M-5 7v5m10-5v5" fill="none" stroke="#a9c8ff" strokeWidth="1.6"/><text y="39">{gameText("EQUIPMENT")}</text>
     </g>
     <g className="pop-map-node pop-map-player" transform="translate(330 151)" filter="url(#nodeGlow)">
-      <circle r="31" fill="#153c3a" stroke="#77e5cb" strokeWidth="1.5"/><circle r="23" fill="none" stroke="#77e5cb" strokeOpacity=".5" strokeDasharray="3 4"/><path d="M-12 10V-9L0-16 12-9V10H4V-2H-4V10Z" fill="#b7ffe9"/><text y="52">NODEWORKS</text>
+      <circle r="31" fill="#153c3a" stroke="#77e5cb" strokeWidth="1.5"/><circle r="23" fill="none" stroke="#77e5cb" strokeOpacity=".5" strokeDasharray="3 4"/><path d="M-12 10V-9L0-16 12-9V10H4V-2H-4V10Z" fill="#b7ffe9"/><text y="52">{gameText("NODEWORKS")}</text>
     </g>
     <g className="pop-map-node pop-map-client" transform="translate(455 190)">
-      <circle r="23" fill="#2a2638" stroke="#b39af0" strokeOpacity=".8"/><path d="M-11 8V-8h7v16m2 0V-13h7V8" fill="none" stroke="#d0bdff" strokeWidth="2"/><text y="42">ASTERION AI</text>
+      <circle r="23" fill="#2a2638" stroke="#b39af0" strokeOpacity=".8"/><path d="M-11 8V-8h7v16m2 0V-13h7V8" fill="none" stroke="#d0bdff" strokeWidth="2"/><text y="42">{gameText("ASTERION AI")}</text>
     </g>
     <g className="pop-map-node pop-map-rival" transform="translate(530 115)">
-      <circle r="20" fill="#382a25" stroke="#d69b6c" strokeOpacity=".8"/><path d="M-9 9V-8h18V9M-5-8v-5h10v5" fill="none" stroke="#f3bd8c" strokeWidth="1.8"/><text y="38">KESTREL</text>
+      <circle r="20" fill="#382a25" stroke="#d69b6c" strokeOpacity=".8"/><path d="M-9 9V-8h18V9M-5-8v-5h10v5" fill="none" stroke="#f3bd8c" strokeWidth="1.8"/><text y="38">{gameText("KESTREL")}</text>
     </g>
     <g className="pop-map-node pop-map-market" transform="translate(555 255)">
-      <circle r="15" fill="#1d2b3b" stroke="#8ca8c8" strokeOpacity=".7"/><path d="M-7 5V-1m7 6v-11m7 11V-5" stroke="#b5c9e7" strokeWidth="2"/><text y="31">DEMAND</text>
+      <circle r="15" fill="#1d2b3b" stroke="#8ca8c8" strokeOpacity=".7"/><path d="M-7 5V-1m7 6v-11m7 11V-5" stroke="#b5c9e7" strokeWidth="2"/><text y="31">{gameText("DEMAND")}</text>
     </g>
     <g className="pop-map-readout" transform="translate(18 18)">
       <rect width="152" height="49" rx="7" fill="#0a1720" fillOpacity=".88" stroke="#527e7e" strokeOpacity=".35"/>
-      <text x="12" y="17">GRID UTILIZATION</text><text className="pop-map-number" x="12" y="37">{Math.round(utilization)}%</text>
+      <text x="12" y="17">{gameText("GRID UTILIZATION")}</text><text className="pop-map-number" x="12" y="37">{Math.round(utilization)}%</text>
       <rect x="92" y="28" width="45" height="4" rx="2" fill="#29434b"/><rect x="92" y="28" width={45*utilization/100} height="4" rx="2" fill="#74e3d1"/>
     </g>
     <g className="pop-map-readout" transform="translate(450 18)">
       <rect width="150" height="49" rx="7" fill="#0a1720" fillOpacity=".88" stroke="#527e7e" strokeOpacity=".35"/>
-      <text x="12" y="17">NODEWORKS LIMIT</text><text className="pop-map-number" x="12" y="37">{capacity.toFixed(0)} MW</text>
+      <text x="12" y="17">{gameText("NODEWORKS LIMIT")}</text><text className="pop-map-number" x="12" y="37">{capacity.toFixed(0)} MW</text>
       <text x="88" y="36" className="pop-map-subnumber">{Math.round(reliability*100)}% REL.</text>
     </g>
   </svg>;
