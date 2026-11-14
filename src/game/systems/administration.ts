@@ -38,7 +38,7 @@ export function openAdministration(
       (state.administrationCases ?? []).some((item) => item.entityId === entityId && item.status === 'active')) {
     return { ok: false, code: 'administration.case_exists', message: 'This company already has an administration case.' };
   }
-  if (!['voluntary', 'debt-default', 'trade-creditor-arrears'].includes(trigger)) {
+  if (!['voluntary', 'debt-default', 'trade-creditor-arrears', 'creditor-workout-breach'].includes(trigger)) {
     return { ok: false, code: 'administration.trigger_invalid', message: 'Administration trigger is not supported.' };
   }
 
