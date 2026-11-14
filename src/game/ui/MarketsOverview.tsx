@@ -6,7 +6,7 @@ import type { GameState, IntelligenceEstimate, KnowledgeClass } from '../domain/
 import type { QuarterReport } from '../systems/quarterReport';
 import { formatMoney, formatPercent, formatQuarter } from './format';
 
-type Props = { state: GameState; report: QuarterReport };
+type Props = { state: GameState; report: QuarterReport; activityReport?: QuarterReport };
 
 const SUBJECTS: Record<string, { role: string; description: string; mark: string }> = {
   'asterion-ai': { role: 'ANCHOR CUSTOMER', description: 'AI compute demand and supplier strategy', mark: 'AA' },
@@ -87,7 +87,7 @@ function ActorCard({ subjectId, estimates, quarter, organizations }: {
   </article>;
 }
 
-export function MarketsOverview({ state, report }: Props) {
+export function MarketsOverview({ state, report, activityReport }: Props) {
   const market = state.regionalMarkets[0];
   const powerUtilization = market && market.availablePowerMW > 0
     ? market.committedPowerMW / market.availablePowerMW : 0;
@@ -100,7 +100,8 @@ export function MarketsOverview({ state, report }: Props) {
     return groups;
   }, {});
   const actorOrder = ['asterion-ai', 'kestrel-compute', 'solara-grid', 'silicon-vein', 'regional-infrastructure-authority'];
-  const actorActions = report.actorActions ?? [];
+  const actorActions = activityReport?.actorActions ?? [];
+  const activityQuarter = activityReport?.quarter ?? report.quarter;
   const activeContracts = state.operatingCompanies.flatMap((company) => company.contracts);
   const contractedDemand = activeContracts.filter((item) => item.flexibility === 'contracted')
     .reduce((sum, item) => sum + item.workloadMW, 0);
@@ -215,7 +216,7 @@ export function MarketsOverview({ state, report }: Props) {
         return <article className="pop-market-event" key={`${item.actorId}-${index}`}>
           <div className="pop-market-event-marker"><Activity size={14} /></div>
           <div><span>{actor?.name ?? item.actorId} · {item.kind.replaceAll('-', ' ')}</span><p>{item.summary}</p></div>
-          <small>{formatQuarter(report.quarter)}</small>
+          <small>{formatQuarter(activityQuarter)}</small>
         </article>;
       })}</div> : <div className="pop-market-empty"><RadioTower size={19} /><div><strong>No new developments recorded</strong><p>Market actors have not produced a reportable action in the latest resolved quarter. Existing constraints and estimates remain in effect.</p></div></div>}
     </section>
