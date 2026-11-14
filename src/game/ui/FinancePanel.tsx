@@ -100,6 +100,22 @@ export function FinancePanel({
         <div><span>Cash runway</span><strong>{operatingHealth.cashRunwayQuarters === null ? 'Cash-positive' : `${operatingHealth.cashRunwayQuarters.toFixed(1)} qtrs`}</strong></div>
         <div><span>Debt arrears</span><strong>{formatMoney(operatingHealth.debtArrearsCents, true)}</strong></div>
       </div>
+      <div className="pop-finance-summary">
+        <div><span>Operating creditors outstanding</span><strong>{formatMoney(operatingHealth.operatingPayablesCents, true)}</strong></div>
+        <div><span>Overdue trade payables</span><strong>{formatMoney(operatingHealth.overdueOperatingPayablesCents, true)}</strong></div>
+      </div>
+      {(state.operatingPayables ?? []).filter((payable) =>
+        payable.entityId === operatingCompany?.organizationId && payable.outstandingAmountCents > 0).length > 0 &&
+        <div className="pop-operating-payables">
+          {(state.operatingPayables ?? []).filter((payable) =>
+            payable.entityId === operatingCompany?.organizationId && payable.outstandingAmountCents > 0)
+            .sort((a, b) => a.priority - b.priority || a.dueQuarter - b.dueQuarter)
+            .map((payable) => <div className="pop-operating-payable" key={payable.id}>
+              <span>{payable.creditorClass.replaceAll('-', ' ')} · {formatQuarter(payable.incurredQuarter)}</span>
+              <strong>{formatMoney(payable.outstandingAmountCents, true)}</strong>
+              <small>{payable.dueQuarter < state.quarter ? 'Overdue' : `Due ${formatQuarter(payable.dueQuarter)}`}</small>
+            </div>)}
+        </div>}
       {operatingHealth.reasons.length > 0
         ? <ul className="pop-financial-health-reasons">{operatingHealth.reasons.map((reason) => <li key={reason}>{reason}</li>)}</ul>
         : <p className="pop-muted">No material liquidity or creditor warning signals are currently detected.</p>}
