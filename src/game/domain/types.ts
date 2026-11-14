@@ -72,9 +72,12 @@ export interface OperatingCostProfile {
   networkAndConnectivityCents: MoneyCents;
   overheadComplianceInsuranceCents: MoneyCents;
 }
+export type TurnaroundActionId = 'workforce-reset' | 'maintenance-deferral' | 'vendor-renegotiation' | 'facility-consolidation';
 export interface OperatingCompanyState {
   organizationId: EntityId; issuedShares: number; capacity: InfrastructureCapacity;
   deliveredWorkloadMW: number; cashCosts: OperatingCostProfile; contracts: ServiceContract[];
+  /** One-time turnaround actions already implemented; prevents duplicate savings. */
+  turnaroundActions?: TurnaroundActionId[];
 }
 export interface HoldingState {
   organizationId: EntityId; leadershipCapacityPerQuarter: number; institutionalAccess: number;
