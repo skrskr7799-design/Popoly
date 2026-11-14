@@ -153,6 +153,10 @@ describe('financial health assessment', () => {
       organizations: opening.organizations.map((item) => item.id === 'nodeworks'
         ? { ...item, cashCents: moneyFromCents(100_000) }
         : item),
+      operatingCompanies: opening.operatingCompanies.map((item) => item.organizationId === 'nodeworks'
+        ? { ...item, cashCosts: { ...item.cashCosts,
+          operationsAndStaffingCents: moneyFromCents(item.cashCosts.operationsAndStaffingCents + 1_000_000_000) } }
+        : item),
       debts: opening.debts.map((item) => item.borrowerId === 'nodeworks'
         ? { ...item, arrearsInterestCents: moneyFromCents(250_000), paymentStatus: 'defaulted' as const }
         : item),
@@ -174,6 +178,10 @@ describe('financial health assessment', () => {
       organizations: opening.organizations.map((item) => item.id === 'nodeworks'
         ? { ...item, cashCents: moneyFromCents(50_000) }
         : item.id === 'meridian-group' ? { ...item, cashCents: moneyFromCents(5_000_000_000) } : item),
+      operatingCompanies: opening.operatingCompanies.map((item) => item.organizationId === 'nodeworks'
+        ? { ...item, cashCosts: { ...item.cashCosts,
+          operationsAndStaffingCents: moneyFromCents(item.cashCosts.operationsAndStaffingCents + 1_000_000_000) } }
+        : item),
     };
     const health = assessFinancialHealth(state, buildQuarterReport(state), 'nodeworks');
 
