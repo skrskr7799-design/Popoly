@@ -573,6 +573,21 @@ Object.assign(ru, {
   "flexible workload": "гибкая нагрузка"
 });
 
+
+Object.assign(ru, {
+  "RESOLUTION": "ИТОГИ КВАРТАЛА",
+  "Change language": "Сменить язык",
+  "Game navigation": "Навигация по игре",
+  "MERIDIAN · CASH": "MERIDIAN · ДЕНЕЖНЫЕ СРЕДСТВА",
+  "NODEWORKS · CASH": "NODEWORKS · ДЕНЕЖНЫЕ СРЕДСТВА",
+  "EFFECTIVE CAPACITY": "ЭФФЕКТИВНАЯ МОЩНОСТЬ",
+  "RELIABILITY": "НАДЁЖНОСТЬ",
+  "Debt": "Долг",
+  "MARKET INTELLIGENCE": "АНАЛИТИКА РЫНКА",
+  "STRATEGIC PLANNING": "СТРАТЕГИЧЕСКОЕ ПЛАНИРОВАНИЕ",
+  "SIMULATION BUILD 0.1.0": "СБОРКА СИМУЛЯЦИИ 0.1.0"
+});
+
 export function gameText(source: string, locale?: Locale): string {
   const activeLocale = locale ?? useI18n.getState().locale;
   if (activeLocale === 'en') return source;
