@@ -72,7 +72,7 @@ Do not represent trade payables as a bank loan unless the creditor and terms are
 
 The cash bridge shows cash remitted to operating creditors, newly accrued obligations, closing unpaid balances and final cash separately. Cash remains non-negative. Previously incurred trade creditors are reserved ahead of new bank debt service. Within the operating ledger, scenario-defined priority and age determine payment order; partial payments reduce the outstanding claim without erasing its history. The quarter can complete into a distressed state only if all unpaid obligations have been represented and the resulting state passes invariants.
 
-Implemented in the active branch: legal-entity operating payable state, defensive save decoding, domain invariants, deterministic priority settlement, per-entity cash isolation, cash-bridge reconciliation, reversible energy-capacity and service-reliability restrictions from overdue essential suppliers, financial-health warnings, lender underwriting penalties for unpaid/overdue trade creditors, and a finance-panel creditor ledger. Save/restore round-trip and deterministic continuation tests cover outstanding payables. A scenario-owned corporate asset register now records book value, realizable value, ownership and secured-debt links. The first liquidation calculation applies administration costs, collateral-limited secured recovery, statutory-style operating-creditor tiers, pro-rata recovery within an underfunded tier, and unsecured debt recovery without pooling assets across legal entities. This is a calculation foundation only: asset-sale execution, creditor voting/workout and campaign continuation still remain future work. A persistent administration case can now be opened for one operating legal entity and closed through a recorded reorganization without silently changing cash, debt or trade-payable balances. The treasury exposes the filing and reorganization choices in both Corporation and Command Center views. While administration is active, new borrowing, discretionary initiatives and discretionary workload changes are rejected; essential operations and turnaround actions remain available. Reorganization requires stable financial health and cleared trade payables, debt arrears, defaults and covenant breaches. Save-shape round-trip coverage includes the active case.
+Implemented in the active branch: legal-entity operating payable state, defensive save decoding, domain invariants, deterministic priority settlement, per-entity cash isolation, cash-bridge reconciliation, reversible energy-capacity and service-reliability restrictions from overdue essential suppliers, financial-health warnings, lender underwriting penalties for unpaid/overdue trade creditors, and a finance-panel creditor ledger. Save/restore round-trip and deterministic continuation tests cover outstanding payables. A scenario-owned corporate asset register now records book value, realizable value, ownership and secured-debt links. The first liquidation calculation applies administration costs, collateral-limited secured recovery, statutory-style operating-creditor tiers, pro-rata recovery within an underfunded tier, and unsecured debt recovery without pooling assets across legal entities. The administration transition now executes asset realization atomically: the subsidiary's own cash joins its estate, recoveries reduce only that entity's debt and trade-payable balances, lender recoveries are credited to the relevant lender, and any residual is distributed to shareholders by ownership shares. The resolution and full creditor distribution ledger are persisted in the administration case and survive save/restore. The campaign enters an explicit concluded state after subsidiary liquidation; restarting begins a new campaign. Creditor voting/workout and continued group play after subsidiary failure remain future work. A persistent administration case can now be opened for one operating legal entity and closed through a recorded reorganization without silently changing cash, debt or trade-payable balances. The treasury exposes the filing and reorganization choices in both Corporation and Command Center views. While administration is active, new borrowing, discretionary initiatives and discretionary workload changes are rejected; essential operations and turnaround actions remain available. Reorganization requires stable financial health and cleared trade payables, debt arrears, defaults and covenant breaches. Save-shape round-trip coverage includes the active case.
 
 ## Asset register and liquidation waterfall
 
@@ -85,7 +85,7 @@ The initial waterfall is deliberately simplified and deterministic:
 4. Unsecured bank-debt balances, including any deficiency remaining after collateral realization, follow operating creditors.
 5. Any residual after all claims is available to shareholders; unpaid claims remain visible as shortfalls.
 
-Claims within an underfunded tier share recovery pro rata in integer cents, with deterministic remainder allocation. The calculation is pure and does not yet dispose assets or move cash; the administration transition will commit those outcomes atomically and record the resulting ownership loss.
+Claims within an underfunded tier share recovery pro rata in integer cents, with deterministic remainder allocation. The waterfall calculation is pure; the administration transition commits its result atomically, marks assets disposed, reduces the appropriate creditor balances, distributes any shareholder residual, and records the full resolution without pooling legal entities.
 
 ## Distress escalation and creditor workout
 
@@ -154,15 +154,17 @@ Avoid changing the game-state schema version until the exact migration/defaultin
 - [x] Add player-facing administration controls and restrictions on new borrowing, discretionary initiatives and workload changes.
 - [x] Require stable financial health and cleared creditor arrears before reorganization.
 - [x] Cover administration case and company status in save-shape round-trip tests.
-- [ ] Add distress-based filing eligibility and player-facing administration choices.
+- [x] Expose filing when the operating company is distressed and present reorganization or liquidation choices during administration.
 - [x] Add atomic asset realization, creditor distributions, debt/payable recovery accounting, and a recorded liquidation outcome.
 - [x] Include the subsidiary's own cash in the estate and distribute any residual to shareholders by ownership shares.
 - [x] Stop ordinary quarter progression after the operating subsidiary is liquidated; post-insolvency group play remains a later campaign feature.
-- [ ] Restrict ordinary investment and new commitments while administration is active.
-- [ ] Define campaign continuation after subsidiary failure.
-- Implement claims, asset realization and priority waterfall.
-- Define campaign continuation after subsidiary failure.
-- Test solvency recovery, successful restructuring, failed workout and liquidation.
+- [x] Restrict new borrowing, discretionary initiatives and workload changes while administration is active; retain essential operations and turnaround actions.
+- [x] Define the current campaign boundary after subsidiary failure: conclude the campaign and offer a new start; post-insolvency group play is deferred.
+- [x] Implement creditor claims, asset realization and priority waterfall.
+- [x] Define campaign conclusion after subsidiary liquidation.
+- [x] Test liquidation, creditor recovery, legal-entity isolation and save/restore.
+- [ ] Implement creditor voting/workout milestones and a recoverable administration review window.
+- [ ] Test a managed turnaround from administration back to ordinary operation.
 
 ### Phase D — Validation
 - Keep the unattended seed-2035 distress boundary as a regression case: unpaid trade creditors must appear before quarter 29, with no negative cash or invalid state.
