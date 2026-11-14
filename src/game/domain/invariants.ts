@@ -212,6 +212,7 @@ export function validateGameState(state: GameState): ValidationIssue[] {
           (resolution !== undefined && (
           resolution.resolvedQuarter !== administrationCase.resolvedQuarter ||
           !Number.isSafeInteger(resolution.grossAssetProceedsCents) || resolution.grossAssetProceedsCents < 0 ||
+          !Number.isSafeInteger(resolution.cashRealizedCents) || resolution.cashRealizedCents < 0 ||
           !Number.isSafeInteger(resolution.administrationCostsCents) || resolution.administrationCostsCents < 0 ||
           !Number.isSafeInteger(resolution.totalCreditorClaimsCents) || resolution.totalCreditorClaimsCents < 0 ||
           !Number.isSafeInteger(resolution.totalCreditorRecoveryCents) || resolution.totalCreditorRecoveryCents < 0 ||
