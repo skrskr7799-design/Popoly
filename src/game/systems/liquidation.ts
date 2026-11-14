@@ -168,7 +168,6 @@ export function calculateLiquidationWaterfall(
       });
     }
     estateRemaining -= tierRecovery;
-    if (estateRemaining <= 0) break;
   }
 
   const totalCreditorClaimsCents = distributions.reduce((sum, item) => sum + item.claimAmountCents, 0);
