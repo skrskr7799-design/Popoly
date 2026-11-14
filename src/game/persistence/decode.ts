@@ -48,7 +48,8 @@ export function isGameStateShape(value: unknown): value is GameState {
       isRecord(item.cashCosts) && isNumber(item.cashCosts.operationsAndStaffingCents) &&
       isNumber(item.cashCosts.maintenanceCents) && isNumber(item.cashCosts.networkAndConnectivityCents) &&
       isNumber(item.cashCosts.overheadComplianceInsuranceCents) &&
-      (item.turnaroundActions === undefined || isStringArray(item.turnaroundActions)) && records(item.contracts) &&
+      (item.turnaroundActions === undefined || isStringArray(item.turnaroundActions)) &&
+      (item.status === undefined || isString(item.status)) && records(item.contracts) &&
       item.contracts.every((contract) => isString(contract.id) && isString(contract.customerId) &&
         isString(contract.providerId) && isNumber(contract.workloadMW) &&
         isNumber(contract.priceCentsPerMWQuarter) && isString(contract.flexibility)))) return false;
@@ -68,6 +69,22 @@ export function isGameStateShape(value: unknown): value is GameState {
         isString(item.creditorClass) && isNumber(item.originalAmountCents) &&
         isNumber(item.outstandingAmountCents) && isNumber(item.incurredQuarter) &&
         isNumber(item.dueQuarter) && isNumber(item.priority)))) return false;
+  if (state.administrationCases !== undefined && (!records(state.administrationCases) ||
+      !state.administrationCases.every((item) => isString(item.id) && isString(item.entityId) &&
+        isNumber(item.openedQuarter) && isString(item.trigger) && isString(item.status) &&
+        (item.resolvedQuarter === undefined || isNumber(item.resolvedQuarter)) &&
+        (item.resolution === undefined || (isRecord(item.resolution) &&
+          isNumber(item.resolution.resolvedQuarter) &&
+          isNumber(item.resolution.grossAssetProceedsCents) &&
+          isNumber(item.resolution.administrationCostsCents) &&
+          isNumber(item.resolution.totalCreditorClaimsCents) &&
+          isNumber(item.resolution.totalCreditorRecoveryCents) &&
+          isNumber(item.resolution.shareholderResidualCents) &&
+          records(item.resolution.distributions) &&
+          item.resolution.distributions.every((distribution) => isString(distribution.claimId) &&
+            isString(distribution.creditorId) && isString(distribution.claimClass) &&
+            isNumber(distribution.claimAmountCents) && isNumber(distribution.recoveryCents) &&
+            isNumber(distribution.shortfallCents))))))) return false;
   if (!state.actors.every((item) => isString(item.organizationId) && isStringArray(item.goals) &&
       isRecord(item.hiddenMetrics) && Object.values(item.hiddenMetrics).every(isNumber))) return false;
   if (!state.playerIntelligence.every((item) => isString(item.subjectId) && isString(item.metric) &&
