@@ -8,7 +8,6 @@ import { moneyFromCents } from '../domain/money';
 describe('operating payables in the quarter engine', () => {
   it('completes a quarter with unpaid operating costs instead of creating negative cash', () => {
     const opening = initializeGame(2035);
-    const company = opening.operatingCompanies.find((item) => item.organizationId === 'nodeworks')!;
     const parentPayable = {
       id: 'meridian-existing-vendor',
       entityId: 'meridian-group',
