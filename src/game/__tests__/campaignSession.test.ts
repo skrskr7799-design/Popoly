@@ -113,4 +113,112 @@ describe('CampaignSession', () => {
     expect(result.ok).toBe(false);
     if (!result.ok) expect(result.error.code).toBe('campaign.repository_unavailable');
   });
+}
+  it('restores an active creditor workout and continues with identical outcomes', async () => {
+    const repository = new IndexedDbCampaignSaveRepository({
+      databaseName: 'popoly-session-workout-restore',
+    });
+    const session = CampaignSession.start({
+      seed: 2035,
+      campaignId: 'campaign-session-workout-restore',
+      repository,
+      now: fixedClock(),
+    });
+    const proposed = session.proposeCreditorWorkout({
+      entityId: 'nodeworks',
+      standstillQuarters: 1,
+      maturityExtensionQuarters: 1,
+      interestReductionBps: 0,
+      principalWriteDownBps: 0,
+      tradePayableWriteDownBps: 0,
+      covenantWaiver: false,
+      deadlineQuarters: 2,
+      minimumOperatingCashContributionCents: -1_000_000_000_000,
+      maximumOperatingPayablesCents: 1_000_000_000_000,
+      maximumDebtArrearsCents: 1_000_000_000_000,
+    });
+    expect(proposed.ok).toBe(true);
+    if (!proposed.ok) return;
+    expect(proposed.workout.status).toBe('active');
+    expect((await session.save()).ok).toBe(true);
+
+    const restored = await CampaignSession.restore(session.campaignId, repository, {
+      now: fixedClock(),
+    });
+    expect(restored.ok).toBe(true);
+    if (!restored.ok) return;
+    expect(restored.value.session.state).toEqual(session.state);
+    expect(restored.value.session.state.creditorWorkouts).toEqual(session.state.creditorWorkouts);
+
+    const uninterrupted = session.advance();
+    const resumed = restored.value.session.advance();
+    expect(resumed).toEqual(uninterrupted);
+  });
+
+  it('restores active administration without relaxing its operating restrictions', async () => {
+    const repository = new IndexedDbCampaignSaveRepository({
+      databaseName: 'popoly-session-administration-restore',
+    });
+    const session = CampaignSession.start({
+      seed: 2035,
+      campaignId: 'campaign-session-administration-restore',
+      repository,
+      now: fixedClock(),
+    });
+    const filed = session.openAdministration('nodeworks', 'voluntary');
+    expect(filed.ok).toBe(true);
+    if (!filed.ok) return;
+    expect((await session.save()).ok).toBe(true);
+
+    const restored = await CampaignSession.restore(session.campaignId, repository, {
+      now: fixedClock(),
+    });
+    expect(restored.ok).toBe(true);
+    if (!restored.ok) return;
+    expect(restored.value.session.state.administrationCases).toEqual(session.state.administrationCases);
+    expect(restored.value.session.state.operatingCompanies.find((item) => item.organizationId === 'nodeworks')?.status)
+      .toBe('administration');
+
+    const restricted = restored.value.session.advance({
+      launchInitiatives: ['capacity-expansion-phase-i'],
+    });
+    expect(restricted.ok).toBe(false);
+    if (!restricted.ok) {
+      expect(restricted.issues.some((item) => item.code === 'administration.investment_restricted')).toBe(true);
+    }
+    expect(restored.value.session.state).toEqual(session.state);
+  });
+
+  it('restores a concluded liquidation and keeps ordinary quarter progression closed', async () => {
+    const repository = new IndexedDbCampaignSaveRepository({
+      databaseName: 'popoly-session-liquidation-restore',
+    });
+    const session = CampaignSession.start({
+      seed: 2035,
+      campaignId: 'campaign-session-liquidation-restore',
+      repository,
+      now: fixedClock(),
+    });
+    const filed = session.openAdministration('nodeworks', 'debt-default');
+    expect(filed.ok).toBe(true);
+    if (!filed.ok) return;
+    const liquidated = session.liquidateAdministration(filed.administrationCase.id);
+    expect(liquidated.ok).toBe(true);
+    if (!liquidated.ok) return;
+    expect((await session.save()).ok).toBe(true);
+
+    const restored = await CampaignSession.restore(session.campaignId, repository, {
+      now: fixedClock(),
+    });
+    expect(restored.ok).toBe(true);
+    if (!restored.ok) return;
+    expect(restored.value.session.state).toEqual(session.state);
+    expect(restored.value.session.state.administrationCases?.[0]?.status).toBe('liquidated');
+
+    const next = restored.value.session.advance();
+    expect(next.ok).toBe(false);
+    if (!next.ok) {
+      expect(next.issues.some((item) => item.code === 'campaign.company_liquidated')).toBe(true);
+    }
+  });
 });
