@@ -159,7 +159,7 @@ export function CommandCenterBriefing({
             })}
           </div>
           <div className="pop-command-timeline-foot">
-            <span>{completedQuarters >= OPENING_QUARTERS ? 'Opening scenario complete · sandbox continues' : `${OPENING_QUARTERS - completedQuarters} quarter(s) until the opening scenario concludes`}</span>
+            <span>{completedQuarters >= OPENING_QUARTERS ? gameText('Opening scenario complete · sandbox continues') : `${OPENING_QUARTERS - completedQuarters} ${gameText('quarter(s) until the opening scenario concludes')}`}</span>
             <span><ShieldCheck size={13} /> {gameText("Simulation state preserved")}</span>
           </div>
         </div>
