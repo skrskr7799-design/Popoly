@@ -249,6 +249,17 @@ button { font: inherit; }
 }
 
 
+.pop-turnaround-list { display: grid; gap: 8px; margin-top: 12px; }
+.pop-turnaround-option { display: flex; align-items: flex-start; gap: 10px; padding: 11px; border: 1px solid #293a49; border-radius: 7px; background: rgba(10, 19, 29, .58); cursor: pointer; transition: border-color .16s ease, background .16s ease; }
+.pop-turnaround-option:hover,.pop-turnaround-option.is-selected { border-color: rgba(121, 226, 207, .38); background: rgba(25, 56, 57, .24); }
+.pop-turnaround-option.is-applied { opacity: .68; cursor: default; }
+.pop-turnaround-option input { margin-top: 3px; accent-color: #79e2cf; }
+.pop-turnaround-copy { display: grid; flex: 1; min-width: 0; gap: 4px; }
+.pop-turnaround-copy strong { color: #d4e4e9; font-size: 10px; font-weight: 600; }
+.pop-turnaround-copy small { color: #8498a8; font-size: 8px; line-height: 1.5; }
+.pop-turnaround-copy em { color: #9fe0c9; font-size: 8px; font-style: normal; }
+.pop-turnaround-copy .pop-turnaround-tradeoff { color: #d7ad83; }
+.pop-turnaround-state { flex: 0 0 auto; color: #8095a6; font-size: 8px; }
 .pop-financial-health { padding: 14px; border: 1px solid rgba(239, 183, 126, .18); border-radius: 9px; background: linear-gradient(120deg, rgba(30, 39, 47, .72), rgba(15, 27, 37, .72)); }
 .pop-financial-health .pop-finance-summary { margin: 10px 0 0; background: rgba(5, 13, 22, .42); }
 .pop-financial-health-reasons { display: grid; gap: 6px; margin: 12px 0 0; padding-left: 17px; color: #d7ad83; font-size: 9px; line-height: 1.5; }
