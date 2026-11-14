@@ -648,6 +648,33 @@ Object.assign(ru, {
 
 Object.assign(ru, { "North Region": "Северный регион" });
 
+
+Object.assign(ru, {
+  "quarter(s) until the opening scenario concludes": "кварталов до завершения вступительного сценария",
+  "Opening scenario complete · sandbox continues": "Вступительный сценарий завершён · свободная игра продолжается",
+  "recovered": "возмещено",
+  "unpaid": "не погашено",
+  "turnaround program(s) selected": "программ оздоровления выбрано",
+  "leadership unit(s) committed this quarter": "ед. управленческого ресурса задействовано в этом квартале",
+  "Arrears": "Просрочка",
+  "overdue quarter(s)": "кварталов просрочки",
+  "Principal maturity / acceleration is due this quarter.": "Срок погашения основного долга или досрочное взыскание наступает в этом квартале.",
+  "Cross-default linked to": "Перекрёстный дефолт связан с",
+  "INTELLIGENCE SIGNALS": "РАЗВЕДЫВАТЕЛЬНЫХ СИГНАЛОВ",
+  "units free": "ед. свободно",
+  "units assigned to selected initiatives": "ед. выделено на выбранные инициативы",
+  "holding cash": "средства холдинга",
+  "active agreements": "действующих соглашений",
+  "accepted": "принято",
+  "converted into": "конвертировано в",
+  "new voting shares at a pre-money valuation of": "новых голосующих акций при оценке капитала до инвестиций",
+  "Counter": "Встречное предложение",
+  "unsecured haircut": "списание необеспеченного долга",
+  "trade write-down": "списание торговой задолженности",
+  "conversion": "конвертация",
+  "quarter standstill": "квартал отсрочки платежей"
+});
+
 export function gameText(source: string, locale?: Locale): string {
   const activeLocale = locale ?? useI18n.getState().locale;
   if (activeLocale === 'en') return source;
