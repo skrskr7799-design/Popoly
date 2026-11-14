@@ -1,5 +1,5 @@
 import 'fake-indexeddb/auto';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { CampaignSession, GUIDED_CAMPAIGN_QUARTERS } from '../campaign/session';
 import { IndexedDbCampaignSaveRepository } from '../persistence/indexedDbRepository';
 import type { MoneyCents } from '../domain/types';
@@ -25,6 +25,23 @@ describe('CampaignSession', () => {
     const snapshot = session.state;
     snapshot.organizations[0]!.cashCents = 0 as MoneyCents;
     expect(session.state.organizations[0]!.cashCents).not.toBe(0);
+  });
+
+  it('starts a campaign when crypto.randomUUID is unavailable', () => {
+    vi.stubGlobal('crypto', {
+      getRandomValues: (values: Uint8Array) => {
+        values.fill(7);
+        return values;
+      },
+    });
+
+    try {
+      const session = CampaignSession.start({ seed: 2035, now: fixedClock() });
+      expect(session.campaignId).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/);
+      expect(session.state.quarter).toBe(1);
+    } finally {
+      vi.unstubAllGlobals();
+    }
   });
 
   it('commits only successful quarter transitions and preserves the last report on rejection', () => {

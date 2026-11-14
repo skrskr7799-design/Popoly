@@ -32,6 +32,26 @@ export interface CampaignRestoreResult {
   recoveredFromPrevious: boolean;
 }
 
+function createCampaignId(): string {
+  const cryptoApi = globalThis.crypto;
+  if (typeof cryptoApi?.randomUUID === 'function') return cryptoApi.randomUUID();
+
+  // randomUUID() is restricted to secure contexts in some browsers. Keep the
+  // game start flow working on HTTP/LAN deployments by using getRandomValues.
+  const bytes = new Uint8Array(16);
+  if (typeof cryptoApi?.getRandomValues === 'function') {
+    cryptoApi.getRandomValues(bytes);
+  } else {
+    for (let index = 0; index < bytes.length; index += 1) {
+      bytes[index] = Math.floor(Math.random() * 256);
+    }
+  }
+  bytes[6] = (bytes[6]! & 0x0f) | 0x40;
+  bytes[8] = (bytes[8]! & 0x3f) | 0x80;
+  const hex = Array.from(bytes, (value) => value.toString(16).padStart(2, '0')).join('');
+  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
+}
+
 const defaultCompatibility: LoadCompatibility = {
   isSimulationCompatible: (version) => version === CAMPAIGN_SIMULATION_VERSION,
   isScenarioCompatible: (scenarioId, scenarioVersion) =>
@@ -86,7 +106,7 @@ export class CampaignSession {
   static start(options: CampaignSessionOptions = {}): CampaignSession {
     const now = options.now ?? (() => new Date());
     const createdAt = now().toISOString();
-    const campaignId = options.campaignId ?? (options.idFactory ?? (() => crypto.randomUUID()))();
+    const campaignId = options.campaignId ?? (options.idFactory ?? createCampaignId)();
     if (!campaignId.trim()) throw new Error('Campaign ID must not be empty.');
 
     return new CampaignSession({
