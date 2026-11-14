@@ -44,7 +44,7 @@ export function CommandCenterBriefing({
   const operations = report.companies.find((item) => item.companyId === 'nodeworks')?.operations;
   const capacity = company?.capacity;
   const ceilings = capacity ? [
-    { label: 'Installed IT', value: capacity.installedITMW },
+    { label: gameText('Installed IT'), value: capacity.installedITMW },
     { label: gameText('Grid allocation'), value: capacity.gridAllocationMW },
     { label: gameText('Equipment'), value: capacity.commissionedEquipmentMW },
     { label: gameText('Operational limit'), value: capacity.operationalLimitMW },
