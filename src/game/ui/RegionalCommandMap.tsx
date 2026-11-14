@@ -1,5 +1,5 @@
 import type { CSSProperties } from 'react';
-import type { RegionalMarket, OperatingCompany } from '../domain/types';
+import type { RegionalMarketState, OperatingCompanyState } from '../domain/types';
 
 type Props = { market?: RegionalMarket; company?: OperatingCompany };
 
@@ -48,10 +48,6 @@ export function RegionalCommandMap({ market, company }: Props) {
     </g>
     <g className="pop-map-node pop-map-market" transform="translate(555 255)">
       <circle r="15" fill="#1d2b3b" stroke="#8ca8c8" strokeOpacity=".7"/><path d="M-7 5V-1m7 6v-11m7 11V-5" stroke="#b5c9e7" strokeWidth="2"/><text y="31">DEMAND</text>
-    </g>
-    <g className="pop-map-flow" fill="#b3f9e8">
-      <circle r="3.5"><animateMotion dur="7s" repeatCount="indefinite" path="M95 205L220 192L330 151L455 190L555 255"/></circle>
-      <circle r="2.5" opacity=".6"><animateMotion dur="9s" repeatCount="indefinite" path="M95 205L220 192L330 151L530 115"/></circle>
     </g>
     <g className="pop-map-readout" transform="translate(18 18)">
       <rect width="152" height="49" rx="7" fill="#0a1720" fillOpacity=".88" stroke="#527e7e" strokeOpacity=".35"/>
