@@ -469,6 +469,7 @@ export default function CampaignApp() {
         onFileAdministration={fileNodeWorksAdministration}
         onReorganizeAdministration={completeNodeWorksReorganization}
         onLiquidateAdministration={liquidateNodeWorks}
+        onProposeWorkout={proposeNodeWorksWorkout}
       /> : activeView === 'markets' ? <>
       <MarketsOverview state={state} report={currentReport} activityReport={report ?? undefined} />
       {storageMessage && <div className="pop-storage-message">{storageMessage}<button onClick={() => setStorageMessage(null)}>Dismiss</button></div>}

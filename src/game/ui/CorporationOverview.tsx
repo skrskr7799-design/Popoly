@@ -4,6 +4,7 @@ import {
 } from 'lucide-react';
 import type { GameState, TurnaroundActionId } from '../domain/types';
 import type { QuarterReport } from '../systems/quarterReport';
+import type { CreditorWorkoutProposal } from '../systems/creditorWorkout';
 import type { ContractRenewalDraft } from './ContractPortfolioPanel';
 import { ContractPortfolioPanel } from './ContractPortfolioPanel';
 import { FinancePanel } from './FinancePanel';
@@ -30,6 +31,7 @@ type Props = {
   onFileAdministration: () => void;
   onReorganizeAdministration: (caseId: string) => void;
   onLiquidateAdministration: (caseId: string) => void;
+  onProposeWorkout: (proposal: CreditorWorkoutProposal) => void;
 };
 
 function EntityMark({ holding = false }: { holding?: boolean }) {
@@ -49,7 +51,7 @@ function Metric({ label, value, detail, tone = 'neutral' }: {
 export function CorporationOverview({
   state, report, renewalDrafts, onRenewalDraftChange,
   selectedLoanOffers, onToggleLoanOffer, creditRequest, onCreditRequestChange,
-  selectedTurnaroundActionIds, onToggleTurnaroundAction, onFileAdministration, onReorganizeAdministration, onLiquidateAdministration,
+  selectedTurnaroundActionIds, onToggleTurnaroundAction, onFileAdministration, onReorganizeAdministration, onLiquidateAdministration, onProposeWorkout,
 }: Props) {
   const holdingId = state.holding.organizationId;
   const operating = state.operatingCompanies.find((item) => item.organizationId === 'nodeworks');
@@ -201,7 +203,8 @@ export function CorporationOverview({
         onToggleTurnaroundAction={onToggleTurnaroundAction}
         onFileAdministration={onFileAdministration}
         onReorganizeAdministration={onReorganizeAdministration}
-        onLiquidateAdministration={onLiquidateAdministration} />
+        onLiquidateAdministration={onLiquidateAdministration}
+        onProposeWorkout={onProposeWorkout} />
     </section>
   </div>;
 }
