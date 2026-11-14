@@ -72,7 +72,20 @@ Do not represent trade payables as a bank loan unless the creditor and terms are
 
 The cash bridge shows cash remitted to operating creditors, newly accrued obligations, closing unpaid balances and final cash separately. Cash remains non-negative. Previously incurred trade creditors are reserved ahead of new bank debt service. Within the operating ledger, scenario-defined priority and age determine payment order; partial payments reduce the outstanding claim without erasing its history. The quarter can complete into a distressed state only if all unpaid obligations have been represented and the resulting state passes invariants.
 
-Implemented in the active branch: legal-entity operating payable state, defensive save decoding, domain invariants, deterministic priority settlement, per-entity cash isolation, cash-bridge reconciliation, reversible energy-capacity and service-reliability restrictions from overdue essential suppliers, financial-health warnings, lender underwriting penalties for unpaid/overdue trade creditors, and a finance-panel creditor ledger. Save/restore round-trip and deterministic continuation tests now cover outstanding payables. Creditor service curtailment, company-wide workouts and formal administration remain future work.
+Implemented in the active branch: legal-entity operating payable state, defensive save decoding, domain invariants, deterministic priority settlement, per-entity cash isolation, cash-bridge reconciliation, reversible energy-capacity and service-reliability restrictions from overdue essential suppliers, financial-health warnings, lender underwriting penalties for unpaid/overdue trade creditors, and a finance-panel creditor ledger. Save/restore round-trip and deterministic continuation tests cover outstanding payables. A scenario-owned corporate asset register now records book value, realizable value, ownership and secured-debt links. The first liquidation calculation applies administration costs, collateral-limited secured recovery, statutory-style operating-creditor tiers, pro-rata recovery within an underfunded tier, and unsecured debt recovery without pooling assets across legal entities. This is a calculation foundation only: formal administration entry, asset-sale decisions, creditor voting/workout and campaign continuation still remain future work.
+
+## Asset register and liquidation waterfall
+
+The scenario now carries a legal-entity asset register. Each asset has a book value, a conservative realizable value, and an optional secured-debt link. Disposed assets remain in history but are excluded from a later liquidation calculation. A subsidiary's assets are never available to settle a holding-company claim.
+
+The initial waterfall is deliberately simplified and deterministic:
+1. Administration costs are deducted from each realized asset at the scenario's configured basis-point rate.
+2. A secured lender recovers only from assets pledged to its specific debt instrument.
+3. Remaining estate proceeds pay operating creditors in statutory-style tiers: payroll, tax/overhead, energy, maintenance, then network/vendor.
+4. Unsecured bank-debt balances, including any deficiency remaining after collateral realization, follow operating creditors.
+5. Any residual after all claims is available to shareholders; unpaid claims remain visible as shortfalls.
+
+Claims within an underfunded tier share recovery pro rata in integer cents, with deterministic remainder allocation. The calculation is pure and does not yet dispose assets or move cash; the administration transition will commit those outcomes atomically and record the resulting ownership loss.
 
 ## Distress escalation and creditor workout
 
