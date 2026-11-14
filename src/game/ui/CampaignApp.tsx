@@ -7,6 +7,7 @@ import {
 import { CampaignSession, GUIDED_CAMPAIGN_QUARTERS } from '../campaign/session';
 import { COMPUTE_BOTTLENECK_INITIATIVES, type StrategicInitiativeDefinition } from '../scenario/initiatives';
 import type { GameState, TurnaroundActionId, ValidationIssue } from '../domain/types';
+import type { CreditorWorkoutProposal } from '../systems/creditorWorkout';
 import type { QuarterReport } from '../systems/quarterReport';
 import { formatMillions, formatMoney, formatPercent, formatQuarter } from './format';
 import { IndexedDbCampaignSaveRepository } from '../persistence/indexedDbRepository';
@@ -380,6 +381,17 @@ export default function CampaignApp() {
     setRevision((value) => value + 1);
   };
 
+  const proposeNodeWorksWorkout = (proposal: CreditorWorkoutProposal) => {
+    const result = session.proposeCreditorWorkout(proposal);
+    if (!result.ok) {
+      setIssues([{ code: result.code, message: result.message, entityId: proposal.entityId }]);
+      return;
+    }
+    setReport(null);
+    setIssues([]);
+    setRevision((value) => value + 1);
+  };
+
   const liquidateNodeWorks = (caseId: string) => {
     if (!window.confirm('Liquidate NodeWorks? This is irreversible. All subsidiary assets will be realized, creditor claims distributed, and the campaign will end.')) return;
     const result = session.liquidateAdministration(caseId);
@@ -549,6 +561,7 @@ export default function CampaignApp() {
             onFileAdministration={fileNodeWorksAdministration}
             onReorganizeAdministration={completeNodeWorksReorganization}
             onLiquidateAdministration={liquidateNodeWorks}
+            onProposeWorkout={proposeNodeWorksWorkout}
           />
         </div>
 
