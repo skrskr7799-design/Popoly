@@ -2,7 +2,7 @@ import {
   Activity, Building2, Cable, CircleDot, Cpu, Factory, Gauge, HardDrive, Network,
   ShieldCheck, Zap,
 } from 'lucide-react';
-import type { GameState } from '../domain/types';
+import type { GameState, TurnaroundActionId } from '../domain/types';
 import type { QuarterReport } from '../systems/quarterReport';
 import type { ContractRenewalDraft } from './ContractPortfolioPanel';
 import { ContractPortfolioPanel } from './ContractPortfolioPanel';
@@ -25,6 +25,8 @@ type Props = {
   onToggleLoanOffer: (offerId: string) => void;
   creditRequest: CreditRequest;
   onCreditRequestChange: (next: CreditRequest) => void;
+  selectedTurnaroundActionIds: TurnaroundActionId[];
+  onToggleTurnaroundAction: (actionId: TurnaroundActionId) => void;
 };
 
 function EntityMark({ holding = false }: { holding?: boolean }) {
@@ -44,6 +46,7 @@ function Metric({ label, value, detail, tone = 'neutral' }: {
 export function CorporationOverview({
   state, report, renewalDrafts, onRenewalDraftChange,
   selectedLoanOffers, onToggleLoanOffer, creditRequest, onCreditRequestChange,
+  selectedTurnaroundActionIds, onToggleTurnaroundAction,
 }: Props) {
   const holdingId = state.holding.organizationId;
   const operating = state.operatingCompanies.find((item) => item.organizationId === 'nodeworks');
@@ -190,7 +193,9 @@ export function CorporationOverview({
       </div>
       <FinancePanel state={state} report={report} selectedOfferIds={selectedLoanOffers}
         onToggleOffer={onToggleLoanOffer} creditRequest={creditRequest}
-        onCreditRequestChange={onCreditRequestChange} />
+        onCreditRequestChange={onCreditRequestChange}
+        selectedTurnaroundActionIds={selectedTurnaroundActionIds}
+        onToggleTurnaroundAction={onToggleTurnaroundAction} />
     </section>
   </div>;
 }
