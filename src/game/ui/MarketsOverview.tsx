@@ -57,7 +57,7 @@ function IntelCard({ item, quarter }: { item: IntelligenceEstimate; quarter: num
         <span className={`pop-knowledge-tag is-${item.knowledge}`}>{gameText(knowledgeLabel(item.knowledge))}</span>
       </div>
       <div className="pop-market-intel-range">{estimateValue(item)}</div>
-      <div className="pop-market-intel-source">{item.source}</div>
+      <div className="pop-market-intel-source">{gameText(item.source)}</div>
       <div className="pop-market-confidence">
         <span>{gameText("Confidence")}</span>
         <div><i style={{ width: `${Math.max(0, Math.min(100, item.confidence * 100))}%` }} /></div>
@@ -216,7 +216,7 @@ export function MarketsOverview({ state, report, activityReport }: Props) {
         const actor = state.organizations.find((org) => org.id === item.actorId);
         return <article className="pop-market-event" key={`${item.actorId}-${index}`}>
           <div className="pop-market-event-marker"><Activity size={14} /></div>
-          <div><span>{actor?.name ?? item.actorId} · {item.kind.replaceAll('-', ' ')}</span><p>{item.summary}</p></div>
+          <div><span>{actor?.name ?? item.actorId} · {gameText(item.kind.replaceAll('-', ' '))}</span><p>{gameText(item.summary)}</p></div>
           <small>{formatQuarter(activityQuarter)}</small>
         </article>;
       })}</div> : <div className="pop-market-empty"><RadioTower size={19} /><div><strong>{gameText("No new developments recorded")}</strong><p>{gameText("Market actors have not produced a reportable action in the latest resolved quarter. Existing constraints and estimates remain in effect.")}</p></div></div>}
