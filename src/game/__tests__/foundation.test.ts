@@ -144,7 +144,7 @@ describe('long-horizon economic stability', () => {
 
       for (let turn = 0; turn < 48; turn += 1) {
         const result = advanceQuarter(state);
-        expect(result.ok, `seed ${seed}, quarter ${state.quarter}`).toBe(true);
+        expect(result.ok, `seed ${seed}, quarter ${state.quarter}: ${JSON.stringify(result)}`).toBe(true);
         if (!result.ok) break;
 
         state = result.state;
