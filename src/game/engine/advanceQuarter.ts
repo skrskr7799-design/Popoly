@@ -949,9 +949,19 @@ export function advanceQuarter(state: GameState, commands: QuarterCommands = {})
     // operating contribution. Project commitments remain ring-fenced; no group cash pooling.
     const operatingCashByBorrower = new Map(report.entityCashBridges.map((bridge) =>
       [bridge.organizationId, bridge.operatingCashContributionCents] as const));
+    const existingOperatingPayablesByEntity = new Map<string, number>();
+    for (const payable of candidate.operatingPayables ?? []) {
+      existingOperatingPayablesByEntity.set(
+        payable.entityId,
+        (existingOperatingPayablesByEntity.get(payable.entityId) ?? 0) + payable.outstandingAmountCents,
+      );
+    }
     const availableByBorrower = new Map(candidate.organizations.map((borrower) => {
       const projectReserve = borrower.id === candidate.holding.organizationId ? cashCommitted : 0;
-      return [borrower.id, borrower.cashCents + (operatingCashByBorrower.get(borrower.id) ?? 0) - projectReserve] as const;
+      const tradeCreditorReserve = existingOperatingPayablesByEntity.get(borrower.id) ?? 0;
+      // Previously incurred operating creditors rank ahead of new bank debt service.
+      return [borrower.id, borrower.cashCents + (operatingCashByBorrower.get(borrower.id) ?? 0) -
+        projectReserve - tradeCreditorReserve] as const;
     }));
     const interestAccrualByDebt = new Map(calculateScenarioDebtService(candidate).map((line) =>
       [line.debtId, line.interestExpenseCents] as const));
