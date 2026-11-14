@@ -1524,7 +1524,7 @@ export function advanceQuarter(state: GameState, commands: QuarterCommands = {})
         netCashChangeCents: moneyFromCents(closingCashCents - bridge.openingCashCents),
         operatingPayablesPaidCents: moneyFromCents(paidCents),
         operatingPayablesAccruedCents: moneyFromCents(accruedCents),
-        operatingPayablesOutstandingCents: settlement.outstandingCents,
+        operatingPayablesOutstandingCents: moneyFromCents(settlement.outstandingCents),
       };
       report.entityCashBridges = report.entityCashBridges.map((item) =>
         item.organizationId === company.organizationId ? updatedBridge : item);
