@@ -12,3 +12,5 @@ export * from './engine/advanceQuarter';
 export * from './scenario/initiatives';
 export * from './systems/actors';
 export * from './campaign/session';
+
+export * from './systems/operatingPayables';
