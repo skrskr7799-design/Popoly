@@ -29,6 +29,7 @@ type Props = {
   onToggleTurnaroundAction: (actionId: TurnaroundActionId) => void;
   onFileAdministration: () => void;
   onReorganizeAdministration: (caseId: string) => void;
+  onLiquidateAdministration: (caseId: string) => void;
 };
 
 function EntityMark({ holding = false }: { holding?: boolean }) {
@@ -48,7 +49,7 @@ function Metric({ label, value, detail, tone = 'neutral' }: {
 export function CorporationOverview({
   state, report, renewalDrafts, onRenewalDraftChange,
   selectedLoanOffers, onToggleLoanOffer, creditRequest, onCreditRequestChange,
-  selectedTurnaroundActionIds, onToggleTurnaroundAction, onFileAdministration, onReorganizeAdministration,
+  selectedTurnaroundActionIds, onToggleTurnaroundAction, onFileAdministration, onReorganizeAdministration, onLiquidateAdministration,
 }: Props) {
   const holdingId = state.holding.organizationId;
   const operating = state.operatingCompanies.find((item) => item.organizationId === 'nodeworks');
@@ -199,7 +200,8 @@ export function CorporationOverview({
         selectedTurnaroundActionIds={selectedTurnaroundActionIds}
         onToggleTurnaroundAction={onToggleTurnaroundAction}
         onFileAdministration={onFileAdministration}
-        onReorganizeAdministration={onReorganizeAdministration} />
+        onReorganizeAdministration={onReorganizeAdministration}
+        onLiquidateAdministration={onLiquidateAdministration} />
     </section>
   </div>;
 }
