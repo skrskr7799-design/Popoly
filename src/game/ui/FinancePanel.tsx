@@ -1,7 +1,8 @@
-import type { GameState } from '../domain/types';
+import type { GameState, TurnaroundActionId } from '../domain/types';
 import type { QuarterReport } from '../systems/quarterReport';
 import { calculateDebtServiceObligation } from '../systems/finance';
 import { assessFinancialHealth } from '../systems/financialHealth';
+import { COMPUTE_BOTTLENECK_TURNAROUND_ACTIONS } from '../scenario/turnaround';
 import { formatMoney, formatPercent, formatQuarter } from './format';
 
 const statusLabel = (status: string | undefined) => {
@@ -101,6 +102,40 @@ export function FinancePanel({
         ? <ul className="pop-financial-health-reasons">{operatingHealth.reasons.map((reason) => <li key={reason}>{reason}</li>)}</ul>
         : <p className="pop-muted">No material liquidity or creditor warning signals are currently detected.</p>}
     </div>}
+
+    <div className="pop-finance-subsection pop-turnaround">
+      <div className="pop-finance-subtitle"><strong>Operating turnaround</strong><small>Costs and trade-offs apply from this quarter</small></div>
+      <p className="pop-muted">Each program is a one-time structural change. Savings are permanent; operational trade-offs are shown before you commit.</p>
+      <div className="pop-turnaround-list">
+        {COMPUTE_BOTTLENECK_TURNAROUND_ACTIONS.map((action) => {
+          const applied = (operatingCompany?.turnaroundActions ?? []).includes(action.id);
+          const selected = selectedTurnaroundActionIds.includes(action.id);
+          const savings = Object.entries(action.costReductionBps).map(([key, bps]) => {
+            const labels: Record<string, string> = {
+              operationsAndStaffingCents: 'staffing',
+              maintenanceCents: 'maintenance',
+              networkAndConnectivityCents: 'network',
+              overheadComplianceInsuranceCents: 'overhead',
+            };
+            return `${labels[key] ?? key} −${(bps / 100).toFixed(0)}%`;
+          }).join(' · ');
+          return <label className={`pop-turnaround-option ${selected ? 'is-selected' : ''} ${applied ? 'is-applied' : ''}`} key={action.id}>
+            <input type="checkbox" checked={applied || selected} disabled={applied}
+              onChange={() => onToggleTurnaroundAction(action.id)} />
+            <span className="pop-turnaround-copy">
+              <strong>{action.name}</strong>
+              <small>{action.description}</small>
+              <em>{savings}</em>
+              <small className="pop-turnaround-tradeoff">Trade-off: {action.tradeoff}</small>
+            </span>
+            <span className="pop-turnaround-state">{applied ? 'Implemented' : selected ? 'Selected' : 'Available'}</span>
+          </label>;
+        })}
+      </div>
+      {selectedTurnaroundActionIds.length > 0 && <p className="pop-finance-alert">
+        {selectedTurnaroundActionIds.length} turnaround program(s) selected · {selectedTurnaroundActionIds.length} leadership unit(s) committed this quarter.
+      </p>}
+    </div>
 
     <div className="pop-finance-subsection">
       <div className="pop-finance-subtitle"><strong>Liquidity by legal entity</strong><small>Opening cash · current quarter</small></div>
