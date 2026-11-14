@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { translations, type Locale } from './translations';
 
-const STORAGE_KEY = 'popoly-locale';
+const STORAGE_KEY = 'popoly-tech-dominion-locale';
 
 function readStoredLocale(): Locale {
   try {
