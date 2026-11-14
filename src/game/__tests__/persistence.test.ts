@@ -198,7 +198,20 @@ describe('campaign save core', () => {
     expect(opening.ok).toBe(true);
     if (!opening.ok) return;
 
-    const created = await createCampaignSave(opening.state, {
+    const stateWithOperatingArrears = {
+      ...opening.state,
+      operatingPayables: [{
+        id: 'nodeworks-energy-q1',
+        entityId: 'nodeworks',
+        creditorClass: 'energy' as const,
+        originalAmountCents: moneyFromCents(2_000_000),
+        outstandingAmountCents: moneyFromCents(1_250_000),
+        incurredQuarter: 1,
+        dueQuarter: 1,
+        priority: 2,
+      }],
+    };
+    const created = await createCampaignSave(stateWithOperatingArrears, {
       ...metadata, updatedAt: '2035-04-01T00:00:00.000Z',
     }, testDigest);
     expect(created.ok).toBe(true);
@@ -207,7 +220,7 @@ describe('campaign save core', () => {
     expect(loaded.ok).toBe(true);
     if (!loaded.ok) return;
 
-    const uninterrupted = advanceQuarter(opening.state);
+    const uninterrupted = advanceQuarter(stateWithOperatingArrears);
     const restored = advanceQuarter(loaded.value.state);
     expect(restored).toEqual(uninterrupted);
   });
