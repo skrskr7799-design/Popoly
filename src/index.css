@@ -1444,3 +1444,39 @@ body,.pop-app { background:var(--pop-color-canvas); color:var(--pop-color-text);
     transition-duration:.01ms !important;
   }
 }
+
+
+.pop-operating-payables {
+  display: grid;
+  gap: 7px;
+  margin-top: 12px;
+}
+.pop-operating-payable {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 12px;
+  padding: 9px 11px;
+  border: 1px solid var(--pop-border);
+  border-radius: 10px;
+  background: var(--pop-surface-inset);
+  color: var(--pop-text-soft);
+  font-size: 12px;
+  text-transform: capitalize;
+}
+.pop-operating-payable strong {
+  color: var(--pop-text);
+  font-variant-numeric: tabular-nums;
+}
+.pop-operating-payable small {
+  color: var(--pop-muted);
+  white-space: nowrap;
+}
+@media (max-width: 640px) {
+  .pop-operating-payable {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+  .pop-operating-payable small {
+    grid-column: 1 / -1;
+  }
+}
