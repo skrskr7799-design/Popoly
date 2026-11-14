@@ -144,8 +144,19 @@ describe('long-horizon economic stability', () => {
 
       for (let turn = 0; turn < 48; turn += 1) {
         const result = advanceQuarter(state);
-        expect(result.ok, `seed ${seed}, quarter ${state.quarter}: ${JSON.stringify(result)}`).toBe(true);
-        if (!result.ok) break;
+        if (!result.ok) {
+          const report = buildQuarterReport(state);
+          const company = state.operatingCompanies.find((item) => item.organizationId === 'nodeworks')!;
+          const organization = state.organizations.find((item) => item.id === 'nodeworks')!;
+          throw new Error(JSON.stringify({
+            seed, quarter: state.quarter, issues: result.issues,
+            cashCents: organization.cashCents, debtCents: organization.debtCents,
+            operations: report.companies.find((item) => item.companyId === 'nodeworks')?.operations,
+            contracts: company.contracts, deliveredWorkloadMW: company.deliveredWorkloadMW,
+            capacity: company.capacity, market: state.regionalMarkets[0],
+            debt: state.debts.filter((item) => item.borrowerId === 'nodeworks'),
+          }));
+        }
 
         state = result.state;
         expect(state.quarter).toBe(openingQuarter + turn + 1);
