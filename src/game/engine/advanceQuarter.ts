@@ -1063,11 +1063,15 @@ export function advanceQuarter(state: GameState, commands: QuarterCommands = {})
         const unpaidPrincipal = unpaidPrincipalByDebt.get(debt.id) ?? 0;
         const closingPrincipalArrears = unpaidPrincipal > 0 ? unpaidPrincipal : 0;
         const closingInterestArrears = unpaidInterest;
-        const missedService = closingInterestArrears > 0 || closingPrincipalArrears > 0;
-        const overdueQuarters = missedService ? (debt.overdueQuarters ?? 0) + 1 : 0;
-        const status = missedService
-          ? overdueQuarters >= 2 ? 'defaulted' as const : 'overdue' as const
-          : debt.principalCents === 0 ? 'settled' as const : 'current' as const;
+        const standstillActive = (debt.paymentStandstillThroughQuarter ?? 0) >= report.quarter;
+        const missedService = !standstillActive && (closingInterestArrears > 0 || closingPrincipalArrears > 0);
+        const overdueQuarters = standstillActive ? (debt.overdueQuarters ?? 0)
+          : missedService ? (debt.overdueQuarters ?? 0) + 1 : 0;
+        const status = standstillActive
+          ? debt.paymentStatus ?? (debt.principalCents === 0 ? 'settled' as const : 'current' as const)
+          : missedService
+            ? overdueQuarters >= 2 ? 'defaulted' as const : 'overdue' as const
+            : debt.principalCents === 0 ? 'settled' as const : 'current' as const;
         if (missedService) {
           unpaidDebtIds.add(debt.id);
           arrearsLines.push({
@@ -1087,10 +1091,15 @@ export function advanceQuarter(state: GameState, commands: QuarterCommands = {})
         };
       }),
     };
-    report.debtInterestService = interestLines.map((line) => ({
-      ...line,
-      missedContractualService: line.closingInterestArrearsCents > 0 || (unpaidPrincipalByDebt.get(line.debtId) ?? 0) > 0,
-    }));
+    report.debtInterestService = interestLines.map((line) => {
+      const debt = candidate.debts.find((item) => item.id === line.debtId);
+      const standstillActive = (debt?.paymentStandstillThroughQuarter ?? 0) >= report.quarter;
+      return {
+        ...line,
+        missedContractualService: !standstillActive &&
+          (line.closingInterestArrearsCents > 0 || (unpaidPrincipalByDebt.get(line.debtId) ?? 0) > 0),
+      };
+    });
     if (arrearsLines.length > 0) report.debtArrears = arrearsLines;
 
     // Contractual cross-default applies only to instruments whose own agreement

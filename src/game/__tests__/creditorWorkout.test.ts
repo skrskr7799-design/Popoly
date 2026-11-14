@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { initializeGame } from '../engine/initialize';
 import { validateGameState } from '../domain/invariants';
 import { buildQuarterReport } from '../systems/quarterReport';
+import { advanceQuarter } from '../engine/advanceQuarter';
 import { advanceCreditorWorkouts, proposeCreditorWorkout } from '../systems/creditorWorkout';
 
 const plan = {
@@ -36,6 +37,27 @@ describe('coordinated creditor workouts', () => {
       expect(result.state.debts.map((item) => [item.id, item.principalCents, item.quarterlyInterestRate])).toEqual(debtBefore);
       expect(result.state.operatingPayables).toEqual(opening.operatingPayables);
     }
+  });
+
+  it('honours an approved standstill without creating a new payment default', () => {
+    const opening = initializeGame(2035);
+    const proposed = proposeCreditorWorkout(opening, plan);
+    expect(proposed.ok).toBe(true);
+    if (!proposed.ok || proposed.workout.status !== 'active') return;
+    const stoodStillDebtIds = proposed.state.debts
+      .filter((item) => item.paymentStandstillThroughQuarter === opening.quarter)
+      .map((item) => item.id);
+    expect(stoodStillDebtIds.length).toBeGreaterThan(0);
+    const next = advanceQuarter(proposed.state);
+    expect(next.ok).toBe(true);
+    if (!next.ok) return;
+    for (const debtId of stoodStillDebtIds) {
+      const debt = next.state.debts.find((item) => item.id === debtId)!;
+      expect(debt.paymentStatus).not.toBe('overdue');
+      expect(debt.paymentStatus).not.toBe('defaulted');
+      expect(next.report.debtRepayments?.some((item) => item.debtId === debtId)).not.toBe(true);
+    }
+    expect(validateGameState(next.state)).toEqual([]);
   });
 
   it('tracks milestones to completion', () => {
