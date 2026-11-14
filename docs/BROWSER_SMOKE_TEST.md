@@ -224,3 +224,11 @@ This is a user-reported exploratory check, not a claim that every BS-01–BS-25 
 - **Expected:** The destination renders as a distinct strategy-game screen, not a dashboard continuation. Regional values match the authoritative scenario state. External actor information is sourced only from `playerIntelligence`; hidden actor metrics are never displayed. Known, reported, estimated, and unknown information remain visually distinguishable. Empty activity and missing-intelligence states remain understandable. No horizontal overflow or clipped content at 390 px, 768 px, and 1280 px.
 - **Actual result / evidence:**
 
+
+## 12. Quarter Strategy destination
+
+### BS-27 — Dedicated quarterly planning view
+- [ ] Pass  [ ] Fail  [ ] Blocked
+- **Steps:** Open Quarter Strategy from desktop and mobile navigation. Inspect the leadership and capital meters, regional operating constraints, all initiative cards, projected effects, and the commitment preview. Select and deselect initiatives; then resolve one disposable campaign quarter.
+- **Expected:** Quarter Strategy renders as a distinct executive-planning screen. Resource meters update immediately and consistently with selected initiatives. Active projects cannot be launched twice. Unaffordable initiatives cannot be selected. The commitment preview reflects the exact selected portfolio. Decisions do not affect campaign state until a successful quarter resolution. Validation errors remain visible and do not silently discard selections. Layout remains usable without horizontal overflow at 390 px, 768 px, and 1280 px.
+- **Actual result / evidence:**
