@@ -170,6 +170,26 @@ export function validateGameState(state: GameState): ValidationIssue[] {
     }
   }
 
+  const assetIds = new Set<string>();
+  const debtById = new Map(state.debts.map((debt) => [debt.id, debt]));
+  for (const asset of state.assets ?? []) {
+    if (assetIds.has(asset.id)) {
+      issues.push({ code: 'asset.id_duplicate', message: 'Corporate asset IDs must be unique.', entityId: asset.id });
+    }
+    assetIds.add(asset.id);
+    const securedDebt = asset.securedDebtId ? debtById.get(asset.securedDebtId) : undefined;
+    if (typeof asset.id !== 'string' || asset.id.trim().length === 0 ||
+        !organizationIds.has(asset.ownerId) ||
+        !['compute-equipment', 'power-infrastructure', 'network-infrastructure', 'facility'].includes(asset.assetClass) ||
+        !Number.isSafeInteger(asset.bookValueCents) || asset.bookValueCents < 0 ||
+        !Number.isSafeInteger(asset.realizableValueCents) || asset.realizableValueCents < 0 ||
+        (asset.securedDebtId !== undefined && (!securedDebt || securedDebt.borrowerId !== asset.ownerId)) ||
+        (asset.disposedQuarter !== undefined && (!Number.isInteger(asset.disposedQuarter) ||
+          asset.disposedQuarter < 1 || asset.disposedQuarter > state.quarter))) {
+      issues.push({ code: 'asset.state_invalid', message: 'Corporate asset must reference a valid owner and optional secured debt, with non-negative values and a valid disposal quarter.', entityId: asset.id });
+    }
+  }
+
   const turnaroundIds = new Set(['workforce-reset', 'maintenance-deferral', 'vendor-renegotiation', 'facility-consolidation']);
   for (const company of state.operatingCompanies) {
     const actions = company.turnaroundActions ?? [];
