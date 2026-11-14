@@ -611,6 +611,10 @@ describe('atomic quarter transition', () => {
     const asterion = state.actors.find((actor) => actor.organizationId === 'asterion-ai')!;
     expect(asterion.hiddenMetrics.nodeworksContractMW).toBe(8);
     expect(asterion.hiddenMetrics.kestrelContractMW).toBe(15);
+    const flexibleDemandMW = Math.max(0, (asterion.hiddenMetrics.demandMW ?? 0) - 8 - 15);
+    expect(asterion.hiddenMetrics.flexibleDemandMW).toBeCloseTo(flexibleDemandMW, 8);
+    expect((asterion.hiddenMetrics.nodeworksFlexibleMW ?? 0) + (asterion.hiddenMetrics.kestrelFlexibleMW ?? 0) + (asterion.hiddenMetrics.otherFlexibleMW ?? 0))
+      .toBeCloseTo(flexibleDemandMW, 8);
     expect(state.operatingCompanies[0]!.contracts.some((contract) => contract.id === 'asterion-contract-a')).toBe(true);
     expect(state.operatingCompanies[0]!.contracts.some((contract) => contract.id === 'asterion-contract-b')).toBe(false);
 
