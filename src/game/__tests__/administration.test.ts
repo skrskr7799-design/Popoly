@@ -1,0 +1,69 @@
+import { describe, expect, it } from 'vitest';
+import { initializeGame } from '../engine/initialize';
+import { validateGameState } from '../domain/invariants';
+import { openAdministration, reorganizeAdministration } from '../systems/administration';
+
+describe('formal administration transitions', () => {
+  it('opens a legal-entity-scoped case without moving cash or changing creditor claims', () => {
+    const opening = initializeGame(2035);
+    const beforeCash = opening.organizations.map((item) => [item.id, item.cashCents]);
+    const beforeDebt = opening.debts.map((item) => [item.id, item.principalCents]);
+    const result = openAdministration(opening, 'nodeworks', 'trade-creditor-arrears');
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.administrationCase).toMatchObject({
+      entityId: 'nodeworks', openedQuarter: opening.quarter,
+      trigger: 'trade-creditor-arrears', status: 'active',
+    });
+    expect(result.state.operatingCompanies.find((item) => item.organizationId === 'nodeworks')?.status)
+      .toBe('administration');
+    expect(result.state.operatingCompanies.find((item) => item.organizationId === 'nodeworks')?.contracts)
+      .toEqual(opening.operatingCompanies.find((item) => item.organizationId === 'nodeworks')?.contracts);
+    expect(result.state.organizations.map((item) => [item.id, item.cashCents])).toEqual(beforeCash);
+    expect(result.state.debts.map((item) => [item.id, item.principalCents])).toEqual(beforeDebt);
+    expect(validateGameState(result.state)).toEqual([]);
+  });
+
+  it('prevents duplicate administration cases and rejects unknown companies', () => {
+    const opening = initializeGame(2035);
+    const first = openAdministration(opening, 'nodeworks');
+    expect(first.ok).toBe(true);
+    if (!first.ok) return;
+    expect(openAdministration(first.state, 'nodeworks')).toMatchObject({
+      ok: false, code: 'administration.case_exists',
+    });
+    expect(openAdministration(opening, 'unknown')).toMatchObject({
+      ok: false, code: 'administration.company_unknown',
+    });
+  });
+
+  it('records reorganization without forgiving debt or operating payables', () => {
+    const opening = initializeGame(2035);
+    const withPayables = {
+      ...opening,
+      operatingPayables: [{
+        id: 'nodeworks-energy-q1', entityId: 'nodeworks', creditorClass: 'energy' as const,
+        originalAmountCents: 125_000, outstandingAmountCents: 125_000,
+        incurredQuarter: 1, dueQuarter: 1, priority: 2,
+      }],
+    };
+    const filed = openAdministration(withPayables, 'nodeworks');
+    expect(filed.ok).toBe(true);
+    if (!filed.ok) return;
+    const debtBefore = filed.state.debts.map((item) => [item.id, item.principalCents, item.arrearsInterestCents]);
+    const reorganized = reorganizeAdministration(filed.state, filed.administrationCase.id);
+    expect(reorganized.ok).toBe(true);
+    if (!reorganized.ok) return;
+    expect(reorganized.administrationCase.status).toBe('reorganized');
+    expect(reorganized.state.operatingCompanies.find((item) => item.organizationId === 'nodeworks')?.status)
+      .toBe('operating');
+    expect(reorganized.state.debts.map((item) => [item.id, item.principalCents, item.arrearsInterestCents]))
+      .toEqual(debtBefore);
+    expect(reorganized.state.operatingPayables).toEqual(withPayables.operatingPayables);
+    expect(validateGameState(reorganized.state)).toEqual([]);
+    expect(reorganizeAdministration(reorganized.state, filed.administrationCase.id)).toMatchObject({
+      ok: false, code: 'administration.case_not_active',
+    });
+  });
+});
