@@ -47,7 +47,8 @@ export function CommandCenterBriefing({
     { label: 'Grid allocation', value: capacity.gridAllocationMW },
     { label: 'Equipment', value: capacity.commissionedEquipmentMW },
     { label: 'Operational limit', value: capacity.operationalLimitMW },
-  ].sort((a, b) => a.value - b.value) : [];
+  ].concat(operations ? [{ label: 'Reliability-adjusted capacity', value: operations.effectiveCapacityMW }] : [])
+    .sort((a, b) => a.value - b.value) : [];
   const bottleneck = ceilings[0];
   const utilization = operations && operations.effectiveCapacityMW > 0
     ? operations.deliveredWorkloadMW / operations.effectiveCapacityMW
@@ -120,7 +121,7 @@ export function CommandCenterBriefing({
             label="NodeWorks utilization"
             value={operations ? `${Math.round(utilization * 100)}%` : '—'}
             detail={operations ? `${operations.deliveredWorkloadMW.toFixed(1)} of ${operations.effectiveCapacityMW.toFixed(1)} MW effective capacity` : 'Operating report unavailable'}
-            tone={utilization >= 0.9 ? 'warn' : 'good'}
+            tone={!operations ? 'neutral' : utilization >= 0.9 ? 'warn' : 'good'}
           />
           <Signal
             icon={Cpu}
@@ -132,7 +133,7 @@ export function CommandCenterBriefing({
             icon={arrears > 0 ? AlertTriangle : Banknote}
             label="Financial pressure"
             value={arrears > 0 ? formatMoney(arrears) : 'No arrears'}
-            detail={defaultedDebts > 0 ? `${defaultedDebts} defaulted instrument(s)` : 'Recorded principal and interest arrears'}
+            detail={defaultedDebts > 0 ? `${defaultedDebts} defaulted instrument(s)` : arrears > 0 ? 'Recorded principal and interest arrears' : 'No overdue principal or interest'}
             tone={defaultedDebts > 0 ? 'critical' : arrears > 0 ? 'warn' : 'good'}
           />
         </div>
