@@ -1485,7 +1485,6 @@ export function advanceQuarter(state: GameState, commands: QuarterCommands = {})
     // remitted leaves the company. Any unpaid portion remains in the separate
     // trade-payables ledger; this does not create bank debt or pool group cash.
     let operatingPayables = candidate.operatingPayables ?? [];
-    const payableCashByEntity = new Map<string, number>();
     for (const company of candidate.operatingCompanies) {
       const companyReport = report.companies.find((item) => item.companyId === company.organizationId);
       const bridge = report.entityCashBridges.find((item) => item.organizationId === company.organizationId);
@@ -1519,7 +1518,6 @@ export function advanceQuarter(state: GameState, commands: QuarterCommands = {})
       const paidCents = settlement.payments.reduce((sum, payment) => sum + payment.amountCents, 0);
       const accruedCents = operations.totalOperatingCostCents;
       const closingCashCents = settlement.cashRemainingCents;
-      payableCashByEntity.set(company.organizationId, closingCashCents);
       const updatedBridge = {
         ...bridge,
         closingCashCents: moneyFromCents(closingCashCents),
