@@ -144,13 +144,13 @@ export function FinancePanel({
       <p>The company is under administrator control. New borrowing and discretionary workload changes are suspended; essential operations and approved turnaround work continue.</p>
       <div className="pop-administration-meta"><span>Filing basis</span><strong>{administrationCase.trigger.replaceAll('-', ' ')}</strong></div>
       {reorganizationReady
-        ? <button type="button" className="pop-button pop-button-primary" onClick={() => onReorganizeAdministration(administrationCase.id)}>Complete creditor reorganization</button>
+        ? <button type="button" className="pop-primary" onClick={() => onReorganizeAdministration(administrationCase.id)}>Complete creditor reorganization</button>
         : <p className="pop-muted">Reorganization is not yet viable. Clear operating payables and debt arrears, restore operating cash flow, and resolve defaults or covenant breaches.</p>}
     </div>}
     {operatingCompany?.status !== 'administration' && operatingCompany?.status !== 'liquidated' && operatingHealth?.status === 'distressed' && !administrationCase && <div className="pop-finance-subsection pop-administration pop-administration-warning">
       <div className="pop-finance-subtitle"><strong>Creditor protection may be required</strong><span className="pop-pill pop-pill-warn">Distressed</span></div>
       <p>NodeWorks is in financial distress. Filing opens a formal administration case; it does not erase debt or transfer Meridian Group's cash to the subsidiary.</p>
-      <button type="button" className="pop-button pop-button-danger" onClick={onFileAdministration}>File for administration</button>
+      <button type="button" className="pop-secondary-button pop-admin-danger" onClick={onFileAdministration}>File for administration</button>
     </div>}
     {ownedAssets.length > 0 && <div className="pop-finance-subsection pop-asset-position">
       <div className="pop-finance-subtitle"><strong>NodeWorks asset base</strong><small>Indicative scenario valuations</small></div>
