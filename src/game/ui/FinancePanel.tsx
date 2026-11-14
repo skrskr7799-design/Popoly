@@ -141,7 +141,7 @@ export function FinancePanel({
             .map((payable) => <div className="pop-operating-payable" key={payable.id}>
               <span>{payable.creditorClass.replaceAll('-', ' ')} · {formatQuarter(payable.incurredQuarter)}</span>
               <strong>{formatMoney(payable.outstandingAmountCents, true)}</strong>
-              <small>{payable.dueQuarter < state.quarter ? 'Overdue' : `Due ${formatQuarter(payable.dueQuarter)}`}</small>
+              <small>{payable.dueQuarter < state.quarter ? gameText('Overdue') : `${gameText('Due')} ${formatQuarter(payable.dueQuarter)}`}</small>
             </div>)}
         </div>}
       {operatingHealth.reasons.length > 0
@@ -223,7 +223,7 @@ export function FinancePanel({
               <strong>{gameText(action.name)}</strong>
               <small>{gameText(action.description)}</small>
               <em>{savings}</em>
-              <small className="pop-turnaround-tradeoff">Trade-off: {gameText(action.tradeoff)}</small>
+              <small className="pop-turnaround-tradeoff">{gameText('Trade-off')}: {gameText(action.tradeoff)}</small>
             </span>
             <span className="pop-turnaround-state">{gameText(applied ? 'Implemented' : selected ? 'Selected' : 'Available')}</span>
           </label>;
@@ -271,8 +271,8 @@ export function FinancePanel({
           </div>
           {debt.facilityLimitCents !== undefined && <div className="pop-facility-line"><span>Facility limit {formatMoney(debt.facilityLimitCents, true)}</span><strong>Undrawn {formatMoney(Math.max(0, debt.facilityLimitCents - debt.principalCents), true)}</strong></div>}
           {debt.covenantTerms && <div className="pop-covenant-line">
-            <span>DSCR minimum {debt.covenantTerms.minimumDebtServiceCoverage?.toFixed(2) ?? '—'}×</span>
-            <span>Leverage maximum {debt.covenantTerms.maximumDebtToAnnualCashFlow?.toFixed(2) ?? '—'}×</span>
+            <span>{gameText('DSCR minimum')} {debt.covenantTerms.minimumDebtServiceCoverage?.toFixed(2) ?? '—'}×</span>
+            <span>{gameText('Leverage maximum')} {debt.covenantTerms.maximumDebtToAnnualCashFlow?.toFixed(2) ?? '—'}×</span>
             <span>{gameText(debt.covenantTerms.restrictAdditionalBorrowing ? 'Borrowing restriction applies' : 'No borrowing restriction')}</span>
           </div>}
           {(arrears > 0 || dueNow || debt.crossDefaultedByDebtId) && <div className="pop-debt-warning">
@@ -314,8 +314,8 @@ export function FinancePanel({
             <span><small>{gameText("Expires after")}</small><strong>{formatQuarter(offer.expiresAfterQuarter)}</strong></span>
           </div>
           <div className="pop-offer-terms">
-            <span>DSCR ≥ {offer.covenantTerms?.minimumDebtServiceCoverage?.toFixed(2) ?? '—'}×</span>
-            <span>Leverage ≤ {offer.covenantTerms?.maximumDebtToAnnualCashFlow?.toFixed(1) ?? '—'}×</span>
+            <span>{gameText('DSCR')} ≥ {offer.covenantTerms?.minimumDebtServiceCoverage?.toFixed(2) ?? '—'}×</span>
+            <span>{gameText('Leverage')} ≤ {offer.covenantTerms?.maximumDebtToAnnualCashFlow?.toFixed(1) ?? '—'}×</span>
             <span>{gameText(offer.crossDefaultClause ? 'Cross-default clause' : 'No cross-default clause')}</span>
             {offer.collateralDescription && <span>Security: {offer.collateralDescription}</span>}
           </div>
