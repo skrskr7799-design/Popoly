@@ -58,11 +58,10 @@ describe('operating payable settlement', () => {
     expect(() => settleOperatingPayables([settled], 'nodeworks', [
       { id: settled.id, entityId: 'nodeworks', creditorClass: 'energy', amountCents: 1, dueQuarter: 2, priority: 1 },
     ], 0, 2)).toThrow(/Invalid or duplicate/);
-    expect(() => settleOperatingPayables([], [
+    expect(() => settleOperatingPayables([], 'nodeworks', [
       { id: 'bad', entityId: 'nodeworks', creditorClass: 'energy', amountCents: -1, dueQuarter: 2, priority: 1 },
     ], 0, 2)).toThrow(/Invalid or duplicate/);
   });
-});
 
   it('never spends one legal entity cash on another entity payable', () => {
     const parent = payable({ id: 'parent-energy', entityId: 'meridian-group' });
@@ -75,3 +74,5 @@ describe('operating payable settlement', () => {
     expect(result.payables.find((item) => item.id === 'parent-energy')?.outstandingAmountCents).toBe(800);
     expect(result.outstandingCents).toBe(0);
   });
+
+});
