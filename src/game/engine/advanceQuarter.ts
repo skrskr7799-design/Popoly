@@ -1,10 +1,11 @@
 import { validateGameState } from '../domain/invariants';
 import { moneyFromCents } from '../domain/money';
-import type { GameState, StrategicProjectState, ValidationIssue } from '../domain/types';
+import type { GameState, StrategicProjectState, TurnaroundActionId, ValidationIssue } from '../domain/types';
 import { getInitiativeDefinition } from '../scenario/initiatives';
 import { advanceAutonomousActors, getRivalRenewalBid } from '../systems/actors';
 import { buildQuarterReport, type ContractNegotiationResult, type ContractRenewalResult, type CreditDecisionReportLine, type CovenantReportLine, type DebtRestructuringReportLine, type QuarterReport } from '../systems/quarterReport';
 import { calculateCreditAssessment, calculateDebtServiceObligation, calculateScenarioDebtService } from '../systems/finance';
+import { getTurnaroundAction } from '../scenario/turnaround';
 
 export interface WorkloadDecision {
   companyId: string;
@@ -77,7 +78,7 @@ export interface ContractRenewalCommand {
 }
 
 export interface QuarterCommands {
-  workloadDecisions?: WorkloadDecision[];
+  workloadDecisions?: WorkloadDecision[];\n  /** One-time operating-cost and capacity restructuring actions. */\n  turnaroundActions?: TurnaroundActionCommand[];
   /** Initiatives to sponsor this quarter. Costs and effects come from scenario data. */
   launchInitiatives?: string[];
   /** Price proposal for an existing flexible customer contract; accepted terms begin next quarter. */
@@ -173,6 +174,25 @@ function validateCommands(state: GameState, commands: QuarterCommands): Validati
     if (!Number.isFinite(decision.desiredWorkloadMW) || decision.desiredWorkloadMW < 0 ||
         decision.desiredWorkloadMW > maximumDemand) {
       issues.push(issue('command.workload_out_of_range', `Desired workload must be between 0 and contracted demand of ${maximumDemand} MW.`, decision.companyId));
+    }
+  }
+
+  const seenTurnaroundActions = new Set<string>();
+  for (const command of commands.turnaroundActions ?? []) {
+    const key = `${command.companyId}:${command.actionId}`;
+    if (seenTurnaroundActions.has(key)) {
+      issues.push(issue('command.turnaround_duplicate', 'A turnaround action can only be selected once per quarter.', command.actionId));
+      continue;
+    }
+    seenTurnaroundActions.add(key);
+    const company = state.operatingCompanies.find((item) => item.organizationId === command.companyId);
+    const definition = getTurnaroundAction(command.actionId);
+    if (!company || !definition) {
+      issues.push(issue('command.turnaround_unknown', 'Turnaround action references an unknown company or scenario action.', command.companyId));
+      continue;
+    }
+    if ((company.turnaroundActions ?? []).includes(command.actionId)) {
+      issues.push(issue('command.turnaround_already_applied', 'This turnaround action has already been implemented for the company.', command.actionId));
     }
   }
 
@@ -562,8 +582,9 @@ function validateCommands(state: GameState, commands: QuarterCommands): Validati
     cashCommitted += definition.upfrontCostCents;
   }
 
-  if (leadershipCommitted > state.holding.leadershipCapacityPerQuarter) {
-    issues.push(issue('command.leadership_exceeded', `Initiatives require ${leadershipCommitted} leadership units; only ${state.holding.leadershipCapacityPerQuarter} are available.`));
+  const turnaroundLeadership = (commands.turnaroundActions ?? []).length;
+  if (leadershipCommitted + turnaroundLeadership > state.holding.leadershipCapacityPerQuarter) {
+    issues.push(issue('command.leadership_exceeded', `Initiatives and turnaround actions require ${leadershipCommitted + turnaroundLeadership} leadership units; only ${state.holding.leadershipCapacityPerQuarter} are available.`));
   }
   const holding = state.organizations.find((organization) => organization.id === state.holding.organizationId);
   if (!holding || cashCommitted + (repaymentByBorrower.get(state.holding.organizationId) ?? 0) > (holding?.cashCents ?? 0)) {
@@ -742,6 +763,39 @@ export function advanceQuarter(state: GameState, commands: QuarterCommands = {})
       lenders: state.lenders.map((lender) => ({ ...lender })),
       loanOffers: state.loanOffers.map((offer) => ({ ...offer })),
     };
+
+    if ((commands.turnaroundActions ?? []).length > 0) {
+      const actionCommands = commands.turnaroundActions ?? [];
+      candidate = {
+        ...candidate,
+        operatingCompanies: candidate.operatingCompanies.map((company) => {
+          const selected = actionCommands.filter((command) => command.companyId === company.organizationId);
+          if (selected.length === 0) return company;
+          let cashCosts = { ...company.cashCosts };
+          let capacity = { ...company.capacity };
+          let reputationPenalty = 0;
+          const applied = [...(company.turnaroundActions ?? [])];
+          for (const command of selected) {
+            const definition = getTurnaroundAction(command.actionId)!;
+            for (const [costKey, reductionBps] of Object.entries(definition.costReductionBps) as Array<[keyof typeof cashCosts, number]>) {
+              cashCosts[costKey] = moneyFromCents(Math.round(cashCosts[costKey] * (10_000 - reductionBps) / 10_000));
+            }
+            capacity = {
+              ...capacity,
+              reliability: Math.max(0.85, capacity.reliability - (definition.reliabilityPenalty ?? 0)),
+              operationalLimitMW: Math.max(0, capacity.operationalLimitMW - (definition.operationalLimitReductionMW ?? 0)),
+            };
+            reputationPenalty += definition.reputationPenalty ?? 0;
+            applied.push(command.actionId);
+          }
+          candidate.organizations = candidate.organizations.map((organization) =>
+            organization.id === company.organizationId && reputationPenalty > 0
+              ? { ...organization, reputation: Math.max(0, organization.reputation - reputationPenalty) }
+              : organization);
+          return { ...company, cashCosts, capacity, turnaroundActions: applied };
+        }),
+      };
+    }
 
     const accelerationLines: NonNullable<QuarterReport['debtAccelerations']> = [];
     candidate = {
