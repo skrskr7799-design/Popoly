@@ -8,6 +8,7 @@ import { createRandomState, nextRandom } from '../engine/random';
 import { validateGameState } from '../domain/invariants';
 import { advanceQuarter } from '../engine/advanceQuarter';
 import { calculateCreditAssessment } from '../systems/finance';
+import { assessFinancialHealth } from '../systems/financialHealth';
 
 describe('The Compute Bottleneck opening state', () => {
   it('initializes with valid ownership and entity references', () => {
@@ -130,6 +131,53 @@ describe('autonomous customer allocation', () => {
 
     expect(assigned).toBeCloseTo(expectedFlexibleDemand, 8);
     expect(customer.hiddenMetrics.kestrelFlexibleMW).toBeGreaterThan(1);
+  });
+});
+
+describe('financial health assessment', () => {
+  it('classifies the opening operating company as stable with positive operating cash flow', () => {
+    const state = initializeGame(2035);
+    const report = buildQuarterReport(state);
+    const health = assessFinancialHealth(state, report, 'nodeworks');
+
+    expect(health?.status).toBe('stable');
+    expect(health?.operatingCashContributionCents).toBeGreaterThan(0);
+    expect(health?.cashRunwayQuarters).toBeNull();
+    expect(health?.reasons).toEqual([]);
+  });
+
+  it('surfaces short cash runway, arrears and default as distress reasons', () => {
+    const opening = initializeGame(2035);
+    const state = {
+      ...opening,
+      organizations: opening.organizations.map((item) => item.id === 'nodeworks'
+        ? { ...item, cashCents: moneyFromCents(100_000) }
+        : item),
+      debts: opening.debts.map((item) => item.borrowerId === 'nodeworks'
+        ? { ...item, arrearsInterestCents: moneyFromCents(250_000), paymentStatus: 'defaulted' as const }
+        : item),
+    };
+    const report = buildQuarterReport(state);
+    const health = assessFinancialHealth(state, report, 'nodeworks');
+
+    expect(health?.status).toBe('distressed');
+    expect(health?.debtArrearsCents).toBe(250_000);
+    expect(health?.defaultedDebtCount).toBeGreaterThan(0);
+    expect(health?.reasons).toContain('Contractual debt service is already in arrears.');
+    expect(health?.reasons).toContain('At least one debt instrument is in default.');
+  });
+
+  it('does not pool holding-company liquidity into subsidiary runway', () => {
+    const opening = initializeGame(2035);
+    const state = {
+      ...opening,
+      organizations: opening.organizations.map((item) => item.id === 'nodeworks'
+        ? { ...item, cashCents: moneyFromCents(50_000) }
+        : item.id === 'meridian-group' ? { ...item, cashCents: moneyFromCents(5_000_000_000) } : item),
+    };
+    const health = assessFinancialHealth(state, buildQuarterReport(state), 'nodeworks');
+
+    expect(health?.cashRunwayQuarters).toBeLessThan(1);
   });
 });
 
