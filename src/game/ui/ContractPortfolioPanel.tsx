@@ -43,7 +43,7 @@ export function ContractPortfolioPanel({
   return <section className="pop-panel pop-contract-panel">
     <div className="pop-section-title">
       <div><span className="pop-eyebrow">{gameText("COMMERCIAL PORTFOLIO")}</span><h2>{gameText("Customer contracts")}</h2></div>
-      <span className="pop-pill">{company.contracts.length} active agreements</span>
+      <span className="pop-pill">{company.contracts.length} {gameText('active agreements')}</span>
     </div>
     <p className="pop-panel-intro">
       Contracted demand is fulfilled before flexible workload when capacity is scarce. Renewal windows are calculated from each agreement's notice period.
@@ -99,7 +99,7 @@ export function ContractPortfolioPanel({
                   <select value={draft.termQuarters} disabled={!draft.enabled}
                     onChange={(event) => onDraftChange(contract.id, { ...draft, termQuarters: event.currentTarget.value })}>
                     {Array.from({ length: 7 }, (_, index) => index + 2).map((term) =>
-                      <option key={term} value={term}>{term} quarters</option>)}
+                      <option key={term} value={term}>{term} {gameText('quarters')}</option>)}
                   </select>
                 </label>
               </div>
