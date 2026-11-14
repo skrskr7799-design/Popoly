@@ -34,6 +34,12 @@ export function FinancePanel({
   const totalInterest = report.totalInterestExpenseCents;
   const scheduledService = activeDebts.reduce((sum, debt) => sum + calculateDebtServiceObligation(debt, state.quarter), 0);
   const operatingCompany = state.operatingCompanies.find((item) => item.organizationId === 'nodeworks');
+  const ownedAssets = (state.assets ?? []).filter((asset) =>
+    asset.ownerId === operatingCompany?.organizationId && asset.disposedQuarter === undefined);
+  const assetBookValueCents = ownedAssets.reduce((sum, asset) => sum + asset.bookValueCents, 0);
+  const assetRealizableValueCents = ownedAssets.reduce((sum, asset) => sum + asset.realizableValueCents, 0);
+  const securedCollateralValueCents = ownedAssets.filter((asset) => asset.securedDebtId !== undefined)
+    .reduce((sum, asset) => sum + asset.realizableValueCents, 0);
   const borrowerIds = [state.holding.organizationId, ...(operatingCompany ? [operatingCompany.organizationId] : [])];
   const selectedBorrower = organizations.find((item) => item.id === creditRequest.borrowerId);
   const requestAllowed = !!selectedBorrower && !state.debts.some((debt) =>
@@ -125,6 +131,16 @@ export function FinancePanel({
       {operatingHealth.reasons.length > 0
         ? <ul className="pop-financial-health-reasons">{operatingHealth.reasons.map((reason) => <li key={reason}>{reason}</li>)}</ul>
         : <p className="pop-muted">No material liquidity or creditor warning signals are currently detected.</p>}
+    </div>}
+
+    {ownedAssets.length > 0 && <div className="pop-finance-subsection pop-asset-position">
+      <div className="pop-finance-subtitle"><strong>NodeWorks asset base</strong><small>Indicative scenario valuations</small></div>
+      <div className="pop-finance-summary">
+        <div><span>Book value</span><strong>{formatMoney(assetBookValueCents, true)}</strong></div>
+        <div><span>Estimated realizable value</span><strong>{formatMoney(assetRealizableValueCents, true)}</strong></div>
+        <div><span>Secured collateral value</span><strong>{formatMoney(securedCollateralValueCents, true)}</strong></div>
+      </div>
+      <p className="pop-muted">Realizable values are liquidation estimates, not cash or borrowing capacity. Secured lenders can claim only the assets pledged to their instruments.</p>
     </div>}
 
     <div className="pop-finance-subsection pop-turnaround">
