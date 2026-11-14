@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { initializeGame } from '../engine/initialize';
 import { moneyFromCents } from '../domain/money';
 import { calculateOperatingQuarter } from '../systems/economy';
+import { advanceAutonomousActors } from '../systems/actors';
 import { buildQuarterReport } from '../systems/quarterReport';
 import { createRandomState, nextRandom } from '../engine/random';
 import { validateGameState } from '../domain/invariants';
@@ -95,6 +96,39 @@ describe('The Compute Bottleneck opening state', () => {
   });
 });
 
+
+describe('autonomous customer allocation', () => {
+  it('reuses capacity released by the previous flexible allocation before assigning the new quarter', () => {
+    const state = initializeGame(2035);
+    state.actors = state.actors.map((actor) => {
+      if (actor.organizationId === 'asterion-ai') {
+        return { ...actor, hiddenMetrics: {
+          ...actor.hiddenMetrics,
+          demandMW: 33,
+          kestrelFlexibleMW: 10,
+          otherProviderCapacityMW: 0,
+        } };
+      }
+      if (actor.organizationId === 'kestrel-compute') {
+        return { ...actor, hiddenMetrics: {
+          ...actor.hiddenMetrics,
+          effectiveCapacityMW: 30,
+          currentWorkloadMW: 29,
+        } };
+      }
+      return actor;
+    });
+
+    const result = advanceAutonomousActors(state);
+    const customer = result.state.actors.find((actor) => actor.organizationId === 'asterion-ai')!;
+    const assigned = (customer.hiddenMetrics.nodeworksFlexibleMW ?? 0) +
+      (customer.hiddenMetrics.kestrelFlexibleMW ?? 0) +
+      (customer.hiddenMetrics.otherFlexibleMW ?? 0);
+
+    expect(assigned).toBeCloseTo(10, 8);
+    expect(customer.hiddenMetrics.kestrelFlexibleMW).toBeGreaterThan(1);
+  });
+});
 
 describe('explicit debt principal repayments', () => {
   it("repays principal from the borrower's own cash and leaves current-quarter interest unchanged", () => {
