@@ -16,3 +16,5 @@ export * from './campaign/session';
 export * from './systems/operatingPayables';
 
 export * from './systems/liquidation';
+
+export * from './systems/administration';
