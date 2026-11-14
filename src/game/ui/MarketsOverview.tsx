@@ -53,8 +53,8 @@ function IntelCard({ item, quarter }: { item: IntelligenceEstimate; quarter: num
   return <article className="pop-market-intel-row">
     <div className="pop-market-intel-main">
       <div className="pop-market-intel-title">
-        <strong>{metricLabel(item.metric)}</strong>
-        <span className={`pop-knowledge-tag is-${item.knowledge}`}>{knowledgeLabel(item.knowledge)}</span>
+        <strong>{gameText(metricLabel(item.metric))}</strong>
+        <span className={`pop-knowledge-tag is-${item.knowledge}`}>{gameText(knowledgeLabel(item.knowledge))}</span>
       </div>
       <div className="pop-market-intel-range">{estimateValue(item)}</div>
       <div className="pop-market-intel-source">{item.source}</div>
@@ -64,7 +64,7 @@ function IntelCard({ item, quarter }: { item: IntelligenceEstimate; quarter: num
         <strong>{Math.round(item.confidence * 100)}%</strong>
       </div>
     </div>
-    <div className="pop-market-intel-age"><Clock3 size={12} /><span>{freshnessLabel(age)}</span></div>
+    <div className="pop-market-intel-age"><Clock3 size={12} /><span>{gameText(freshnessLabel(age))}</span></div>
   </article>;
 }
 
@@ -77,7 +77,7 @@ function ActorCard({ subjectId, estimates, quarter, organizations }: {
   return <article className="pop-market-actor">
     <div className="pop-market-actor-head">
       <div className={`pop-market-actor-mark is-${subjectId}`}>{meta.mark}</div>
-      <div><span>{meta.role}</span><h3>{name}</h3><small>{meta.description}</small></div>
+      <div><span>{gameText(meta.role)}</span><h3>{name}</h3><small>{gameText(meta.description)}</small></div>
       <div className="pop-market-actor-count">{estimates.length} <small>{gameText("signals")}</small></div>
     </div>
     <div className="pop-market-intel-list">
@@ -141,14 +141,14 @@ export function MarketsOverview({ state, report, activityReport }: Props) {
     <section className="pop-market-condition">
       <div className="pop-section-title">
         <div><span className="pop-eyebrow">{gameText("REGIONAL CONDITIONS")}</span><h2>{gameText("Infrastructure pressure")}</h2></div>
-        <span className="pop-pill">{market?.name ?? 'Market data unavailable'}</span>
+        <span className="pop-pill">{gameText(market?.name ?? 'Market data unavailable')}</span>
       </div>
       <div className="pop-market-condition-grid">
         <article className="pop-market-power-card">
           <div className="pop-market-card-label"><Zap size={15} /> {gameText("GRID CAPACITY")}</div>
           <div className="pop-market-power-value">{market?.committedPowerMW.toFixed(0) ?? '—'} <small>/ {market?.availablePowerMW.toFixed(0) ?? '—'} MW</small></div>
           <div className="pop-market-power-track"><i style={{ width: `${Math.min(100, Math.max(0, powerUtilization * 100))}%` }} /></div>
-          <div className="pop-market-power-foot"><span>{formatPercent(powerUtilization)} committed</span><strong>{powerHeadroom.toFixed(1)} MW firm headroom</strong></div>
+          <div className="pop-market-power-foot"><span>{formatPercent(powerUtilization)} {gameText('committed')}</span><strong>{powerHeadroom.toFixed(1)} {gameText('MW firm headroom')}</strong></div>
         </article>
         <article className="pop-market-condition-stat">
           <div className="pop-market-card-label"><Gauge size={15} /> {gameText("ENERGY REFERENCE")}</div>
@@ -159,28 +159,28 @@ export function MarketsOverview({ state, report, activityReport }: Props) {
           <div className="pop-market-card-label"><Cpu size={15} /> {gameText("EQUIPMENT THROUGHPUT")}</div>
           <strong>{market?.equipmentDeliveryPoolMWEquivalentPerQuarter.toFixed(1) ?? '—'} MW-eq</strong>
           <small>{gameText("Available delivery pool per quarter")}</small>
-          <span className="pop-market-stat-note">{equipmentReserved.toFixed(1)} MW-eq currently reserved</span>
+          <span className="pop-market-stat-note">{equipmentReserved.toFixed(1)} {gameText('MW-eq currently reserved')}</span>
         </article>
         <article className="pop-market-condition-stat">
           <div className="pop-market-card-label"><Factory size={15} /> {gameText("CONTRACTED WORKLOAD")}</div>
           <strong>{contractedDemand.toFixed(1)} MW</strong>
           <small>{gameText("Firm customer commitments")}</small>
-          <span className="pop-market-stat-note">{flexibleDemand.toFixed(1)} MW flexible workload</span>
+          <span className="pop-market-stat-note">{flexibleDemand.toFixed(1)} MW {gameText('flexible workload')}</span>
         </article>
       </div>
       <div className="pop-market-pressure-note">
         <div className="pop-market-pressure-icon"><Activity size={17} /></div>
-        <div><strong>{powerHeadroom <= 2 ? 'Power is the immediate regional constraint' : 'Regional power capacity remains available'}</strong>
-          <p>{powerHeadroom <= 2
+        <div><strong>{gameText(powerHeadroom <= 2 ? 'Power is the immediate regional constraint' : 'Regional power capacity remains available')}</strong>
+          <p>{gameText(powerHeadroom <= 2
             ? 'Only a narrow firm-power buffer remains. New compute capacity may be physically stranded unless additional grid allocation is secured.'
-            : 'The current firm-power buffer leaves room for carefully staged expansion, subject to equipment and operational constraints.'}</p></div>
+            : 'The current firm-power buffer leaves room for carefully staged expansion, subject to equipment and operational constraints.')}</p></div>
       </div>
     </section>
 
     <section className="pop-market-actors">
       <div className="pop-section-title">
         <div><span className="pop-eyebrow">{gameText("MARKET PARTICIPANTS")}</span><h2>{gameText("Who shapes the region")}</h2></div>
-        <span className="pop-pill">{actorOrder.length} tracked entities</span>
+        <span className="pop-pill">{actorOrder.length} {gameText('tracked entities')}</span>
       </div>
       <div className="pop-market-actor-grid">
         {actorOrder.map((id) => <ActorCard key={id} subjectId={id} estimates={estimatesByActor[id] ?? []}
@@ -191,7 +191,7 @@ export function MarketsOverview({ state, report, activityReport }: Props) {
     <section className="pop-market-intelligence">
       <div className="pop-section-title">
         <div><span className="pop-eyebrow">{gameText("INFORMATION QUALITY")}</span><h2>{gameText("Intelligence desk")}</h2></div>
-        <span className="pop-pill">{staleSignals} stale signals</span>
+        <span className="pop-pill">{staleSignals} {gameText('stale signals')}</span>
       </div>
       <div className="pop-market-intel-summary">
         <div><strong>{state.playerIntelligence.length}</strong><span>{gameText("Active signals")}</span></div>
@@ -210,7 +210,7 @@ export function MarketsOverview({ state, report, activityReport }: Props) {
     <section className="pop-market-activity">
       <div className="pop-section-title">
         <div><span className="pop-eyebrow">{gameText("WORLD ACTIVITY")}</span><h2>{gameText("Recent market developments")}</h2></div>
-        <span className="pop-pill">{actorActions.length} reported actions</span>
+        <span className="pop-pill">{actorActions.length} {gameText('reported actions')}</span>
       </div>
       {actorActions.length ? <div className="pop-market-event-list">{actorActions.map((item, index) => {
         const actor = state.organizations.find((org) => org.id === item.actorId);
