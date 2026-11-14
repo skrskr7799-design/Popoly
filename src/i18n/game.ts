@@ -645,6 +645,9 @@ Object.assign(ru, {
   "market study": "исследование рынка"
 });
 
+
+Object.assign(ru, { "North Region": "Северный регион" });
+
 export function gameText(source: string, locale?: Locale): string {
   const activeLocale = locale ?? useI18n.getState().locale;
   if (activeLocale === 'en') return source;
