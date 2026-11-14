@@ -141,17 +141,17 @@ export function CorporationOverview({
     <section className="pop-corp-section">
       <div className="pop-section-title">
         <div><span className="pop-eyebrow">{gameText("OPERATING ASSETS")}</span><h2>{gameText("Infrastructure & capacity")}</h2></div>
-        <span className="pop-pill">{capacity ? formatPercent(capacity.reliability, 1) + ' reliability' : 'No capacity data'}</span>
+        <span className="pop-pill">{capacity ? formatPercent(capacity.reliability, 1) + ' ' + gameText('reliability') : gameText('No capacity data')}</span>
       </div>
       <div className="pop-corp-asset-overview">
         <div className="pop-corp-capacity-primary">
           <div className="pop-corp-capacity-top"><span>{gameText("RELIABILITY-ADJUSTED CAPACITY")}</span><Gauge size={17} /></div>
           <strong>{effective.toFixed(1)} <small>{gameText("MW")}</small></strong>
           <div className="pop-corp-utilization"><i style={{ width: `${Math.min(100, Math.max(0, utilization * 100))}%` }} /></div>
-          <div className="pop-corp-capacity-bottom"><span>{delivered.toFixed(1)} MW delivered</span><span>{formatPercent(utilization)} utilized</span></div>
+          <div className="pop-corp-capacity-bottom"><span>{delivered.toFixed(1)} MW {gameText('delivered')}</span><span>{formatPercent(utilization)} {gameText('utilized')}</span></div>
         </div>
         <div className="pop-corp-bottleneck">
-          <span>{gameText("ACTIVE CONSTRAINT")}</span><strong>{bottleneck.label}</strong><small>{bottleneck.value.toFixed(1)} MW currently sets the lowest physical ceiling</small>
+          <span>{gameText("ACTIVE CONSTRAINT")}</span><strong>{gameText(bottleneck.label)}</strong><small>{bottleneck.value.toFixed(1)} MW {gameText('currently sets the lowest physical ceiling')}</small>
           <div className="pop-corp-bottleneck-icon"><Activity size={20} /></div>
         </div>
       </div>
@@ -159,16 +159,16 @@ export function CorporationOverview({
         {capacityRows.map((item) => {
           const Icon = item.icon;
           const max = Math.max(1, ...capacityRows.map((row) => row.value));
-          return <article className="pop-corp-capacity-card" key={item.label}>
-            <div><Icon size={16} /><span>{item.label}</span></div>
+          return <article className="pop-corp-capacity-card" key={gameText(item.label)}>
+            <div><Icon size={16} /><span>{gameText(item.label)}</span></div>
             <strong>{item.value.toFixed(1)} <small>{gameText("MW")}</small></strong>
             <div className="pop-corp-capacity-track"><i className={`tone-${item.color}`} style={{ width: `${Math.min(100, item.value / max * 100)}%` }} /></div>
           </article>;
         })}
       </div>
       <div className="pop-corp-asset-footer">
-        <div><HardDrive size={16} /><span>{gameText("Equipment pipeline")}</span><strong>{reservedMW.toFixed(1)} MW-eq reserved</strong><small>{reservedOrders.length} pending order(s) · {deliveredOrders.length} delivered</small></div>
-        <div><Cable size={16} /><span>{gameText("Regional power access")}</span><strong>{state.regionalMarkets[0]?.name ?? 'North Region'}</strong><small>{state.regionalMarkets[0]?.immediateFirmPowerHeadroomMW.toFixed(1) ?? '—'} MW firm headroom</small></div>
+        <div><HardDrive size={16} /><span>{gameText("Equipment pipeline")}</span><strong>{reservedMW.toFixed(1)} MW-eq {gameText('reserved')}</strong><small>{reservedOrders.length} {gameText('pending order(s)')} · {deliveredOrders.length} {gameText('delivered')}</small></div>
+        <div><Cable size={16} /><span>{gameText("Regional power access")}</span><strong>{state.regionalMarkets[0]?.name ?? 'North Region'}</strong><small>{state.regionalMarkets[0]?.immediateFirmPowerHeadroomMW.toFixed(1) ?? '—'} {gameText('MW firm headroom')}</small></div>
       </div>
     </section>
 
@@ -178,10 +178,10 @@ export function CorporationOverview({
         <span className="pop-pill">{activeContracts.length} active agreements</span>
       </div>
       <div className="pop-corp-commercial">
-        <Metric label={gameText("Contracted workload")} value={contractedMW.toFixed(1) + ' MW'} detail="Firm customer commitments" tone="good" />
-        <Metric label={gameText("Flexible workload")} value={flexibleMW.toFixed(1) + ' MW'} detail="Demand with flexible terms" />
-        <Metric label={gameText("Quarter revenue")} value={formatMoney(operations?.revenueCents ?? 0, true)} detail="Latest resolved quarter" tone="good" />
-        <Metric label={gameText("Operating contribution")} value={formatMoney(operations?.operatingCashContributionCents ?? 0, true)} detail="After operating expenses" tone={(operations?.operatingCashContributionCents ?? 0) >= 0 ? 'good' : 'warn'} />
+        <Metric label={gameText("Contracted workload")} value={contractedMW.toFixed(1) + ' MW'} detail={gameText('Firm customer commitments')} tone="good" />
+        <Metric label={gameText("Flexible workload")} value={flexibleMW.toFixed(1) + ' MW'} detail={gameText('Demand with flexible terms')} />
+        <Metric label={gameText("Quarter revenue")} value={formatMoney(operations?.revenueCents ?? 0, true)} detail={gameText('Latest resolved quarter')} tone="good" />
+        <Metric label={gameText("Operating contribution")} value={formatMoney(operations?.operatingCashContributionCents ?? 0, true)} detail={gameText('After operating expenses')} tone={(operations?.operatingCashContributionCents ?? 0) >= 0 ? 'good' : 'warn'} />
       </div>
     </section>
 
@@ -194,9 +194,9 @@ export function CorporationOverview({
         <span className="pop-pill">{gameText("Entity-level accounting")}</span>
       </div>
       <div className="pop-corp-finance-summary">
-        <Metric label={gameText("Group cash")} value={formatMoney((holding?.cashCents ?? 0) + (subsidiary?.cashCents ?? 0), true)} detail="Combined view · not pooled" />
-        <Metric label={gameText("Group debt")} value={formatMoney(debtTotal([...holdingDebt, ...subsidiaryDebt]), true)} detail="Across both legal entities" tone="warn" />
-        <Metric label={gameText("Quarter interest")} value={formatMoney(report.totalInterestExpenseCents, true)} detail="Latest resolved quarter" />
+        <Metric label={gameText("Group cash")} value={formatMoney((holding?.cashCents ?? 0) + (subsidiary?.cashCents ?? 0), true)} detail={gameText('Combined view · not pooled')} />
+        <Metric label={gameText("Group debt")} value={formatMoney(debtTotal([...holdingDebt, ...subsidiaryDebt]), true)} detail={gameText('Across both legal entities')} tone="warn" />
+        <Metric label={gameText("Quarter interest")} value={formatMoney(report.totalInterestExpenseCents, true)} detail={gameText('Latest resolved quarter')} />
       </div>
       <FinancePanel state={state} report={report} selectedOfferIds={selectedLoanOffers}
         onToggleOffer={onToggleLoanOffer} creditRequest={creditRequest}
