@@ -232,3 +232,12 @@ This is a user-reported exploratory check, not a claim that every BS-01–BS-25 
 - **Steps:** Open Quarter Strategy from desktop and mobile navigation. Inspect the leadership and capital meters, regional operating constraints, all initiative cards, projected effects, and the commitment preview. Select and deselect initiatives; then resolve one disposable campaign quarter.
 - **Expected:** Quarter Strategy renders as a distinct executive-planning screen. Resource meters update immediately and consistently with selected initiatives. Active projects cannot be launched twice. Unaffordable initiatives cannot be selected. The commitment preview reflects the exact selected portfolio. Decisions do not affect campaign state until a successful quarter resolution. Validation errors remain visible and do not silently discard selections. Layout remains usable without horizontal overflow at 390 px, 768 px, and 1280 px.
 - **Actual result / evidence:**
+
+
+## 13. Shared visual system
+
+### BS-28 — Cross-destination consistency and accessibility
+- [ ] Pass  [ ] Fail  [ ] Blocked
+- **Steps:** Visit Command Center, Corporation, Markets & Intelligence, and Quarter Strategy at desktop and compact widths. Compare page headings, quarter context, navigation active state, panel surfaces, badges, primary/secondary actions, and keyboard focus. Enable the operating system's reduced-motion preference and revisit the screens.
+- **Expected:** All destinations read as one game interface while retaining their own hero illustration and information layout. The active navigation item is unambiguous. Shared controls and panels use consistent treatment. Focus remains visible for keyboard users. Reduced-motion preference suppresses nonessential transitions. No horizontal overflow at 390 px, 768 px, and 1280 px.
+- **Actual result / evidence:**
