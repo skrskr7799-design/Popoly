@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { initializeGame } from '../engine/initialize';
 import { CampaignSession } from '../campaign/session';
 import { validateGameState } from '../domain/invariants';
-import { moneyFromCents } from '../domain/money';
+import { moneyFromCents, moneyFromDollars } from '../domain/money';
 import { buildQuarterReport } from '../systems/quarterReport';
 import { advanceQuarter } from '../engine/advanceQuarter';
 import { advanceCreditorWorkouts, proposeCreditorWorkout } from '../systems/creditorWorkout';
@@ -69,6 +69,37 @@ describe('coordinated creditor workouts', () => {
     if (!result.ok) return;
     expect(result.workout.status).toBe('rejected');
     expect(result.workout.votes.some((vote) => vote.vote === 'countered' && vote.counterTerms !== undefined)).toBe(true);
+  });
+
+  it('converts approved debt into fairly priced new voting shares', () => {
+    const opening = initializeGame(2035);
+    const debt = opening.debts.find((item) => item.borrowerId === 'nodeworks')!;
+    const result = proposeCreditorWorkout(opening, {
+      ...plan, standstillQuarters: 0, maturityExtensionQuarters: 0,
+      debtToEquityConversionBps: 1_000,
+      equityPreMoneyValuationCents: moneyFromDollars(100_000_000),
+    });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.workout.status).toBe('active');
+    expect(result.workout.debtConvertedCents).toBe(moneyFromDollars(1_400_000));
+    expect(result.workout.newSharesIssued).toBe(140_000);
+    const amendedDebt = result.state.debts.find((item) => item.id === debt.id)!;
+    expect(amendedDebt.principalCents).toBe(moneyFromDollars(12_600_000));
+    const lenderStake = result.state.ownership.find((item) =>
+      item.ownerId === 'frontier-development-bank' && item.companyId === 'nodeworks');
+    expect(lenderStake).toMatchObject({ shares: 140_000, votingShares: 140_000 });
+    expect(result.state.operatingCompanies.find((item) => item.organizationId === 'nodeworks')?.issuedShares)
+      .toBe(10_140_000);
+    expect(result.state.assets?.filter((item) => item.securedDebtId === debt.id)).toHaveLength(2);
+    expect(validateGameState(result.state)).toEqual([]);
+  });
+
+  it('requires an explicit valuation before any debt-to-equity conversion', () => {
+    const opening = initializeGame(2035);
+    expect(proposeCreditorWorkout(opening, {
+      ...plan, debtToEquityConversionBps: 1_000,
+    })).toMatchObject({ ok: false, code: 'workout.terms_invalid' });
   });
 
   it('records rejection without applying unapproved debt or payable relief', () => {
