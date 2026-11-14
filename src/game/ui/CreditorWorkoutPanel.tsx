@@ -37,7 +37,7 @@ export function CreditorWorkoutPanel({ state, onPropose, onFileAdministration }:
 
   return <section className="pop-finance-subsection pop-creditor-workout">
     <div className="pop-finance-subtitle"><strong>Creditor workout</strong><small>Company-wide recovery agreement</small></div>
-    <p className="pop-muted">Lenders vote independently by claim value. Secured creditors must consent. Trade creditors are represented by existing payable classes. No concessions apply unless the approval threshold is reached.</p>
+    <p className="pop-muted">Lenders vote independently by claim value. Secured creditors must consent to changes affecting their secured portion; write-downs apply only to unsecured deficiency. Trade creditors are represented by existing payable classes. No concessions apply unless the approval threshold is reached.</p>
     {workouts.slice(0, 2).map((workout) => <article className="pop-loan-offer" key={workout.id}>
       <div className="pop-loan-heading">
         <strong>{workout.status.toUpperCase()}</strong>

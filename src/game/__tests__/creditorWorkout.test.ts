@@ -71,6 +71,21 @@ describe('coordinated creditor workouts', () => {
     expect(result.workout.votes.some((vote) => vote.vote === 'countered' && vote.counterTerms !== undefined)).toBe(true);
   });
 
+  it('writes down only the unsecured deficiency of a secured loan', () => {
+    const opening = initializeGame(2035);
+    const debt = opening.debts.find((item) => item.borrowerId === 'nodeworks')!;
+    const result = proposeCreditorWorkout(opening, {
+      ...plan, standstillQuarters: 0, maturityExtensionQuarters: 0,
+      principalWriteDownBps: 1_000,
+    });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.workout.status).toBe('active');
+    expect(result.workout.votes[0].securedClaimCents).toBe(moneyFromDollars(7_800_000));
+    expect(result.state.debts.find((item) => item.id === debt.id)?.principalCents).toBe(moneyFromDollars(13_380_000));
+    expect(validateGameState(result.state)).toEqual([]);
+  });
+
   it('converts approved debt into fairly priced new voting shares', () => {
     const opening = initializeGame(2035);
     const debt = opening.debts.find((item) => item.borrowerId === 'nodeworks')!;

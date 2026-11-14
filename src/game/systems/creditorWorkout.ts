@@ -24,9 +24,13 @@ function creditorClaims(state: GameState, entityId: string) {
     if (debt.borrowerId !== entityId || debt.principalCents + (debt.arrearsInterestCents ?? 0) + (debt.arrearsPrincipalCents ?? 0) <= 0 || !debt.lenderId) continue;
     const current = claims.get(debt.lenderId) ?? { creditorId: debt.lenderId, creditorKind: 'lender' as const, claimCents: 0, securedClaimCents: 0 };
     current.claimCents += debt.principalCents + (debt.arrearsInterestCents ?? 0) + (debt.arrearsPrincipalCents ?? 0);
-    if ((state.assets ?? []).some((asset) => asset.ownerId === entityId && asset.securedDebtId === debt.id && asset.disposedQuarter === undefined)) {
-      current.securedClaimCents += debt.principalCents + (debt.arrearsInterestCents ?? 0) + (debt.arrearsPrincipalCents ?? 0);
-    }
+    const collateralValue = (state.assets ?? []).filter((asset) => asset.ownerId === entityId &&
+      asset.securedDebtId === debt.id && asset.disposedQuarter === undefined)
+      .reduce((sum, asset) => sum + asset.realizableValueCents, 0);
+    current.securedClaimCents += Math.min(
+      debt.principalCents + (debt.arrearsInterestCents ?? 0) + (debt.arrearsPrincipalCents ?? 0),
+      collateralValue,
+    );
     claims.set(debt.lenderId, current);
   }
   for (const creditorClass of payableClasses) {
@@ -143,9 +147,11 @@ export function proposeCreditorWorkout(state: GameState, input: CreditorWorkoutP
     if (debt.borrowerId !== input.entityId || !debt.lenderId) return debt;
     const vote = votes.find((item) => item.creditorId === debt.lenderId);
     if (vote?.vote !== 'accepted') return debt;
-    const secured = (state.assets ?? []).some((asset) => asset.ownerId === input.entityId &&
-      asset.securedDebtId === debt.id && asset.disposedQuarter === undefined);
-    const writeDown = secured ? 0 : Math.floor(debt.principalCents * terms.principalWriteDownBps / 10_000);
+    const collateralValue = (state.assets ?? []).filter((asset) => asset.ownerId === input.entityId &&
+      asset.securedDebtId === debt.id && asset.disposedQuarter === undefined)
+      .reduce((sum, asset) => sum + asset.realizableValueCents, 0);
+    const unsecuredPrincipal = Math.max(0, debt.principalCents - Math.min(debt.principalCents, collateralValue));
+    const writeDown = Math.floor(unsecuredPrincipal * terms.principalWriteDownBps / 10_000);
     const principalAfterWriteDown = debt.principalCents - writeDown;
     const conversion = Math.floor(principalAfterWriteDown * terms.debtToEquityConversionBps / 10_000);
     if (conversion > 0) conversionByLender.set(debt.lenderId, (conversionByLender.get(debt.lenderId) ?? 0) + conversion);
