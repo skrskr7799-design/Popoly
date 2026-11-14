@@ -146,6 +146,24 @@ describe('coordinated creditor workouts', () => {
     expect(validateGameState(session.state)).toEqual([]);
   });
 
+  it('allows explicit administration escalation after a missed recovery milestone', () => {
+    const session = CampaignSession.start({ seed: 2035 });
+    const proposed = session.proposeCreditorWorkout({
+      ...plan, standstillQuarters: 0, maturityExtensionQuarters: 0,
+      minimumOperatingCashContributionCents: moneyFromDollars(1_000_000_000),
+      maximumOperatingPayablesCents: 0, maximumDebtArrearsCents: 0,
+      deadlineQuarters: 1,
+    });
+    expect(proposed.ok).toBe(true);
+    if (!proposed.ok) return;
+    expect(session.advance().ok).toBe(true);
+    expect(session.advance().ok).toBe(true);
+    expect(session.state.creditorWorkouts?.find((item) => item.id === proposed.workout.id)?.status).toBe('breached');
+    const filed = session.openAdministration('nodeworks', 'creditor-workout-breach');
+    expect(filed.ok).toBe(true);
+    if (filed.ok) expect(filed.administrationCase.trigger).toBe('creditor-workout-breach');
+  });
+
   it('keeps an administration review window open while a workout is unresolved', () => {
     const session = CampaignSession.start({ seed: 2035 });
     const filed = session.openAdministration('nodeworks', 'voluntary');

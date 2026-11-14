@@ -165,6 +165,7 @@ Avoid changing the game-state schema version until the exact migration/defaultin
 - [x] Test liquidation, creditor recovery, legal-entity isolation and save/restore.
 - [x] Implement creditor voting/workout milestones with claim-weighted approval, secured-creditor consent, counters and persisted outcomes.
 - [x] Add a recoverable administration review path: an approved workout can run during administration; completed milestones and restored financial health permit reorganization.
+- [x] Add explicit enforcement escalation after a missed recovery milestone, with a recorded creditor-workout-breach administration trigger and the existing liquidation alternative.
 - [x] Preserve lender-by-lender consent; apply debt terms only to accepting lenders and trade-payable compromises only to accepting creditor classes.
 - [x] Add deterministic workout transitions and focused domain tests.
 - [ ] Add managed multi-seed turnaround campaigns and browser-level workout walkthroughs.
