@@ -320,9 +320,6 @@ export default function CampaignApp() {
       ? current.filter((id) => id !== initiative.id)
       : [...current, initiative.id]);
   };
-  const scrollToSection = (id: string) => {
-    document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  };
   const restartCampaign = () => {
     if (window.confirm('Start a new campaign? Unsaved progress in the current session will be lost.')) {
       startCampaign();
@@ -415,7 +412,7 @@ export default function CampaignApp() {
 
       <div className="pop-content-grid">
         <div className="pop-column">
-          <section className="pop-panel">
+          <section id="quarter-agenda" className="pop-panel pop-agenda-panel">
             <SectionTitle eyebrow="EXECUTIVE AGENDA" title="Choose this quarter's priorities" right={<span className="pop-pill">{selected.length} selected</span>} />
             <p className="pop-panel-intro">Sponsor initiatives using Meridian's cash and limited leadership bandwidth. Routine operations continue automatically.</p>
             <div className="pop-budget">
