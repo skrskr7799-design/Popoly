@@ -72,6 +72,20 @@ Only after the vertical slice is enjoyable, deepen corporate structures and mark
 
 The core strategy-game interface, onboarding, and main destinations are implemented. Continue with focused visual polish rather than a wholesale redesign; balance viable strategic paths; test long campaigns and edge cases; improve accessibility, performance, and presentation.
 
+
+## Phase 8 — Release validation and migration
+
+- [x] Add four-seed, 48-quarter managed campaign validation with per-quarter invariants.
+- [x] Add campaign-session restore tests for active creditor workout, active administration restrictions, and completed liquidation.
+- [x] Record the owner's exploratory browser check without overstating the unrecorded checklist results.
+- [x] Prepare a non-destructive migration rehearsal documenting branch ancestry, runtime entry, legacy preservation, Docker/CI, and cutover gates.
+- [ ] Complete production Docker build and container HTTP smoke test in CI.
+- [ ] Complete and record the full browser checklist on desktop, tablet, and mobile.
+- [ ] Archive the exact pre-cutover `main` prototype under `legacy/prototype/` and verify it before moving any legacy source.
+- [ ] Review the full source-to-main PR diff and merge only after all release gates pass.
+
+**Current release posture:** `docs/game-foundation` is the candidate release branch. `main` remains unchanged. See [MIGRATION_REHEARSAL.md](MIGRATION_REHEARSAL.md) for the current comparison and exact cutover sequence.
+
 ## Phase 7 — Future options
 
 Evaluate only when the single-player foundation is stable: multiplayer architecture and authoritative server; larger worlds and actor counts; advanced diplomacy or military conflict; modding and scenario tools; optional platform or distribution expansions.
