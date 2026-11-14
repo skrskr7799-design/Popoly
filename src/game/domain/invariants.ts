@@ -159,7 +159,7 @@ export function validateGameState(state: GameState): ValidationIssue[] {
     payableIds.add(payable.id);
     if (typeof payable.id !== 'string' || payable.id.trim().length === 0 ||
         !organizationIds.has(payable.entityId) ||
-        !['energy', 'payroll', 'network-vendor', 'tax-overhead'].includes(payable.creditorClass) ||
+        !['energy', 'payroll', 'maintenance', 'network-vendor', 'tax-overhead'].includes(payable.creditorClass) ||
         !Number.isSafeInteger(payable.originalAmountCents) || payable.originalAmountCents <= 0 ||
         !Number.isSafeInteger(payable.outstandingAmountCents) || payable.outstandingAmountCents < 0 ||
         payable.outstandingAmountCents > payable.originalAmountCents ||
