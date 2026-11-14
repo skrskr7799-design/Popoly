@@ -1,6 +1,6 @@
 # Browser Smoke Test — Campaign Vertical Slice
 
-**Status:** Prepared; not yet executed in a real browser  
+**Status:** Exploratory owner check reported; full 29-case checklist not yet recorded  
 **Branch:** `docs/game-foundation`  
 **Scope:** End-to-end manual verification of the campaign UI, quarterly loop, persistence, and responsive layout.
 
@@ -213,7 +213,7 @@ A manual browser check was reported by the project owner on 2026-11-14. The owne
 - **Exact commit tested:** Not confirmed.
 - **Individual case results:** Not recorded; the checklist above remains available for detailed follow-up.
 
-This is a user-reported exploratory check, not a claim that every BS-01–BS-25 case was executed. Re-run targeted cases after material UI, campaign-flow, or persistence changes.
+This is a user-reported exploratory check, not a claim that every BS-01–BS-29 case was executed. Re-run targeted cases after material UI, campaign-flow, or persistence changes.
 
 
 ## 11. Markets & Intelligence destination
