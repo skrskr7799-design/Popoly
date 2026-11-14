@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { initializeGame } from '../engine/initialize';
 import { validateGameState } from '../domain/invariants';
+import { moneyFromCents } from '../domain/money';
 import { openAdministration, reorganizeAdministration } from '../systems/administration';
 
 describe('formal administration transitions', () => {
@@ -44,7 +45,7 @@ describe('formal administration transitions', () => {
       ...opening,
       operatingPayables: [{
         id: 'nodeworks-energy-q1', entityId: 'nodeworks', creditorClass: 'energy' as const,
-        originalAmountCents: 125_000, outstandingAmountCents: 125_000,
+        originalAmountCents: moneyFromCents(125_000), outstandingAmountCents: moneyFromCents(125_000),
         incurredQuarter: 1, dueQuarter: 1, priority: 2,
       }],
     };
