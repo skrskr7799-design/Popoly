@@ -35,7 +35,7 @@ export function openAdministration(
     return { ok: false, code: 'administration.company_liquidated', message: 'A liquidated company cannot enter administration again.' };
   }
   if (company.status === 'administration' ||
-      (state.administrationCases ?? []).some((item) => item.entityId === entityId)) {
+      (state.administrationCases ?? []).some((item) => item.entityId === entityId && item.status === 'active')) {
     return { ok: false, code: 'administration.case_exists', message: 'This company already has an administration case.' };
   }
   if (!['voluntary', 'debt-default', 'trade-creditor-arrears'].includes(trigger)) {
@@ -43,7 +43,7 @@ export function openAdministration(
   }
 
   const administrationCase: AdministrationCase = {
-    id: `administration:${entityId}:q${state.quarter}`,
+    id: `administration:${entityId}:q${state.quarter}:${(state.administrationCases ?? []).filter((item) => item.entityId === entityId).length + 1}`,
     entityId,
     openedQuarter: state.quarter,
     trigger,
