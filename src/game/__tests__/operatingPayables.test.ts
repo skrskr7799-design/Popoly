@@ -78,6 +78,7 @@ describe('operating payable settlement', () => {
 
   it('applies reversible energy and workforce restrictions only to overdue claims', () => {
     const company = initializeGame(2035).operatingCompanies[0]!;
+    const baseCapacity = { ...company.capacity };
     const energy = {
       id: 'energy-q1', entityId: company.organizationId, creditorClass: 'energy' as const,
       originalAmountCents: moneyFromCents(100_000_000), outstandingAmountCents: moneyFromCents(100_000_000),
@@ -93,8 +94,7 @@ describe('operating payable settlement', () => {
     expect(pressured.pressure.reliabilityPenalty).toBe(0.004);
     expect(pressured.company.capacity.gridAllocationMW).toBe(company.capacity.gridAllocationMW - 1);
     expect(pressured.company.capacity.reliability).toBeCloseTo(company.capacity.reliability - 0.004, 8);
-    expect(company.capacity.gridAllocationMW).toBe(19.9);
-    expect(company.capacity.reliability).toBe(0.995);
+    expect(company.capacity).toEqual(baseCapacity);
 
     const cured = applyOperatingCreditorPressure(company, [], 3);
     expect(cured.pressure).toEqual({
