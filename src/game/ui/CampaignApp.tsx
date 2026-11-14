@@ -440,6 +440,8 @@ export default function CampaignApp() {
         selectedTurnaroundActionIds={selectedTurnaroundActions}
         onToggleTurnaroundAction={(actionId) => setSelectedTurnaroundActions((current) =>
           current.includes(actionId) ? current.filter((id) => id !== actionId) : [...current, actionId])}
+        onFileAdministration={fileNodeWorksAdministration}
+        onReorganizeAdministration={completeNodeWorksReorganization}
       /> : activeView === 'markets' ? <>
       <MarketsOverview state={state} report={currentReport} activityReport={report ?? undefined} />
       {storageMessage && <div className="pop-storage-message">{storageMessage}<button onClick={() => setStorageMessage(null)}>Dismiss</button></div>}
